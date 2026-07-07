@@ -1,0 +1,13 @@
+.pio/
+.vscode/*
+!.vscode/extensions.json
+
+*.elf
+*.hex
+*.map
+*.eep
+*.lss
+*.sym
+
+*.tmp
+*.bak
