@@ -1,5 +1,6 @@
 #include <Arduino.h>
 
+#include "Adret/FrontPanel.h"
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
 #include "Adret/FrontPanelMap.h"
@@ -15,102 +16,86 @@ enum class DebugPhase : uint8_t {
 constexpr DebugPhase kDebugPhase = DebugPhase::Leds;
 constexpr uint16_t kLedDebugPeriodMs = 500;
 
-void initialiseFrontPanel()
+adret::front_panel::PanelIndicator functionIndicatorForStep(uint8_t step)
 {
-    using namespace adret::front_panel;
-
-    adret::frontPanelBus.writeDecimalPoints(0x00);
-    adret::frontPanelBus.writeFirstCharFlags(0x00);
-    adret::frontPanelBus.writeSn2(FunctionLed::None0,
-                                  AmplitudeUnitLed::None6,
-                                  ModulationSourceLed::Cw);
-    adret::frontPanelBus.writeSn3(StatusLed::Normal,
-                                  ModulationUnitLed::None,
-                                  MemoryLedMode::None,
-                                  false,
-                                  false);
-}
-
-adret::front_panel::FunctionLed functionLedForStep(uint8_t step)
-{
-    using adret::front_panel::FunctionLed;
+    using adret::front_panel::PanelIndicator;
     switch (step & 0x07u) {
         case 3:
-            return FunctionLed::Rf;
+            return PanelIndicator::Rf;
         case 4:
-            return FunctionLed::Fm;
+            return PanelIndicator::Fm;
         case 5:
-            return FunctionLed::Pm;
+            return PanelIndicator::Pm;
         case 6:
-            return FunctionLed::Am;
+            return PanelIndicator::Am;
         case 7:
-            return FunctionLed::Amplitude;
+            return PanelIndicator::Amplitude;
         default:
-            return FunctionLed::None0;
+            return PanelIndicator::Rf;
     }
 }
 
-adret::front_panel::AmplitudeUnitLed amplitudeUnitForStep(uint8_t step)
+adret::front_panel::PanelIndicator amplitudeIndicatorForStep(uint8_t step)
 {
-    using adret::front_panel::AmplitudeUnitLed;
+    using adret::front_panel::PanelIndicator;
     switch (step % 6u) {
         case 0:
-            return AmplitudeUnitLed::DBm;
+            return PanelIndicator::DBm;
         case 1:
-            return AmplitudeUnitLed::DB;
+            return PanelIndicator::DB;
         case 2:
-            return AmplitudeUnitLed::DBuV;
+            return PanelIndicator::DBuV;
         case 3:
-            return AmplitudeUnitLed::V;
+            return PanelIndicator::Volt;
         case 4:
-            return AmplitudeUnitLed::MV;
+            return PanelIndicator::MilliVolt;
         default:
-            return AmplitudeUnitLed::UV;
+            return PanelIndicator::MicroVolt;
     }
 }
 
-adret::front_panel::ModulationSourceLed modulationSourceForStep(uint8_t step)
+adret::front_panel::PanelIndicator modulationSourceIndicatorForStep(uint8_t step)
 {
-    using adret::front_panel::ModulationSourceLed;
+    using adret::front_panel::PanelIndicator;
     switch (step & 0x03u) {
         case 0:
-            return ModulationSourceLed::Hz400;
+            return PanelIndicator::Hz400;
         case 1:
-            return ModulationSourceLed::KHz1;
+            return PanelIndicator::KHz1;
         case 2:
-            return ModulationSourceLed::External;
+            return PanelIndicator::External;
         default:
-            return ModulationSourceLed::Cw;
+            return PanelIndicator::Cw;
     }
 }
 
-adret::front_panel::StatusLed statusLedForStep(uint8_t step)
+adret::front_panel::PanelIndicator statusIndicatorForStep(uint8_t step)
 {
-    using adret::front_panel::StatusLed;
+    using adret::front_panel::PanelIndicator;
     switch (step & 0x03u) {
         case 1:
-            return StatusLed::Error;
+            return PanelIndicator::Error;
         case 2:
-            return StatusLed::Dept;
+            return PanelIndicator::Dept;
         case 3:
-            return StatusLed::Normal;
+            return PanelIndicator::Normal;
         default:
-            return StatusLed::None;
+            return PanelIndicator::Normal;
     }
 }
 
-adret::front_panel::ModulationUnitLed modulationUnitForStep(uint8_t step)
+adret::front_panel::PanelIndicator modulationUnitIndicatorForStep(uint8_t step)
 {
-    using adret::front_panel::ModulationUnitLed;
+    using adret::front_panel::PanelIndicator;
     switch (step & 0x03u) {
         case 1:
-            return ModulationUnitLed::Rd;
+            return PanelIndicator::ModRd;
         case 2:
-            return ModulationUnitLed::KHz;
+            return PanelIndicator::ModKHz;
         case 3:
-            return ModulationUnitLed::Percent;
+            return PanelIndicator::ModPercent;
         default:
-            return ModulationUnitLed::None;
+            return PanelIndicator::ModPercent;
     }
 }
 
@@ -141,24 +126,49 @@ void runLedDebug()
     previousMs = now;
     ++step;
 
-    adret::frontPanelBus.writeSn2(functionLedForStep(step),
-                                  amplitudeUnitForStep(step),
-                                  modulationSourceForStep(step));
-    adret::frontPanelBus.writeSn3(statusLedForStep(step),
-                                  modulationUnitForStep(step),
-                                  memoryModeForStep(step),
-                                  (step & 0x01u) != 0u,
-                                  (step & 0x02u) != 0u);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Rf);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Fm);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Pm);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Am);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Amplitude);
+    if ((step & 0x07u) >= 3u) {
+        adret::frontPanel.turnOn(functionIndicatorForStep(step));
+    }
+
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Error);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Dept);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Normal);
+    if ((step & 0x03u) != 0u) {
+        adret::frontPanel.turnOn(statusIndicatorForStep(step));
+    }
+
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::ModRd);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::ModKHz);
+    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::ModPercent);
+    if ((step & 0x03u) != 0u) {
+        adret::frontPanel.turnOn(modulationUnitIndicatorForStep(step));
+    }
+
+    adret::frontPanel.turnOn(amplitudeIndicatorForStep(step));
+    adret::frontPanel.turnOn(modulationSourceIndicatorForStep(step));
+    adret::frontPanel.setIndicator(adret::front_panel::PanelIndicator::Memory,
+                                   (step & 0x01u) != 0u);
+    adret::frontPanel.setIndicator(adret::front_panel::PanelIndicator::Sequence,
+                                   (step & 0x02u) != 0u);
+    adret::frontPanel.setMemoryMode(memoryModeForStep(step));
 }
 
 void runInputDebug()
 {
-    const uint8_t pendingPanelEvents = adret::frontPanelIrq.consumePending();
-    for (uint8_t i = 0; i < pendingPanelEvents; ++i) {
-        const adret::front_panel::KeyboardSample sample =
-            adret::frontPanelBus.readKeyboard();
-        (void)sample;
+    adret::frontPanel.pollInputs();
+
+    adret::front_panel::KeyEvent event = {};
+    while (adret::frontPanel.popKey(&event)) {
+        (void)event;
     }
+
+    const int16_t encoderDelta = adret::frontPanel.consumeEncoderDelta();
+    (void)encoderDelta;
 }
 
 }  // namespace
@@ -167,7 +177,7 @@ void setup()
 {
     adret::frontPanelBus.begin();
     adret::frontPanelIrq.begin();
-    initialiseFrontPanel();
+    adret::frontPanel.begin();
 }
 
 void loop()

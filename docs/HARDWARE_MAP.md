@@ -36,6 +36,21 @@ Values come from `Adret_740A_table_memoire_panneau_avant.ods`.
 - `110`: SN10 ICM7218A frequency display.
 - `111`: SN11 ICM7218A mixed display.
 
+## Logical Front Panel Layer
+
+`adret::frontPanel` keeps RAM mirrors of the front-panel latch state before
+writing through `FrontPanelBus`.
+
+- SN2 is split into exclusive logical groups for function, amplitude unit, and
+  modulation source LEDs.
+- SN3 is split into exclusive logical groups for status, modulation unit, and
+  memory LED mode, plus independent `MEM` and `SEQ` bits.
+- SN4/SN17 hold first-character/status flags and decimal-point flags.
+- SN5 samples are decoded into raw `xCode`/`yCode`, a named keyboard event when
+  known, and an accumulated signed optical-wheel delta.
+- SN10/SN11 display buffers are prepared by the high-level layer, but the final
+  ICM7218A command/data sequence remains to be validated on hardware.
+
 ## Timing Model
 
 For output writes:

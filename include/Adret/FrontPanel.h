@@ -1,0 +1,162 @@
+#pragma once
+
+#include <stdint.h>
+
+#include "Adret/FrontPanelMap.h"
+
+namespace adret {
+namespace front_panel {
+
+enum class PanelIndicator : uint8_t {
+    Rf,
+    Fm,
+    Pm,
+    Am,
+    Amplitude,
+    DBm,
+    DB,
+    DBuV,
+    Volt,
+    MilliVolt,
+    MicroVolt,
+    Hz400,
+    KHz1,
+    External,
+    Cw,
+    Error,
+    Dept,
+    Normal,
+    ModRd,
+    ModKHz,
+    ModPercent,
+    Memory,
+    Sequence,
+    Remote,
+    RfInhibit,
+    ManualValidation,
+};
+
+enum class Key : uint8_t {
+    None,
+    Amplitude,
+    Rf,
+    Fm,
+    Pm,
+    Am,
+    Spl,
+    Digit0,
+    Digit1,
+    Digit2,
+    Digit3,
+    Digit4,
+    Digit5,
+    Digit6,
+    Digit7,
+    Digit8,
+    Digit9,
+    Mhz,
+    KHz,
+    Hz,
+    Cw,
+    External,
+    KHz1,
+    Hz400,
+    Divide10,
+    Multiply10,
+    ValidManual,
+    Exec,
+    Sequence,
+    Memory,
+    Recall,
+    Increment,
+    RfOff,
+    Address17,
+    XToY,
+    Left,
+    Clear,
+    DecimalPoint,
+    DBm,
+    OneDBm,
+    Up,
+    Down,
+};
+
+struct KeyEvent {
+    Key key;
+    KeyboardSample sample;
+};
+
+struct DisplayBuffers {
+    char frequencyHz[11];
+    char frequencySn10[9];
+    char frequencySn11[3];
+    char modulation[7];
+    char amplitude[7];
+};
+
+}  // namespace front_panel
+
+class FrontPanel final {
+public:
+    static constexpr uint8_t kKeyQueueCapacity = 8;
+
+    FrontPanel() = default;
+    FrontPanel(const FrontPanel&) = delete;
+    FrontPanel& operator=(const FrontPanel&) = delete;
+
+    void begin();
+    void reset();
+    void flushOutputs();
+
+    void setIndicator(front_panel::PanelIndicator indicator, bool enabled);
+    void turnOn(front_panel::PanelIndicator indicator);
+    void turnOff(front_panel::PanelIndicator indicator);
+    bool isOn(front_panel::PanelIndicator indicator) const;
+    void setMemoryMode(front_panel::MemoryLedMode mode);
+
+    void setFrequencyHz(uint32_t frequencyHz);
+    void setModulationValue(uint32_t value,
+                            front_panel::ModulationUnitLed unit,
+                            bool decimalPoint);
+    void setAmplitudeValue(int32_t value,
+                           front_panel::AmplitudeUnitLed unit,
+                           bool decimalPoint);
+
+    void pollInputs();
+    bool popKey(front_panel::KeyEvent* event);
+    int16_t consumeEncoderDelta();
+    uint8_t keyOverflowCount() const;
+    const front_panel::DisplayBuffers& displayBuffers() const;
+
+private:
+    static front_panel::Key keyForSample(const front_panel::KeyboardSample& sample);
+    static void formatUnsigned(uint32_t value, char* out, uint8_t width);
+    static void formatSignedMagnitude(int32_t value, char* out, uint8_t width);
+
+    void flushSn2();
+    void flushSn3();
+    void flushFlags();
+    void pushKey(const front_panel::KeyboardSample& sample);
+
+    front_panel::FunctionLed functionLed_ = front_panel::FunctionLed::None0;
+    front_panel::AmplitudeUnitLed amplitudeUnit_ = front_panel::AmplitudeUnitLed::None6;
+    front_panel::ModulationSourceLed modulationSource_ = front_panel::ModulationSourceLed::Cw;
+    front_panel::StatusLed statusLed_ = front_panel::StatusLed::Normal;
+    front_panel::ModulationUnitLed modulationUnit_ = front_panel::ModulationUnitLed::None;
+    front_panel::MemoryLedMode memoryMode_ = front_panel::MemoryLedMode::None;
+    bool memory_ = false;
+    bool sequence_ = false;
+    uint8_t firstCharFlags_ = 0;
+    uint8_t decimalPointFlags_ = 0;
+
+    front_panel::DisplayBuffers displayBuffers_ = {};
+    front_panel::KeyEvent keyQueue_[kKeyQueueCapacity] = {};
+    uint8_t keyHead_ = 0;
+    uint8_t keyCount_ = 0;
+    uint8_t keyOverflowCount_ = 0;
+    int16_t encoderDelta_ = 0;
+};
+
+extern FrontPanel frontPanel;
+
+}  // namespace adret
