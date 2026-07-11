@@ -1,5 +1,7 @@
 #include "Adret/FrontPanel.h"
 
+#include <Arduino.h>
+
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
 
@@ -9,8 +11,40 @@ namespace {
 
 using namespace front_panel;
 
-constexpr uint8_t kModulationTextWidth = 6;
-constexpr uint8_t kAmplitudeTextWidth = 6;
+constexpr uint8_t kModulationTextWidth = 3;
+constexpr uint8_t kAmplitudeTextWidth = 3;
+
+constexpr uint8_t reversedCodeBDigit(const char* digits,
+                                     uint8_t width,
+                                     uint8_t memoryIndex)
+{
+    return codeBDigit(digits[uint8_t(width - 1u - memoryIndex)]);
+}
+
+constexpr uint8_t mixedSn11CodeBDigit(const char* frequency,
+                                      const char* modulation,
+                                      const char* amplitude,
+                                      uint8_t memoryIndex)
+{
+    return (memoryIndex < 3u)
+        ? reversedCodeBDigit(amplitude, 3u, memoryIndex)
+        : ((memoryIndex < 6u)
+            ? reversedCodeBDigit(modulation, 3u, uint8_t(memoryIndex - 3u))
+            : reversedCodeBDigit(frequency, 2u, uint8_t(memoryIndex - 6u)));
+}
+
+static_assert(kIcm7218CodeBFrameCommand == 0x90u,
+              "Unexpected ICM7218A Code B frame command");
+static_assert(codeBDigit('0') == 0x80u && codeBDigit('9') == 0x89u,
+              "Unexpected ICM7218A Code B digit encoding");
+static_assert(reversedCodeBDigit("12345678", 8u, 0u) == 0x88u &&
+              reversedCodeBDigit("12345678", 8u, 7u) == 0x81u,
+              "Unexpected SN10 frame order");
+static_assert(mixedSn11CodeBDigit("12", "345", "678", 0u) == 0x88u &&
+              mixedSn11CodeBDigit("12", "345", "678", 3u) == 0x85u &&
+              mixedSn11CodeBDigit("12", "345", "678", 6u) == 0x82u &&
+              mixedSn11CodeBDigit("12", "345", "678", 7u) == 0x81u,
+              "Unexpected SN11 frame order");
 
 static_assert(makeSn2Byte(FunctionLed::Rf,
                           AmplitudeUnitLed::DBm,
@@ -32,6 +66,12 @@ static_assert(makeSn3Byte(StatusLed::None,
                           false,
                           false) == 0x08u,
               "Unexpected SN3 cleared byte");
+static_assert(keyboardX(0x28u) == 0u && keyboardY(0x28u) == 5u,
+              "Unexpected AMPL keyboard coordinates");
+static_assert(keyboardX(0x05u) == 5u && keyboardY(0x05u) == 0u,
+              "Unexpected RF OFF keyboard coordinates");
+static_assert(keyboardX(0x0Eu) == 6u && keyboardY(0x0Eu) == 1u,
+              "Unexpected EXEC keyboard coordinates");
 
 uint8_t queueIndex(uint8_t head, uint8_t offset)
 {
@@ -45,6 +85,55 @@ uint8_t queueIndex(uint8_t head, uint8_t offset)
 }  // namespace
 
 FrontPanel frontPanel;
+
+const __FlashStringHelper* front_panel::keyShortLabel(Key key)
+{
+    switch (key) {
+    case Key::Amplitude: return F("AMPL");
+    case Key::Rf: return F("RF");
+    case Key::Fm: return F("FM");
+    case Key::Pm: return F("PM");
+    case Key::Am: return F("AM");
+    case Key::Spl: return F("SPL");
+    case Key::Digit0: return F("0");
+    case Key::Digit1: return F("1");
+    case Key::Digit2: return F("2");
+    case Key::Digit3: return F("3");
+    case Key::Digit4: return F("4");
+    case Key::Digit5: return F("5");
+    case Key::Digit6: return F("6");
+    case Key::Digit7: return F("7");
+    case Key::Digit8: return F("8");
+    case Key::Digit9: return F("9");
+    case Key::Mhz: return F("MHZ");
+    case Key::KHz: return F("KHZ");
+    case Key::Hz: return F("HZ");
+    case Key::Cw: return F("CW");
+    case Key::External: return F("EXT");
+    case Key::KHz1: return F("1KHZ");
+    case Key::Hz400: return F("400HZ");
+    case Key::Divide10: return F("DIV10");
+    case Key::Multiply10: return F("MUL10");
+    case Key::ValidManual: return F("VALID");
+    case Key::Exec: return F("EXEC");
+    case Key::Sequence: return F("SEQ");
+    case Key::Memory: return F("MEM");
+    case Key::Recall: return F("RECALL");
+    case Key::Increment: return F("INC");
+    case Key::RfOff: return F("RF_OFF");
+    case Key::Address17: return F("ADR17");
+    case Key::XToY: return F("X_TO_Y");
+    case Key::Left: return F("LEFT");
+    case Key::Clear: return F("CLEAR");
+    case Key::DecimalPoint: return F("POINT");
+    case Key::DBm: return F("DBM");
+    case Key::OneDBm: return F("1DBM");
+    case Key::Up: return F("UP");
+    case Key::Down: return F("DOWN");
+    case Key::None: return F("UNKNOWN");
+    }
+    return F("UNKNOWN");
+}
 
 void FrontPanel::begin()
 {
@@ -68,6 +157,8 @@ void FrontPanel::reset()
     keyCount_ = 0;
     keyOverflowCount_ = 0;
     encoderDelta_ = 0;
+    lastQueuedKey_ = Key::None;
+    lastQueuedKeyMs_ = 0;
 
     setFrequencyHz(0);
     formatUnsigned(0, displayBuffers_.modulation, kModulationTextWidth);
@@ -294,6 +385,21 @@ bool FrontPanel::isOn(PanelIndicator indicator) const
     return false;
 }
 
+void FrontPanel::clearIndicators()
+{
+    functionLed_ = FunctionLed::None0;
+    amplitudeUnit_ = AmplitudeUnitLed::None6;
+    modulationSource_ = ModulationSourceLed::Cw;
+    statusLed_ = StatusLed::None;
+    modulationUnit_ = ModulationUnitLed::None;
+    memoryMode_ = MemoryLedMode::None;
+    memory_ = false;
+    sequence_ = false;
+    firstCharFlags_ = 0;
+    decimalPointFlags_ = 0;
+    flushOutputs();
+}
+
 void FrontPanel::setMemoryMode(MemoryLedMode mode)
 {
     memoryMode_ = mode;
@@ -345,6 +451,31 @@ void FrontPanel::setAmplitudeValue(int32_t value,
         decimalPointFlags_ &= uint8_t(~kAmplitudeDecimalPoint);
     }
     flushOutputs();
+}
+
+void FrontPanel::refreshDisplays()
+{
+    uint8_t sn10[kIcm7218DigitCount] = {};
+    uint8_t sn11[kIcm7218DigitCount] = {};
+    makeDisplayFrames(sn10, sn11);
+    frontPanelBus.writeDisplayFrame(DisplayDevice::FrequencySn10, sn10);
+    frontPanelBus.writeDisplayFrame(DisplayDevice::MixedSn11, sn11);
+}
+
+void FrontPanel::makeDisplayFrames(uint8_t* sn10, uint8_t* sn11) const
+{
+    for (uint8_t i = 0; i < kIcm7218DigitCount; ++i) {
+        sn10[i] = reversedCodeBDigit(displayBuffers_.frequencySn10, 8u, i);
+    }
+
+    // ICM7218A loads dg0 first. SN11 is wired from right to left as:
+    // amplitude dg0..dg2, modulation dg3..dg5, frequency dg6..dg7.
+    for (uint8_t i = 0; i < kIcm7218DigitCount; ++i) {
+        sn11[i] = mixedSn11CodeBDigit(displayBuffers_.frequencySn11,
+                                      displayBuffers_.modulation,
+                                      displayBuffers_.amplitude,
+                                      i);
+    }
 }
 
 void FrontPanel::pollInputs()
@@ -556,6 +687,18 @@ void FrontPanel::flushFlags()
 
 void FrontPanel::pushKey(const KeyboardSample& sample)
 {
+    const Key key = keyForSample(sample);
+    if (key == Key::None) {
+        return;
+    }
+
+    constexpr uint16_t kKeyDebounceMs = 30;
+    const uint32_t now = millis();
+    if ((key == lastQueuedKey_) &&
+        ((now - lastQueuedKeyMs_) < kKeyDebounceMs)) {
+        return;
+    }
+
     if (keyCount_ >= kKeyQueueCapacity) {
         if (keyOverflowCount_ != 0xFFu) {
             ++keyOverflowCount_;
@@ -565,8 +708,10 @@ void FrontPanel::pushKey(const KeyboardSample& sample)
 
     const uint8_t writeIndex = queueIndex(keyHead_, keyCount_);
     keyQueue_[writeIndex].sample = sample;
-    keyQueue_[writeIndex].key = keyForSample(sample);
+    keyQueue_[writeIndex].key = key;
     ++keyCount_;
+    lastQueuedKey_ = key;
+    lastQueuedKeyMs_ = now;
 }
 
 }  // namespace adret

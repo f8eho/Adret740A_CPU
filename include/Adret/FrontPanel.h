@@ -4,6 +4,8 @@
 
 #include "Adret/FrontPanelMap.h"
 
+class __FlashStringHelper;
+
 namespace adret {
 namespace front_panel {
 
@@ -86,6 +88,8 @@ struct KeyEvent {
     KeyboardSample sample;
 };
 
+const __FlashStringHelper* keyShortLabel(Key key);
+
 struct DisplayBuffers {
     char frequencyHz[11];
     char frequencySn10[9];
@@ -112,6 +116,7 @@ public:
     void turnOn(front_panel::PanelIndicator indicator);
     void turnOff(front_panel::PanelIndicator indicator);
     bool isOn(front_panel::PanelIndicator indicator) const;
+    void clearIndicators();
     void setMemoryMode(front_panel::MemoryLedMode mode);
 
     void setFrequencyHz(uint32_t frequencyHz);
@@ -121,6 +126,7 @@ public:
     void setAmplitudeValue(int32_t value,
                            front_panel::AmplitudeUnitLed unit,
                            bool decimalPoint);
+    void refreshDisplays();
 
     void pollInputs();
     bool popKey(front_panel::KeyEvent* event);
@@ -136,6 +142,7 @@ private:
     void flushSn2();
     void flushSn3();
     void flushFlags();
+    void makeDisplayFrames(uint8_t* sn10, uint8_t* sn11) const;
     void pushKey(const front_panel::KeyboardSample& sample);
 
     front_panel::FunctionLed functionLed_ = front_panel::FunctionLed::None0;
@@ -155,6 +162,8 @@ private:
     uint8_t keyCount_ = 0;
     uint8_t keyOverflowCount_ = 0;
     int16_t encoderDelta_ = 0;
+    front_panel::Key lastQueuedKey_ = front_panel::Key::None;
+    uint32_t lastQueuedKeyMs_ = 0;
 };
 
 extern FrontPanel frontPanel;

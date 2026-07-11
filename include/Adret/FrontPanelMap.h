@@ -14,8 +14,8 @@ enum class Select : uint8_t {
     LedBankSn2 = 0b011,
     LedBankSn3 = 0b100,
     KeyboardSn5 = 0b101,
-    DisplaySn10 = 0b110,
-    DisplaySn11 = 0b111,
+    DisplaySn11 = 0b110,
+    DisplaySn10 = 0b111,
 };
 
 enum class DisplayDevice : uint8_t {
@@ -28,6 +28,19 @@ enum class DisplayMode : uint8_t {
     Data = 0,
     Command = 1,
 };
+
+constexpr uint8_t kIcm7218CodeBFrameCommand = 0x90u;
+constexpr uint8_t kIcm7218DigitCount = 8u;
+constexpr uint8_t kIcm7218DecimalPointOff = 0x80u;
+
+constexpr uint8_t codeBDigit(char digit)
+{
+    // ICM7218 decimal-point data is active low: ID7=1 turns it off.
+    return uint8_t(((digit >= '0' && digit <= '9')
+                        ? uint8_t(digit - '0')
+                        : 0u) |
+                   kIcm7218DecimalPointOff);
+}
 
 enum FirstCharFlags : uint8_t {
     kModAm1 = 1u << 0,
@@ -102,6 +115,16 @@ struct KeyboardSample {
     bool encoderCountLine;
     bool encoderDirectionLine;
 };
+
+constexpr uint8_t keyboardX(uint8_t raw)
+{
+    return uint8_t(raw & 0x07u);
+}
+
+constexpr uint8_t keyboardY(uint8_t raw)
+{
+    return uint8_t((raw >> 3) & 0x07u);
+}
 
 constexpr uint8_t makeSn2Byte(FunctionLed function,
                               AmplitudeUnitLed amplitudeUnit,

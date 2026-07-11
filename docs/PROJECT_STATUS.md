@@ -2,9 +2,8 @@
 
 Project name: `ADRET740A_CPU`
 
-The hardware test environment is not ready yet. The current firmware is a
-compile-tested low-level and front-panel state base for the Arduino Mega /
-ATmega2560 replacement CPU.
+The current firmware is a compile-tested and bench-tested low-level
+front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 
 ## Done
 
@@ -14,32 +13,34 @@ ATmega2560 replacement CPU.
 - CA2 active-low address-enable handling for the 74LS138.
 - CA1 interrupt source shared by keyboard and optical wheel events.
 - Static `PROGMEM` placeholder for the 2716 calibration EPROM dump.
-- First LED debug phase for SN2/SN3 output validation.
+- Bench-validated LED scan through SN2, SN3, SN4, and SN17.
 - High-level front-panel state layer for LEDs, display buffers, keyboard FIFO,
   and optical wheel accumulation.
 - Named front-panel indicators with exclusive hardware groups reflected in the
   API behavior.
 - Keyboard matrix mapping from the provisional front-panel table/image, while
   preserving raw SN5 samples.
-- PlatformIO build succeeds: RAM 137 bytes / 8192 bytes, Flash 2308 bytes /
+- Bench-validated paired PORTA harness across Mega pins 22..29.
+- ICM7218A Code B full-frame output for SN10/Y7 and SN11/Y6.
+- Bench-validated ten-digit frequency split and three-digit modulation and
+  amplitude groups, with active-low decimal-point handling.
+- Bench-validated keyboard labels on Serial0 with unknown-code rejection and
+  30 ms duplicate filtering.
+- Ten-microsecond SN5 enable and startup acknowledgement sequence for CA1.
+- PlatformIO build succeeds: RAM 452 bytes / 8192 bytes, Flash 5072 bytes /
   253952 bytes.
 
-## Not Yet Tested On Hardware
+## Remaining Hardware Validation
 
-- Electrical polarity and timing of CA2 on the original front-panel decoder.
-- LED decode mapping and active states.
-- ICM7218A command/data sequencing.
-- CA1 event timing and SN5 data validity window.
-- Keyboard and optical wheel decoding.
-- High-level front-panel API behavior against the real panel latches.
+- Long-term CA1 electrical stability and cold-start behavior.
 - Exact left/right sign of the optical wheel delta.
-- SN10/SN11 ICM7218A display command/data sequence.
+- Individual decimal-point placement and SN4 special leading characters.
+- High-level API behavior beyond the current diagnostic scan.
 
 ## Next Steps
 
-1. Validate pin wiring on the test harness.
-2. Run the LED debug phase and compare SN2/SN3 outputs with the front panel.
-3. Validate the high-level LED API against SN2/SN3 active states.
-4. Add a minimal ICM7218A display test pattern.
-5. Capture CA1/SN5 timing for keyboard and optical wheel events.
-6. Replace placeholder EPROM data with the real 2716 calibration dump.
+1. Validate optical-wheel direction and accumulation.
+2. Add decimal-point masks and SN4 leading-character APIs.
+3. Exercise cold-start CA1 recovery repeatedly.
+4. Replace the diagnostic loop with the first application state machine.
+5. Replace placeholder EPROM data with the real 2716 calibration dump.

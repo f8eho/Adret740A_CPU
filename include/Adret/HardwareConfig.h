@@ -32,6 +32,13 @@ constexpr uint8_t kFrontPanelSelectMask =
 constexpr uint8_t kFrontPanelCa2Bit = PB4;
 constexpr bool kFrontPanelCa2ActiveLow = true;
 
+// Hold SN5 enabled long enough for the CMOS keyboard logic and the C10/SN16
+// acknowledgement path. This is deliberately longer than a simple TTL
+// settling delay while the original CPU bus timing is being characterized.
+constexpr uint8_t kFrontPanelKeyboardEnableUs = 10;
+constexpr uint8_t kFrontPanelStartupAcknowledgeCount = 4;
+constexpr uint8_t kFrontPanelStartupAcknowledgeGapUs = 20;
+
 // CA1 is asserted by the original front-panel hardware for keyboard and
 // optical-wheel events. Default Arduino Mega pin 2: PE4 / INT4, not INT0.
 #define ADRET_FP_CA1_DDR DDRE

@@ -5,8 +5,8 @@ avec un Arduino Mega / ATmega2560.
 
 ## Etat actuel
 
-L'environnement hardware de test n'est pas encore pret. Le projet compile pour
-Arduino Mega / ATmega2560 et fournit pour l'instant une base compilee pour :
+Le panneau avant est maintenant raccordé à une Arduino Mega et les fonctions
+principales ont été validées au banc :
 
 - le bus panneau avant sur PORTA;
 - le decodage d'adresse panneau avant via `PB2..PB0`;
@@ -14,10 +14,11 @@ Arduino Mega / ATmega2560 et fournit pour l'instant une base compilee pour :
 - l'interruption CA1 commune clavier/roue;
 - une couche d'etat haut niveau pour les voyants, les flags SN4/SN17,
   les buffers d'affichage, le clavier et la roue codeuse;
-- une sequence de debug par balayage des voyants SN2/SN3 via cette couche.
+- une séquence de diagnostic simultanée pour les voyants, les trois groupes
+  d'affichage numérique et le clavier.
 
-La prochaine etape hardware sera de valider les broches, puis de tester les
-LEDs et la couche `FrontPanel` avant de passer aux afficheurs ICM7218A.
+Le firmware courant balaie les voyants, incrémente les trois afficheurs toutes
+les 200 ms et publie les touches reconnues sur Serial0 à 115200 bauds.
 
 ## Regles de base
 
@@ -49,24 +50,23 @@ ecrit via `FrontPanelBus`.
 - Les groupes pilotes par decodeurs 74LS138/74LS139 restent exclusifs: allumer
   `RF` remplace donc `FM`, `PM`, `AM` ou `AMP`, sans modifier les autres
   familles de voyants.
-- `setFrequencyHz` formate une frequence complete en Hz dans des buffers:
-  huit caracteres pour SN10 et deux caracteres pour la partie frequence de
-  SN11.
-- `setModulationValue` et `setAmplitudeValue` maintiennent des buffers
-  numeriques et les unites associees. La sequence exacte d'ecriture ICM7218A
-  reste volontairement a valider au banc.
+- `setFrequencyHz` formate dix digits : huit sont envoyés à SN10/Y7 et les deux
+  derniers à SN11/Y6.
+- `setModulationValue` et `setAmplitudeValue` maintiennent trois digits
+  numériques chacun dans SN11. Les premiers caractères restent sur SN4.
+- `refreshDisplays` envoie aux ICM7218A une commande Code B puis huit digits.
+  Le bit de point décimal est actif bas.
 - `pollInputs` consomme les interruptions CA1, empile les touches dans une FIFO
   statique de 8 evenements et cumule les pas de roue codeuse jusqu'a
   `consumeEncoderDelta`.
 
-## Sequence de debug
+## Séquence de diagnostic courante
 
-Le mode courant est choisi par `kDebugPhase` dans `src/main.cpp`.
-
-- `Leds` : balaye les sorties SN2/SN3 via `frontPanel` pour verifier les voyants.
-- `Displays` : reserve pour les premiers essais ICM7218A.
-- `Inputs` : consomme les interruptions CA1 via `frontPanel`, depile les
-  touches et remet le cumul roue a zero.
+- Un voyant logique est sélectionné toutes les 200 ms.
+- Un compteur est affiché simultanément sur fréquence, modulation et amplitude.
+- Les touches sont envoyées sous la forme `KEY raw=0xNN X=n Y=n label=NOM`.
+- Les positions inconnues sont ignorées et un anti-rebond de 30 ms filtre les
+  doublons identiques.
 
 ## Compilation
 
@@ -78,21 +78,22 @@ Depuis un terminal ou Codex, si `pio` n'est pas dans le PATH :
 & "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run
 ```
 
-## Hypotheses a valider au banc
+## Résultats et points restant à valider
 
-- Le bus panneau avant 8 bits est sur PORTA / Mega pins 22..29.
+- Le bus utilise PORTA / Mega 22..29 avec les paires croisées 22/23, 24/25,
+  26/27 et 28/29 sur le faisceau validé.
 - Le controle panneau avant `PB3..PB0` est cable par defaut sur PORTB bits 0..3.
 - `PB2..PB0` portent l'adresse decodee; `PB3` sert au mode ICM7218A.
 - La ligne CA2 active G2 du 74LS138; elle est cablee par defaut sur PORTB bit 4
   et active bas.
 - La ligne CA1 clavier/roue est cablee par defaut sur Mega D2, soit PE4 / INT4
   sur ATmega2560.
-- La lecture clavier/roue SN5 est effectuee apres interruption CA1, en activant
-  CA2 pendant la selection `PB2..PB0 = 101`.
-- Le sens gauche/droite de la roue codeuse depend de D7 et doit encore etre
-  confirme au banc.
-- La sequence de commande/data des ICM7218A pour SN10/SN11 doit encore etre
-  validee avant d'afficher les buffers numeriques sur la facade.
+- La lecture SN5 maintient CA2/Y5 actif 10 µs. Quatre acquittements sont
+  envoyés au démarrage avant l'armement d'INT4.
+- SN11 est sélectionné par Y6/`110`; SN10 par Y7/`111`.
+- Les voyants, chiffres Code B et touches ont été observés au banc.
+- La stabilité CA1 au démarrage, le sens de la roue et le placement individuel
+  des points décimaux restent à valider.
 
 Ces points sont volontairement isoles dans `HardwareConfig.h` pour eviter de
 modifier la logique metier apres validation du connecteur CPU.

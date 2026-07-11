@@ -1,6 +1,7 @@
 # Hardware Map
 
-This map is provisional until the test harness is wired and checked.
+This map records the harness and front-panel selections validated on the bench.
+Items explicitly listed under remaining validation are still provisional.
 
 ## Reserved Interfaces
 
@@ -9,6 +10,8 @@ This map is provisional until the test harness is wired and checked.
 ## Front Panel Bus
 
 - Data bus: ATmega2560 PORTA, Arduino Mega pins 22..29.
+- Validated harness pairs: panel D0/D1 to Mega 23/22, D2/D3 to 25/24,
+  D4/D5 to 27/26, and D6/D7 to 29/28.
 - Direction: bidirectional.
 - Access: direct register writes and reads through `PORTA`, `PINA`, `DDRA`.
 
@@ -33,8 +36,8 @@ Values come from `Adret_740A_table_memoire_panneau_avant.ods`.
 - `011`: SN2 LED bank.
 - `100`: SN3 LED bank.
 - `101`: SN5 keyboard / optical wheel read path.
-- `110`: SN10 ICM7218A frequency display.
-- `111`: SN11 ICM7218A mixed display.
+- `110`: SN11 ICM7218A mixed display.
+- `111`: SN10 ICM7218A frequency display.
 
 ## Logical Front Panel Layer
 
@@ -48,8 +51,9 @@ writing through `FrontPanelBus`.
 - SN4/SN17 hold first-character/status flags and decimal-point flags.
 - SN5 samples are decoded into raw `xCode`/`yCode`, a named keyboard event when
   known, and an accumulated signed optical-wheel delta.
-- SN10/SN11 display buffers are prepared by the high-level layer, but the final
-  ICM7218A command/data sequence remains to be validated on hardware.
+- SN10/SN11 use full eight-byte Code B frames. SN10/Y7 drives the first eight
+  frequency digits; SN11/Y6 drives the final two frequency digits and the
+  modulation/amplitude groups. ICM decimal-point data is active low.
 
 ## Timing Model
 
@@ -65,7 +69,10 @@ For SN5 reads:
 
 1. Put PORTA in input mode.
 2. Select `101`.
-3. Assert CA2 active low.
+3. Assert CA2 active low for 10 microseconds.
 4. Read PINA.
 5. Release CA2.
 6. Return PORTA to output idle.
+
+Four SN5 acknowledgement reads are issued at startup before INT4 is enabled so
+that a CA1 line already low during reset can be released.

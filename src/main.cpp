@@ -3,193 +3,120 @@
 #include "Adret/FrontPanel.h"
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
-#include "Adret/FrontPanelMap.h"
+#include "Adret/HardwareConfig.h"
 
 namespace {
 
-enum class DebugPhase : uint8_t {
-    Leds,
-    Displays,
-    Inputs,
+using adret::front_panel::KeyEvent;
+using adret::front_panel::PanelIndicator;
+
+constexpr uint32_t kIndicatorPeriodMs = 200;
+
+constexpr PanelIndicator kIndicatorSequence[] = {
+    PanelIndicator::Rf,
+    PanelIndicator::Fm,
+    PanelIndicator::Pm,
+    PanelIndicator::Am,
+    PanelIndicator::Amplitude,
+    PanelIndicator::DBm,
+    PanelIndicator::DB,
+    PanelIndicator::DBuV,
+    PanelIndicator::Volt,
+    PanelIndicator::MilliVolt,
+    PanelIndicator::MicroVolt,
+    PanelIndicator::Hz400,
+    PanelIndicator::KHz1,
+    PanelIndicator::External,
+    PanelIndicator::Cw,
+    PanelIndicator::Error,
+    PanelIndicator::Dept,
+    PanelIndicator::Normal,
+    PanelIndicator::ModRd,
+    PanelIndicator::ModKHz,
+    PanelIndicator::ModPercent,
+    PanelIndicator::Memory,
+    PanelIndicator::Sequence,
+    PanelIndicator::Remote,
+    PanelIndicator::RfInhibit,
+    PanelIndicator::ManualValidation,
 };
 
-constexpr DebugPhase kDebugPhase = DebugPhase::Leds;
-constexpr uint16_t kLedDebugPeriodMs = 500;
+constexpr uint8_t kIndicatorCount =
+    sizeof(kIndicatorSequence) / sizeof(kIndicatorSequence[0]);
 
-adret::front_panel::PanelIndicator functionIndicatorForStep(uint8_t step)
-{
-    using adret::front_panel::PanelIndicator;
-    switch (step & 0x07u) {
-        case 3:
-            return PanelIndicator::Rf;
-        case 4:
-            return PanelIndicator::Fm;
-        case 5:
-            return PanelIndicator::Pm;
-        case 6:
-            return PanelIndicator::Am;
-        case 7:
-            return PanelIndicator::Amplitude;
-        default:
-            return PanelIndicator::Rf;
-    }
-}
-
-adret::front_panel::PanelIndicator amplitudeIndicatorForStep(uint8_t step)
-{
-    using adret::front_panel::PanelIndicator;
-    switch (step % 6u) {
-        case 0:
-            return PanelIndicator::DBm;
-        case 1:
-            return PanelIndicator::DB;
-        case 2:
-            return PanelIndicator::DBuV;
-        case 3:
-            return PanelIndicator::Volt;
-        case 4:
-            return PanelIndicator::MilliVolt;
-        default:
-            return PanelIndicator::MicroVolt;
-    }
-}
-
-adret::front_panel::PanelIndicator modulationSourceIndicatorForStep(uint8_t step)
-{
-    using adret::front_panel::PanelIndicator;
-    switch (step & 0x03u) {
-        case 0:
-            return PanelIndicator::Hz400;
-        case 1:
-            return PanelIndicator::KHz1;
-        case 2:
-            return PanelIndicator::External;
-        default:
-            return PanelIndicator::Cw;
-    }
-}
-
-adret::front_panel::PanelIndicator statusIndicatorForStep(uint8_t step)
-{
-    using adret::front_panel::PanelIndicator;
-    switch (step & 0x03u) {
-        case 1:
-            return PanelIndicator::Error;
-        case 2:
-            return PanelIndicator::Dept;
-        case 3:
-            return PanelIndicator::Normal;
-        default:
-            return PanelIndicator::Normal;
-    }
-}
-
-adret::front_panel::PanelIndicator modulationUnitIndicatorForStep(uint8_t step)
-{
-    using adret::front_panel::PanelIndicator;
-    switch (step & 0x03u) {
-        case 1:
-            return PanelIndicator::ModRd;
-        case 2:
-            return PanelIndicator::ModKHz;
-        case 3:
-            return PanelIndicator::ModPercent;
-        default:
-            return PanelIndicator::ModPercent;
-    }
-}
-
-adret::front_panel::MemoryLedMode memoryModeForStep(uint8_t step)
-{
-    using adret::front_panel::MemoryLedMode;
-    switch (step & 0x03u) {
-        case 0:
-            return MemoryLedMode::Q2Base;
-        case 1:
-            return MemoryLedMode::D25Fixed;
-        case 3:
-            return MemoryLedMode::D25Blink;
-        default:
-            return MemoryLedMode::None;
-    }
-}
-
-void runLedDebug()
+void advanceIndicatorTest()
 {
     static uint32_t previousMs = 0;
-    static uint8_t step = 0;
+    static uint8_t index = 0;
+    static uint32_t counter = 0;
 
     const uint32_t now = millis();
-    if ((now - previousMs) < kLedDebugPeriodMs) {
+    if ((now - previousMs) < kIndicatorPeriodMs) {
         return;
     }
+
     previousMs = now;
-    ++step;
-
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Rf);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Fm);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Pm);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Am);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Amplitude);
-    if ((step & 0x07u) >= 3u) {
-        adret::frontPanel.turnOn(functionIndicatorForStep(step));
-    }
-
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Error);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Dept);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::Normal);
-    if ((step & 0x03u) != 0u) {
-        adret::frontPanel.turnOn(statusIndicatorForStep(step));
-    }
-
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::ModRd);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::ModKHz);
-    adret::frontPanel.turnOff(adret::front_panel::PanelIndicator::ModPercent);
-    if ((step & 0x03u) != 0u) {
-        adret::frontPanel.turnOn(modulationUnitIndicatorForStep(step));
-    }
-
-    adret::frontPanel.turnOn(amplitudeIndicatorForStep(step));
-    adret::frontPanel.turnOn(modulationSourceIndicatorForStep(step));
-    adret::frontPanel.setIndicator(adret::front_panel::PanelIndicator::Memory,
-                                   (step & 0x01u) != 0u);
-    adret::frontPanel.setIndicator(adret::front_panel::PanelIndicator::Sequence,
-                                   (step & 0x02u) != 0u);
-    adret::frontPanel.setMemoryMode(memoryModeForStep(step));
+    ++counter;
+    adret::frontPanel.setFrequencyHz(counter);
+    adret::frontPanel.setModulationValue(
+        counter % 1000u, adret::front_panel::ModulationUnitLed::None, false);
+    adret::frontPanel.setAmplitudeValue(
+        int32_t(counter % 1000u), adret::front_panel::AmplitudeUnitLed::None6, false);
+    adret::frontPanel.clearIndicators();
+    adret::frontPanel.turnOn(kIndicatorSequence[index]);
+    adret::frontPanel.refreshDisplays();
+    index = uint8_t((index + 1u) % kIndicatorCount);
 }
 
-void runInputDebug()
+void printHexByte(uint8_t value)
+{
+    if (value < 0x10u) {
+        Serial.print('0');
+    }
+    Serial.print(value, HEX);
+}
+
+void reportKeyboardEvents()
 {
     adret::frontPanel.pollInputs();
 
-    adret::front_panel::KeyEvent event = {};
+    KeyEvent event = {};
     while (adret::frontPanel.popKey(&event)) {
-        (void)event;
+        Serial.print(F("KEY raw=0x"));
+        printHexByte(event.sample.raw);
+        Serial.print(F(" X="));
+        Serial.print(event.sample.xCode);
+        Serial.print(F(" Y="));
+        Serial.print(event.sample.yCode);
+        Serial.print(F(" label="));
+        Serial.println(adret::front_panel::keyShortLabel(event.key));
     }
+}
 
-    const int16_t encoderDelta = adret::frontPanel.consumeEncoderDelta();
-    (void)encoderDelta;
+void releasePendingPanelInputAtStartup()
+{
+    for (uint8_t i = 0; i < adret::hw::kFrontPanelStartupAcknowledgeCount; ++i) {
+        (void)adret::frontPanelBus.readKeyboard();
+        delayMicroseconds(adret::hw::kFrontPanelStartupAcknowledgeGapUs);
+    }
 }
 
 }  // namespace
 
 void setup()
 {
+    Serial.begin(115200);
     adret::frontPanelBus.begin();
-    adret::frontPanelIrq.begin();
     adret::frontPanel.begin();
+    adret::frontPanel.clearIndicators();
+    adret::frontPanel.refreshDisplays();
+    releasePendingPanelInputAtStartup();
+    adret::frontPanelIrq.begin();
+    Serial.println(F("ADRET panel diagnostic ready"));
 }
 
 void loop()
 {
-    switch (kDebugPhase) {
-    case DebugPhase::Leds:
-        runLedDebug();
-        return;
-    case DebugPhase::Displays:
-        return;
-    case DebugPhase::Inputs:
-        runInputDebug();
-        return;
-    }
+    reportKeyboardEvents();
+    advanceIndicatorTest();
 }

@@ -1,10 +1,16 @@
 #include "Adret/FrontPanelBus.h"
 
+#include <Arduino.h>
 #include <avr/io.h>
 
 #include "Adret/HardwareConfig.h"
 
 namespace adret {
+
+static_assert(uint8_t(front_panel::Select::DisplaySn11) == 0b110u,
+              "SN11 must be selected by Y6");
+static_assert(uint8_t(front_panel::Select::DisplaySn10) == 0b111u,
+              "SN10 must be selected by Y7");
 
 FrontPanelBus frontPanelBus;
 
@@ -40,6 +46,21 @@ void FrontPanelBus::writeDisplay(front_panel::DisplayDevice device,
     pulseAddressEnable();
 }
 
+void FrontPanelBus::writeDisplayFrame(front_panel::DisplayDevice device,
+                                      const uint8_t* digits)
+{
+    if (digits == nullptr) {
+        return;
+    }
+
+    writeDisplay(device,
+                 front_panel::DisplayMode::Command,
+                 front_panel::kIcm7218CodeBFrameCommand);
+    for (uint8_t i = 0; i < front_panel::kIcm7218DigitCount; ++i) {
+        writeDisplay(device, front_panel::DisplayMode::Data, digits[i]);
+    }
+}
+
 void FrontPanelBus::writeDecimalPoints(uint8_t flags)
 {
     writeRaw(front_panel::Select::DecimalPointsSn17, flags);
@@ -73,7 +94,7 @@ front_panel::KeyboardSample FrontPanelBus::readKeyboard()
     setDataInput();
     setSelectNibble(uint8_t(front_panel::Select::KeyboardSn5));
     assertAddressEnable();
-    hw::waitTtlSettle();
+    delayMicroseconds(hw::kFrontPanelKeyboardEnableUs);
 
     const uint8_t raw = ADRET_FP_DATA_PIN;
 
@@ -84,10 +105,11 @@ front_panel::KeyboardSample FrontPanelBus::readKeyboard()
 
     front_panel::KeyboardSample sample = {};
     sample.raw = raw;
-    sample.xCode = uint8_t(raw & 0x07u);
-    sample.yCode = uint8_t((raw >> 3) & 0x07u);
-    sample.encoderCountLine = (raw & (1u << 6)) != 0u;
-    sample.encoderDirectionLine = (raw & (1u << 7)) != 0u;
+    sample.xCode = front_panel::keyboardX(raw);
+    sample.yCode = front_panel::keyboardY(raw);
+    // The validated harness crosses the panel D6/D7 signals onto AVR PA7/PA6.
+    sample.encoderCountLine = (raw & (1u << 7)) != 0u;
+    sample.encoderDirectionLine = (raw & (1u << 6)) != 0u;
     return sample;
 }
 

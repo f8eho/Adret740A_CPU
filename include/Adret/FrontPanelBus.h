@@ -18,6 +18,8 @@ public:
     void writeDisplay(front_panel::DisplayDevice device,
                       front_panel::DisplayMode mode,
                       uint8_t value);
+    void writeDisplayFrame(front_panel::DisplayDevice device,
+                           const uint8_t* digits);
 
     void writeDecimalPoints(uint8_t flags);
     void writeFirstCharFlags(uint8_t flags);

@@ -12,7 +12,7 @@ FrontPanelIrq frontPanelIrq;
 void FrontPanelIrq::begin()
 {
     ADRET_FP_CA1_DDR &= uint8_t(~_BV(hw::kFrontPanelCa1Bit));
-    ADRET_FP_CA1_PORT &= uint8_t(~_BV(hw::kFrontPanelCa1Bit));
+    ADRET_FP_CA1_PORT |= _BV(hw::kFrontPanelCa1Bit);  // Enable D2/PE4 pull-up.
 
     EIMSK &= uint8_t(~hw::kFrontPanelCa1InterruptMask);
     EICRB = uint8_t((EICRB & uint8_t(~(_BV(hw::kFrontPanelCa1SenseBit0) |
