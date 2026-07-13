@@ -30,11 +30,13 @@ Y = (raw >> 3) & 0x07
 ```
 
 Les lignes `Y6` et `Y7`, ainsi que les cases marquées `—`, ne correspondent à
-aucune touche connue et produisent le libellé série `UNKNOWN`.
+aucune touche connue. Le firmware les classe comme `UNKNOWN` puis les ignore.
 
 ## Libellés série
 
-Le diagnostic envoie une ligne par événement, sans filtrage anti-rebond :
+Le diagnostic envoie une ligne par touche reconnue. Les codes inconnus sont
+ignorés et deux événements identiques reçus à moins de 30 ms d'intervalle sont
+filtrés comme rebonds :
 
 ```text
 KEY raw=0x28 X=0 Y=5 label=AMPL

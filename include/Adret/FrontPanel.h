@@ -88,6 +88,11 @@ struct KeyEvent {
     KeyboardSample sample;
 };
 
+struct EncoderEvent {
+    KeyboardSample sample;
+    int8_t step;
+};
+
 const __FlashStringHelper* keyShortLabel(Key key);
 
 struct DisplayBuffers {
@@ -103,6 +108,7 @@ struct DisplayBuffers {
 class FrontPanel final {
 public:
     static constexpr uint8_t kKeyQueueCapacity = 8;
+    static constexpr uint8_t kEncoderQueueCapacity = 8;
 
     FrontPanel() = default;
     FrontPanel(const FrontPanel&) = delete;
@@ -130,8 +136,10 @@ public:
 
     void pollInputs();
     bool popKey(front_panel::KeyEvent* event);
+    bool popEncoder(front_panel::EncoderEvent* event);
     int16_t consumeEncoderDelta();
     uint8_t keyOverflowCount() const;
+    uint8_t encoderOverflowCount() const;
     const front_panel::DisplayBuffers& displayBuffers() const;
 
 private:
@@ -144,6 +152,7 @@ private:
     void flushFlags();
     void makeDisplayFrames(uint8_t* sn10, uint8_t* sn11) const;
     void pushKey(const front_panel::KeyboardSample& sample);
+    void pushEncoder(const front_panel::KeyboardSample& sample, int8_t step);
 
     front_panel::FunctionLed functionLed_ = front_panel::FunctionLed::None0;
     front_panel::AmplitudeUnitLed amplitudeUnit_ = front_panel::AmplitudeUnitLed::None6;
@@ -161,6 +170,10 @@ private:
     uint8_t keyHead_ = 0;
     uint8_t keyCount_ = 0;
     uint8_t keyOverflowCount_ = 0;
+    front_panel::EncoderEvent encoderQueue_[kEncoderQueueCapacity] = {};
+    uint8_t encoderHead_ = 0;
+    uint8_t encoderCount_ = 0;
+    uint8_t encoderOverflowCount_ = 0;
     int16_t encoderDelta_ = 0;
     front_panel::Key lastQueuedKey_ = front_panel::Key::None;
     uint32_t lastQueuedKeyMs_ = 0;

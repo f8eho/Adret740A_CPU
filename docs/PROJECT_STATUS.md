@@ -37,6 +37,19 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Individual decimal-point placement and SN4 special leading characters.
 - High-level API behavior beyond the current diagnostic scan.
 
+## Current Optical Wheel Diagnostic
+
+- The display counters no longer advance automatically; only the LED sweep
+  remains timed at 200 ms.
+- Each SN5 wheel event is retained in a fixed-size FIFO and reported on
+  Serial0 as raw hexadecimal, D7..D0 binary, count, direction, interpreted
+  step, signed total, and displayed frequency.
+- The provisional polarity is D6 high = clockwise = +1. This remains to be
+  confirmed at the bench and is centralized as
+  `kFrontPanelEncoderClockwiseLevel` in `HardwareConfig.h`.
+- Frequency decrements saturate at zero. Modulation and amplitude remain at
+  zero during this diagnostic.
+
 ## Next Steps
 
 1. Validate optical-wheel direction and accumulation.

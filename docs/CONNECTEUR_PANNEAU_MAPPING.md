@@ -126,7 +126,7 @@ de ces deux noms ne doit être confondu avec `INHIB`, la commande électrique de
 marche/arrêt général.
 
 `INHIB RF` n'est donc ni la ligne dédiée `INHIB`, ni une sortie à commander par
-`PA6/D6`. L'ancienne association de `INHIB RF` avec `PA6`, Arduino **28**, était
+`PA6/D6`. L'ancienne association de `INHIB RF` à une sortie dédiée du bus était
 incorrecte. `PA6/D6` reste simplement le bit 6 du bus de données bidirectionnel.
 
 ## Séquence électrique attendue
@@ -164,7 +164,7 @@ maintient CA2/Y5 actif pendant 10 µs. Cette séquence permet de libérer un
 - Confirmer le circuit électrique de `INHIB` avant de le piloter : commande
   directe ou collecteur ouvert, résistance de rappel et interaction avec le
   bouton marche/arrêt du panneau.
-- Confirmer au banc la polarité de `CA1` et de `CA2`.
+- Surveiller la stabilité de `CA1` lors de démarrages à froid répétés.
 - Ne pas utiliser Arduino `D0` et `D1`, réservées à `Serial0`.
 - Tous les signaux sont supposés compatibles TTL 5 V ; ne pas raccorder une
   alimentation du panneau sans avoir vérifié sa tension et sa masse.

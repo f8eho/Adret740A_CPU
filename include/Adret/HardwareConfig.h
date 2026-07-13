@@ -39,6 +39,10 @@ constexpr uint8_t kFrontPanelKeyboardEnableUs = 10;
 constexpr uint8_t kFrontPanelStartupAcknowledgeCount = 4;
 constexpr uint8_t kFrontPanelStartupAcknowledgeGapUs = 20;
 
+// Provisional wheel polarity. Bench validation must confirm that a high SN5
+// direction line corresponds to clockwise rotation on the assembled panel.
+constexpr bool kFrontPanelEncoderClockwiseLevel = true;
+
 // CA1 is asserted by the original front-panel hardware for keyboard and
 // optical-wheel events. Default Arduino Mega pin 2: PE4 / INT4, not INT0.
 #define ADRET_FP_CA1_DDR DDRE

@@ -30,6 +30,8 @@ les 200 ms et publie les touches reconnues sur Serial0 à 115200 bauds.
 
 ## Fichiers principaux
 
+- `docs/retroanalyse_panneau_avant.md` rassemble le fonctionnement électrique,
+  les protocoles, les résultats du banc et les points restant à valider.
 - `include/Adret/HardwareConfig.h` centralise le cablage AVR.
 - `include/Adret/FrontPanelMap.h` nomme les selections issues du tableur ODS.
 - `include/Adret/FrontPanel.h` expose l'API logique du panneau avant.

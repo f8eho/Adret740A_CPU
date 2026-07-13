@@ -4,6 +4,7 @@
 
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
+#include "Adret/HardwareConfig.h"
 
 namespace adret {
 
@@ -156,6 +157,9 @@ void FrontPanel::reset()
     keyHead_ = 0;
     keyCount_ = 0;
     keyOverflowCount_ = 0;
+    encoderHead_ = 0;
+    encoderCount_ = 0;
+    encoderOverflowCount_ = 0;
     encoderDelta_ = 0;
     lastQueuedKey_ = Key::None;
     lastQueuedKeyMs_ = 0;
@@ -484,15 +488,32 @@ void FrontPanel::pollInputs()
     for (uint8_t i = 0; i < pendingPanelEvents; ++i) {
         const KeyboardSample sample = frontPanelBus.readKeyboard();
         if (sample.encoderCountLine) {
-            if (sample.encoderDirectionLine) {
+            const int8_t step =
+                sample.encoderDirectionLine == hw::kFrontPanelEncoderClockwiseLevel
+                    ? 1
+                    : -1;
+            if ((step > 0) && (encoderDelta_ < INT16_MAX)) {
                 ++encoderDelta_;
-            } else {
+            } else if ((step < 0) && (encoderDelta_ > INT16_MIN)) {
                 --encoderDelta_;
             }
+            pushEncoder(sample, step);
         } else {
             pushKey(sample);
         }
     }
+}
+
+bool FrontPanel::popEncoder(EncoderEvent* event)
+{
+    if ((event == nullptr) || (encoderCount_ == 0u)) {
+        return false;
+    }
+
+    *event = encoderQueue_[encoderHead_];
+    encoderHead_ = queueIndex(encoderHead_, 1);
+    --encoderCount_;
+    return true;
 }
 
 bool FrontPanel::popKey(KeyEvent* event)
@@ -517,6 +538,11 @@ int16_t FrontPanel::consumeEncoderDelta()
 uint8_t FrontPanel::keyOverflowCount() const
 {
     return keyOverflowCount_;
+}
+
+uint8_t FrontPanel::encoderOverflowCount() const
+{
+    return encoderOverflowCount_;
 }
 
 const DisplayBuffers& FrontPanel::displayBuffers() const
@@ -712,6 +738,21 @@ void FrontPanel::pushKey(const KeyboardSample& sample)
     ++keyCount_;
     lastQueuedKey_ = key;
     lastQueuedKeyMs_ = now;
+}
+
+void FrontPanel::pushEncoder(const KeyboardSample& sample, int8_t step)
+{
+    if (encoderCount_ >= kEncoderQueueCapacity) {
+        if (encoderOverflowCount_ != 0xFFu) {
+            ++encoderOverflowCount_;
+        }
+        return;
+    }
+
+    const uint8_t writeIndex = queueIndex(encoderHead_, encoderCount_);
+    encoderQueue_[writeIndex].sample = sample;
+    encoderQueue_[writeIndex].step = step;
+    ++encoderCount_;
 }
 
 }  // namespace adret
