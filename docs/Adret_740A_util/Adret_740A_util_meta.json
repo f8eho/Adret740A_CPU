@@ -1,0 +1,994 @@
+{
+  "table_of_contents": [
+    {
+      "title": "III 3. MANIPULATION DU CLAVIER",
+      "heading_level": null,
+      "page_id": 14,
+      "polygon": [
+        [
+          98.16750629722922,
+          256.5
+        ],
+        [
+          291.5050377833753,
+          255.9375
+        ],
+        [
+          291.5050377833753,
+          269.25
+        ],
+        [
+          98.16750629722922,
+          269.0625
+        ]
+      ]
+    },
+    {
+      "title": "MODE OPERATOIRE",
+      "heading_level": null,
+      "page_id": 14,
+      "polygon": [
+        [
+          97.32666015625,
+          294.0
+        ],
+        [
+          193.3375314861461,
+          292.44140625
+        ],
+        [
+          193.3375314861461,
+          304.5
+        ],
+        [
+          97.32666015625,
+          304.74609375
+        ]
+      ]
+    },
+    {
+      "title": "Diagramme de l'utilisation du clavier",
+      "heading_level": null,
+      "page_id": 15,
+      "polygon": [
+        [
+          178.3501259445844,
+          121.40625
+        ],
+        [
+          409.6435546875,
+          121.40625
+        ],
+        [
+          409.15617128463475,
+          134.25
+        ],
+        [
+          178.3501259445844,
+          134.25
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DE LA FREQUENCE ET DU NIVEAU",
+      "heading_level": null,
+      "page_id": 16,
+      "polygon": [
+        [
+          90.67380352644837,
+          126.75
+        ],
+        [
+          350.7052896725441,
+          125.5078125
+        ],
+        [
+          350.7052896725441,
+          138.0
+        ],
+        [
+          90.67380352644837,
+          138.6328125
+        ]
+      ]
+    },
+    {
+      "title": "Exemples:",
+      "heading_level": null,
+      "page_id": 16,
+      "polygon": [
+        [
+          89.92443324937028,
+          163.5
+        ],
+        [
+          153.62090680100755,
+          162.421875
+        ],
+        [
+          153.62090680100755,
+          174.75
+        ],
+        [
+          89.92443324937028,
+          175.546875
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DES MODULATIONS",
+      "heading_level": null,
+      "page_id": 17,
+      "polygon": [
+        [
+          95.91939546599497,
+          127.5
+        ],
+        [
+          275.01889168765746,
+          125.91796875
+        ],
+        [
+          275.01889168765746,
+          137.25
+        ],
+        [
+          95.29296875,
+          138.22265625
+        ]
+      ]
+    },
+    {
+      "title": "* Choix de la source :",
+      "heading_level": null,
+      "page_id": 17,
+      "polygon": [
+        [
+          95.29296875,
+          163.2421875
+        ],
+        [
+          230.8060453400504,
+          161.6015625
+        ],
+        [
+          230.8060453400504,
+          174.0
+        ],
+        [
+          94.130859375,
+          174.7265625
+        ]
+      ]
+    },
+    {
+      "title": "* Choix du type de modulation et r\u00e9glage :",
+      "heading_level": null,
+      "page_id": 17,
+      "polygon": [
+        [
+          96.66876574307305,
+          305.9765625
+        ],
+        [
+          352.95340050377837,
+          304.3359375
+        ],
+        [
+          352.95340050377837,
+          317.4609375
+        ],
+        [
+          95.58349609375,
+          319.1015625
+        ]
+      ]
+    },
+    {
+      "title": "INCREMENTATION",
+      "heading_level": null,
+      "page_id": 18,
+      "polygon": [
+        [
+          74.18765743073048,
+          123.45703125
+        ],
+        [
+          163.36272040302268,
+          121.81640625
+        ],
+        [
+          163.36272040302268,
+          132.75
+        ],
+        [
+          74.18765743073048,
+          134.12109375
+        ]
+      ]
+    },
+    {
+      "title": "MANIVELLE",
+      "heading_level": null,
+      "page_id": 18,
+      "polygon": [
+        [
+          72.68891687657431,
+          495.0
+        ],
+        [
+          132.63853904282115,
+          493.828125
+        ],
+        [
+          132.63853904282115,
+          504.0
+        ],
+        [
+          72.68891687657431,
+          505.3125
+        ]
+      ]
+    },
+    {
+      "title": "MEMOIRES ET SEQUENCE",
+      "heading_level": null,
+      "page_id": 19,
+      "polygon": [
+        [
+          71.93954659949623,
+          123.45703125
+        ],
+        [
+          196.33501259445845,
+          121.81640625
+        ],
+        [
+          196.33501259445845,
+          134.12109375
+        ],
+        [
+          71.4697265625,
+          135.76171875
+        ]
+      ]
+    },
+    {
+      "title": "* Entr\u00e9e :",
+      "heading_level": null,
+      "page_id": 19,
+      "polygon": [
+        [
+          72.05078125,
+          158.73046875
+        ],
+        [
+          134.13727959697735,
+          157.08984375
+        ],
+        [
+          134.13727959697735,
+          169.5
+        ],
+        [
+          70.888671875,
+          171.03515625
+        ]
+      ]
+    },
+    {
+      "title": "* Sortie :",
+      "heading_level": null,
+      "page_id": 19,
+      "polygon": [
+        [
+          72.34130859375,
+          457.32421875
+        ],
+        [
+          135.6360201511335,
+          455.68359375
+        ],
+        [
+          135.6360201511335,
+          468.75
+        ],
+        [
+          72.34130859375,
+          469.62890625
+        ]
+      ]
+    },
+    {
+      "title": "* Recherche d'une position m\u00e9moire :",
+      "heading_level": null,
+      "page_id": 21,
+      "polygon": [
+        [
+          90.67380352644837,
+          123.046875
+        ],
+        [
+          311.73803526448364,
+          123.046875
+        ],
+        [
+          311.73803526448364,
+          136.171875
+        ],
+        [
+          90.0634765625,
+          136.171875
+        ]
+      ]
+    },
+    {
+      "title": "MODULATION D'IMPULSION (option)",
+      "heading_level": null,
+      "page_id": 22,
+      "polygon": [
+        [
+          68.1926952141058,
+          122.63671875
+        ],
+        [
+          260.03148614609574,
+          120.99609375
+        ],
+        [
+          260.03148614609574,
+          133.5
+        ],
+        [
+          67.69287109375,
+          134.94140625
+        ]
+      ]
+    },
+    {
+      "title": "CARACTERISTIQUES PARTICULIERES DU CLAVIER",
+      "heading_level": null,
+      "page_id": 22,
+      "polygon": [
+        [
+          69.69143576826197,
+          469.21875
+        ],
+        [
+          323.727959697733,
+          467.578125
+        ],
+        [
+          323.727959697733,
+          482.34375
+        ],
+        [
+          69.1455078125,
+          483.984375
+        ]
+      ]
+    },
+    {
+      "title": "STATUS",
+      "heading_level": null,
+      "page_id": 23,
+      "polygon": [
+        [
+          77.18513853904282,
+          125.25
+        ],
+        [
+          117.373046875,
+          124.27734375
+        ],
+        [
+          116.90176322418137,
+          135.75
+        ],
+        [
+          77.18513853904282,
+          136.58203125
+        ]
+      ]
+    },
+    {
+      "title": "D\u00e9passement",
+      "heading_level": null,
+      "page_id": 23,
+      "polygon": [
+        [
+          78.683879093199,
+          521.30859375
+        ],
+        [
+          150.6234256926952,
+          519.66796875
+        ],
+        [
+          150.6234256926952,
+          531.75
+        ],
+        [
+          78.683879093199,
+          531.97265625
+        ]
+      ]
+    },
+    {
+      "title": "Entr\u00e9e erron\u00e9e",
+      "heading_level": null,
+      "page_id": 23,
+      "polygon": [
+        [
+          80.18261964735517,
+          666.0
+        ],
+        [
+          170.10705289672546,
+          664.453125
+        ],
+        [
+          170.10705289672546,
+          676.5
+        ],
+        [
+          80.18261964735517,
+          676.5
+        ]
+      ]
+    },
+    {
+      "title": "Omission de l'unit\u00e9 ou unit\u00e9 incoh\u00e9rente",
+      "heading_level": null,
+      "page_id": 24,
+      "polygon": [
+        [
+          76.40869140625,
+          398.25
+        ],
+        [
+          323.727959697733,
+          396.62109375
+        ],
+        [
+          323.727959697733,
+          409.5
+        ],
+        [
+          75.24658203125,
+          410.56640625
+        ]
+      ]
+    },
+    {
+      "title": "Oubli de s\u00e9lectionner un nouveau param\u00e8tre",
+      "heading_level": null,
+      "page_id": 24,
+      "polygon": [
+        [
+          76.43576826196474,
+          481.11328125
+        ],
+        [
+          335.7178841309824,
+          479.47265625
+        ],
+        [
+          335.7178841309824,
+          493.5
+        ],
+        [
+          76.43576826196474,
+          495.05859375
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 14,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          58
+        ],
+        [
+          "Span",
+          24
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "ListItem",
+          9
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 15,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          13
+        ],
+        [
+          "Span",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 16,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          24
+        ],
+        [
+          "Span",
+          11
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "Picture",
+          4
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 17,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          28
+        ],
+        [
+          "Span",
+          10
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Picture",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 18,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          59
+        ],
+        [
+          "Span",
+          22
+        ],
+        [
+          "Text",
+          13
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 19,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          30
+        ],
+        [
+          "Span",
+          19
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "Picture",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 20,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          43
+        ],
+        [
+          "Span",
+          25
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 21,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          18
+        ],
+        [
+          "Span",
+          13
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 22,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          40
+        ],
+        [
+          "Span",
+          13
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "ListItem",
+          4
+        ],
+        [
+          "Picture",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 23,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          54
+        ],
+        [
+          "Span",
+          23
+        ],
+        [
+          "ListItem",
+          8
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "ListGroup",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 24,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "TableCell",
+          32
+        ],
+        [
+          "Line",
+          23
+        ],
+        [
+          "Span",
+          8
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 25,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          53
+        ],
+        [
+          "Figure",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data\\Adret_740A_util"
+}
