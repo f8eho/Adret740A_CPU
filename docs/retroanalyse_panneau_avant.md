@@ -133,8 +133,11 @@ mais allumer un membre d'un groupe remplace nécessairement le précédent.
 | D7..D6 | état | 0=aucun, 1=`ERROR`, 2=`DEPT`, 3=`NORMAL` |
 | D5..D4 | unité modulation | 0=aucune, 1=`rd`, 2=`kHz`, 3=`%` |
 | D3..D2 | mode mémoire | 0=base, 1=fixe, 2=aucun, 3=clignotant |
-| D1 | indépendant | voyant `MEM` |
-| D0 | indépendant | voyant `SEQ` |
+| D1 AVR | indépendant actif bas | voyant `SEQ` |
+| D0 AVR | indépendant actif bas | voyant `MEM` |
+
+Les deux bits indépendants apparaissent permutés par rapport aux sorties
+physiques D1=`MEM` et D0=`SEQ` de SN3 à cause du croisement du faisceau.
 
 Le sens précis des deux états matériels du champ mémoire est **à valider** en
 dehors du balayage de diagnostic ; le firmware les nomme encore
@@ -146,14 +149,18 @@ SN4 pilote des segments ou indicateurs indépendants.
 
 | Bit | Nom firmware | Fonction comprise |
 | ---: | --- | --- |
-| D0 | `kModAm1` | segment spécial modulation `A/1` |
-| D1 | `kModAm2` | second segment spécial modulation |
-| D2 | `kPowerOne` | chiffre spécial `1` d'amplitude |
-| D3 | `kPowerMinus` | signe moins amplitude |
-| D4 | `kPowerPlus` | signe plus amplitude |
+| D0 AVR | `kModulationOne` | caractère spécial modulation `1` |
+| D1 AVR | `kModulationP` | caractère spécial modulation `P` ; avec D0, aspect `A` |
+| D2 AVR | `kPowerOneBlank` | extinction active haut du `1` d'amplitude |
+| D3 AVR | `kPowerPlus` | signe plus amplitude |
+| D4 AVR | `kPowerMinus` | signe moins amplitude |
 | D5 | `kRemote` | indicateur `REM` |
 | D6 | `kRfInhibit` | indicateur lumineux `INHIB RF` |
 | D7 | `kManualValidation` | indicateur `VALID MAN` |
+
+Ces affectations sont celles observées au banc après les permutations par
+paires du faisceau ; elles diffèrent donc de la numérotation physique D0..D4
+du registre SN4 donnée dans la table mémoire.
 
 L'indicateur de façade `INHIB RF` piloté ici ne doit pas être confondu avec la
 touche `RF OFF` lue dans SN5, ni avec la ligne d'alimentation `INHIB`.
@@ -167,6 +174,9 @@ touche `RF OFF` lue dans SN5, ni avec la ligne d'alimentation `INHIB`.
 | D7..D2 | non utilisés dans le firmware actuel |
 
 Ces deux points sont séparés des points intégrés dans les digits ICM7218A.
+Ils sont actifs à l'état bas : SN17 doit donc recevoir `1` pour les éteindre.
+Cette polarité a été confirmée lors des premiers essais de la logique
+fonctionnelle.
 
 ## 5. Afficheurs numériques
 
@@ -370,7 +380,10 @@ est piloté séparément par SN4/D6.
 mentionne une ligne `PA`, présence alimentation, sur le bus instrument. Elle
 servirait à prévenir la CPU d'une coupure afin de sauvegarder les paramètres.
 Cette ligne ne fait pas partie du bus panneau `PA0..PA7` malgré l'homonymie et
-n'est pas encore intégrée au firmware du panneau avant.
+le firmware lui réserve désormais Arduino D3 / PE5 / INT5. L'entrée et son
+interruption restent désactivées dans `HardwareConfig.h` jusqu'à validation de
+sa tension et de sa polarité. La sauvegarde EEPROM à deux slots et CRC est
+prête et expose `saveNow()` pour les essais sans raccordement de PA.
 
 ## 10. Anomalies rencontrées et conclusions
 
@@ -401,9 +414,8 @@ n'est pas encore intégrée au firmware du panneau avant.
 
 - sens définitif de la molette et robustesse de son comptage ;
 - comportement CA1 sur de nombreux démarrages à froid ;
-- API de placement individuel des points décimaux ;
+- validation au banc du placement individuel des points décimaux ;
 - combinaisons exactes des premiers caractères SN4 ;
 - affectation et étage électrique de la commande `INHIB` ;
-- intégration de la présence alimentation `PA` et sauvegarde EEPROM ;
-- remplacement du programme de diagnostic par la logique fonctionnelle de
-  l'instrument.
+- validation électrique puis activation de la présence alimentation `PA` ;
+- validation de la première logique fonctionnelle de l'instrument.

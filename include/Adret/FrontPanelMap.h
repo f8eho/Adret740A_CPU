@@ -32,6 +32,7 @@ enum class DisplayMode : uint8_t {
 constexpr uint8_t kIcm7218CodeBFrameCommand = 0x90u;
 constexpr uint8_t kIcm7218DigitCount = 8u;
 constexpr uint8_t kIcm7218DecimalPointOff = 0x80u;
+constexpr uint8_t kIcm7218CodeBBlank = 0x8Fu;
 
 constexpr uint8_t codeBDigit(char digit)
 {
@@ -42,12 +43,22 @@ constexpr uint8_t codeBDigit(char digit)
                    kIcm7218DecimalPointOff);
 }
 
+constexpr uint8_t decoratedCodeBDigit(char digit, bool decimalPoint, bool blank)
+{
+    return blank
+        ? kIcm7218CodeBBlank
+        : (decimalPoint
+            ? uint8_t(codeBDigit(digit) & uint8_t(~kIcm7218DecimalPointOff))
+            : codeBDigit(digit));
+}
+
 enum FirstCharFlags : uint8_t {
-    kModAm1 = 1u << 0,
-    kModAm2 = 1u << 1,
-    kPowerOne = 1u << 2,
-    kPowerMinus = 1u << 3,
-    kPowerPlus = 1u << 4,
+    // These are AVR bus bits after the validated adjacent-pair crossover.
+    kModulationOne = 1u << 0,
+    kModulationP = 1u << 1,
+    kPowerOneBlank = 1u << 2,
+    kPowerPlus = 1u << 3,
+    kPowerMinus = 1u << 4,
     kRemote = 1u << 5,
     kRfInhibit = 1u << 6,
     kManualValidation = 1u << 7,
@@ -57,6 +68,12 @@ enum DecimalPointFlags : uint8_t {
     kModulationDecimalPoint = 1u << 0,
     kAmplitudeDecimalPoint = 1u << 1,
 };
+
+constexpr uint8_t makeSn17Byte(uint8_t logicalFlags)
+{
+    // SN17 drives common-anode decimal points: a low output lights the point.
+    return uint8_t(~logicalFlags);
+}
 
 enum class FunctionLed : uint8_t {
     None0 = 0,
@@ -141,11 +158,13 @@ constexpr uint8_t makeSn3Byte(StatusLed status,
                               bool memory,
                               bool sequence)
 {
+    // The harness swaps the two independent outputs: AVR D0 reaches the MEM
+    // lamp and AVR D1 reaches SEQ. Both lamp controls are active low.
     return uint8_t((uint8_t(status) << 6) |
                    (uint8_t(modulationUnit) << 4) |
                    (uint8_t(memoryMode) << 2) |
-                   (memory ? (1u << 1) : 0u) |
-                   (sequence ? (1u << 0) : 0u));
+                   (memory ? 0u : (1u << 0)) |
+                   (sequence ? 0u : (1u << 1)));
 }
 
 }  // namespace front_panel

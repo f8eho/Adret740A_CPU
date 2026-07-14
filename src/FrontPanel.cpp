@@ -17,9 +17,13 @@ constexpr uint8_t kAmplitudeTextWidth = 3;
 
 constexpr uint8_t reversedCodeBDigit(const char* digits,
                                      uint8_t width,
-                                     uint8_t memoryIndex)
+                                     uint8_t memoryIndex,
+                                     uint16_t decimalMask = 0,
+                                     uint16_t blankMask = 0)
 {
-    return codeBDigit(digits[uint8_t(width - 1u - memoryIndex)]);
+    return decoratedCodeBDigit(digits[uint8_t(width - 1u - memoryIndex)],
+                               (decimalMask & (uint16_t(1u) << memoryIndex)) != 0u,
+                               (blankMask & (uint16_t(1u) << memoryIndex)) != 0u);
 }
 
 constexpr uint8_t mixedSn11CodeBDigit(const char* frequency,
@@ -38,6 +42,16 @@ static_assert(kIcm7218CodeBFrameCommand == 0x90u,
               "Unexpected ICM7218A Code B frame command");
 static_assert(codeBDigit('0') == 0x80u && codeBDigit('9') == 0x89u,
               "Unexpected ICM7218A Code B digit encoding");
+static_assert(decoratedCodeBDigit('5', true, false) == 0x05u &&
+              decoratedCodeBDigit('5', false, true) == 0x8Fu,
+              "Unexpected ICM7218A decimal point or blank encoding");
+static_assert(makeSn17Byte(0u) == 0xFFu &&
+              makeSn17Byte(kModulationDecimalPoint) == 0xFEu,
+              "Unexpected active-low SN17 decimal-point encoding");
+static_assert(kModulationOne == 0x01u && kModulationP == 0x02u &&
+              kPowerOneBlank == 0x04u &&
+              kPowerPlus == 0x08u && kPowerMinus == 0x10u,
+              "Unexpected bench-validated SN4 bus mapping");
 static_assert(reversedCodeBDigit("12345678", 8u, 0u) == 0x88u &&
               reversedCodeBDigit("12345678", 8u, 7u) == 0x81u,
               "Unexpected SN10 frame order");
@@ -59,13 +73,13 @@ static_assert(makeSn3Byte(StatusLed::Normal,
                           ModulationUnitLed::Percent,
                           MemoryLedMode::D25Blink,
                           true,
-                          true) == 0xFFu,
+                          true) == 0xFCu,
               "Unexpected SN3 all-selected byte");
 static_assert(makeSn3Byte(StatusLed::None,
                           ModulationUnitLed::None,
                           MemoryLedMode::None,
                           false,
-                          false) == 0x08u,
+                          false) == 0x0Bu,
               "Unexpected SN3 cleared byte");
 static_assert(keyboardX(0x28u) == 0u && keyboardY(0x28u) == 5u,
               "Unexpected AMPL keyboard coordinates");
@@ -152,8 +166,14 @@ void FrontPanel::reset()
     memoryMode_ = MemoryLedMode::None;
     memory_ = false;
     sequence_ = false;
-    firstCharFlags_ = 0;
+    firstCharFlags_ = kPowerOneBlank;
     decimalPointFlags_ = 0;
+    frequencyBlankMask_ = 0;
+    modulationBlankMask_ = 0;
+    amplitudeBlankMask_ = 0;
+    frequencyIcmDecimalMask_ = 0;
+    modulationIcmDecimalMask_ = 0;
+    amplitudeIcmDecimalMask_ = 0;
     keyHead_ = 0;
     keyCount_ = 0;
     keyOverflowCount_ = 0;
@@ -399,7 +419,7 @@ void FrontPanel::clearIndicators()
     memoryMode_ = MemoryLedMode::None;
     memory_ = false;
     sequence_ = false;
-    firstCharFlags_ = 0;
+    firstCharFlags_ = kPowerOneBlank;
     decimalPointFlags_ = 0;
     flushOutputs();
 }
@@ -429,10 +449,27 @@ void FrontPanel::setModulationValue(uint32_t value,
 {
     formatUnsigned(value, displayBuffers_.modulation, kModulationTextWidth);
     modulationUnit_ = unit;
+    modulationIcmDecimalMask_ = 0;
     if (decimalPoint) {
         decimalPointFlags_ |= kModulationDecimalPoint;
     } else {
         decimalPointFlags_ &= uint8_t(~kModulationDecimalPoint);
+    }
+    flushOutputs();
+}
+
+void FrontPanel::setModulationDisplay(uint16_t digits,
+                                      ModulationUnitLed unit,
+                                      uint8_t icmDecimalMask,
+                                      bool leadingOne)
+{
+    formatUnsigned(digits, displayBuffers_.modulation, kModulationTextWidth);
+    modulationUnit_ = unit;
+    modulationIcmDecimalMask_ = uint8_t(icmDecimalMask & 0x07u);
+    decimalPointFlags_ &= uint8_t(~kModulationDecimalPoint);
+    firstCharFlags_ &= uint8_t(~(kModulationOne | kModulationP));
+    if (leadingOne) {
+        firstCharFlags_ |= kModulationOne;
     }
     flushOutputs();
 }
@@ -443,7 +480,14 @@ void FrontPanel::setAmplitudeValue(int32_t value,
 {
     formatSignedMagnitude(value, displayBuffers_.amplitude, kAmplitudeTextWidth);
     amplitudeUnit_ = unit;
-    firstCharFlags_ &= uint8_t(~(kPowerMinus | kPowerPlus));
+    amplitudeIcmDecimalMask_ = 0;
+    firstCharFlags_ &= uint8_t(~(kPowerOneBlank | kPowerMinus | kPowerPlus));
+    const uint32_t magnitude = value < 0
+        ? uint32_t(-(value + 1)) + 1u
+        : uint32_t(value);
+    if (magnitude < 1000u) {
+        firstCharFlags_ |= kPowerOneBlank;
+    }
     if (value < 0) {
         firstCharFlags_ |= kPowerMinus;
     } else if (value > 0) {
@@ -455,6 +499,57 @@ void FrontPanel::setAmplitudeValue(int32_t value,
         decimalPointFlags_ &= uint8_t(~kAmplitudeDecimalPoint);
     }
     flushOutputs();
+}
+
+void FrontPanel::setAmplitudeDisplay(int16_t tenthsDbm,
+                                     uint8_t icmDecimalMask,
+                                     bool leadingOne)
+{
+    formatSignedMagnitude(tenthsDbm, displayBuffers_.amplitude,
+                          kAmplitudeTextWidth);
+    amplitudeUnit_ = AmplitudeUnitLed::DBm;
+    amplitudeIcmDecimalMask_ = uint8_t(icmDecimalMask & 0x07u);
+    decimalPointFlags_ &= uint8_t(~kAmplitudeDecimalPoint);
+    firstCharFlags_ &= uint8_t(~(kPowerOneBlank | kPowerMinus | kPowerPlus));
+    if (!leadingOne) {
+        firstCharFlags_ |= kPowerOneBlank;
+    }
+    if (tenthsDbm < 0) {
+        firstCharFlags_ |= kPowerMinus;
+    } else {
+        firstCharFlags_ |= kPowerPlus;
+    }
+    flushOutputs();
+}
+
+void FrontPanel::setDisplayBlankMask(DisplayField field, uint16_t mask)
+{
+    switch (field) {
+    case DisplayField::Frequency:
+        frequencyBlankMask_ = uint16_t(mask & 0x03FFu);
+        break;
+    case DisplayField::Modulation:
+        modulationBlankMask_ = uint8_t(mask & 0x07u);
+        break;
+    case DisplayField::Amplitude:
+        amplitudeBlankMask_ = uint8_t(mask & 0x07u);
+        break;
+    }
+}
+
+void FrontPanel::setDisplayDecimalMask(DisplayField field, uint16_t mask)
+{
+    switch (field) {
+    case DisplayField::Frequency:
+        frequencyIcmDecimalMask_ = uint16_t(mask & 0x03FFu);
+        break;
+    case DisplayField::Modulation:
+        modulationIcmDecimalMask_ = uint8_t(mask & 0x07u);
+        break;
+    case DisplayField::Amplitude:
+        amplitudeIcmDecimalMask_ = uint8_t(mask & 0x07u);
+        break;
+    }
 }
 
 void FrontPanel::refreshDisplays()
@@ -469,16 +564,35 @@ void FrontPanel::refreshDisplays()
 void FrontPanel::makeDisplayFrames(uint8_t* sn10, uint8_t* sn11) const
 {
     for (uint8_t i = 0; i < kIcm7218DigitCount; ++i) {
-        sn10[i] = reversedCodeBDigit(displayBuffers_.frequencySn10, 8u, i);
+        const uint8_t frequencyPosition = uint8_t(i + 2u);
+        const uint16_t bit = uint16_t(1u) << frequencyPosition;
+        sn10[i] = decoratedCodeBDigit(
+            displayBuffers_.frequencySn10[uint8_t(7u - i)],
+            (frequencyIcmDecimalMask_ & bit) != 0u,
+            (frequencyBlankMask_ & bit) != 0u);
     }
 
     // ICM7218A loads dg0 first. SN11 is wired from right to left as:
     // amplitude dg0..dg2, modulation dg3..dg5, frequency dg6..dg7.
     for (uint8_t i = 0; i < kIcm7218DigitCount; ++i) {
-        sn11[i] = mixedSn11CodeBDigit(displayBuffers_.frequencySn11,
-                                      displayBuffers_.modulation,
-                                      displayBuffers_.amplitude,
-                                      i);
+        if (i < 3u) {
+            sn11[i] = reversedCodeBDigit(displayBuffers_.amplitude, 3u, i,
+                                         amplitudeIcmDecimalMask_,
+                                         amplitudeBlankMask_);
+        } else if (i < 6u) {
+            const uint8_t position = uint8_t(i - 3u);
+            sn11[i] = reversedCodeBDigit(displayBuffers_.modulation, 3u,
+                                         position,
+                                         modulationIcmDecimalMask_,
+                                         modulationBlankMask_);
+        } else {
+            const uint8_t position = uint8_t(i - 6u);
+            const uint16_t bit = uint16_t(1u) << position;
+            sn11[i] = decoratedCodeBDigit(
+                displayBuffers_.frequencySn11[uint8_t(1u - position)],
+                (frequencyIcmDecimalMask_ & bit) != 0u,
+                (frequencyBlankMask_ & bit) != 0u);
+        }
     }
 }
 

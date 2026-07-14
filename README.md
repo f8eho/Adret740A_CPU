@@ -38,6 +38,11 @@ les 200 ms et publie les touches reconnues sur Serial0 à 115200 bauds.
 - `src/FrontPanel.cpp` maintient l'etat des voyants, afficheurs et entrees.
 - `src/FrontPanelBus.cpp` pilote PORTA pour le bus panneau avant.
 - `src/FrontPanelIrq.cpp` installe l'interruption externe CA1 commune clavier/roue.
+- `src/OperatingController.cpp` contient les valeurs, limites, pas et actions
+  fonctionnelles du panneau.
+- `src/SettingsStore.cpp` conserve la configuration dans deux slots EEPROM
+  versionnés avec CRC.
+- `src/PowerFailMonitor.cpp` prépare l'interruption PA future sur D3 / INT5.
 - `src/CalibrationEprom.cpp` reserve le dump 2716 en Flash.
 - `src/main.cpp` contient le mode de debug courant, d'abord le balayage LED.
 
@@ -62,13 +67,16 @@ ecrit via `FrontPanelBus`.
   statique de 8 evenements et cumule les pas de roue codeuse jusqu'a
   `consumeEncoderDelta`.
 
-## Séquence de diagnostic courante
+## Logique fonctionnelle courante
 
-- Un voyant logique est sélectionné toutes les 200 ms.
-- Un compteur est affiché simultanément sur fréquence, modulation et amplitude.
-- Les touches sont envoyées sous la forme `KEY raw=0xNN X=n Y=n label=NOM`.
-- Les positions inconnues sont ignorées et un anti-rebond de 30 ms filtre les
-  doublons identiques.
+- RF, AMPL, FM, PM et AM sélectionnent la valeur réglée par la roue codeuse.
+- VALID MAN affecte la sélection affichée à la roue ; MUL10 et DIV10 changent
+  le pas de la dernière cible validée et font clignoter le digit correspondant.
+- CW, 400 Hz, 1 kHz, EXT et RF OFF mettent à jour les voyants et produisent des
+  commandes instrument provisoires sur Serial0.
+- Les touches et la roue conservent leurs traces brutes à 115200 bauds.
+- Une EEPROM à deux slots et CRC restaure les réglages, tout en forçant RF OFF
+  au démarrage. La future entrée PA reste désactivée jusqu'à validation.
 
 ## Compilation
 

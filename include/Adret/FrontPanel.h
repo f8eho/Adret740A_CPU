@@ -38,6 +38,12 @@ enum class PanelIndicator : uint8_t {
     ManualValidation,
 };
 
+enum class DisplayField : uint8_t {
+    Frequency,
+    Modulation,
+    Amplitude,
+};
+
 enum class Key : uint8_t {
     None,
     Amplitude,
@@ -129,9 +135,18 @@ public:
     void setModulationValue(uint32_t value,
                             front_panel::ModulationUnitLed unit,
                             bool decimalPoint);
+    void setModulationDisplay(uint16_t digits,
+                              front_panel::ModulationUnitLed unit,
+                              uint8_t icmDecimalMask,
+                              bool leadingOne);
     void setAmplitudeValue(int32_t value,
                            front_panel::AmplitudeUnitLed unit,
                            bool decimalPoint);
+    void setAmplitudeDisplay(int16_t tenthsDbm,
+                             uint8_t icmDecimalMask,
+                             bool leadingOne);
+    void setDisplayDecimalMask(front_panel::DisplayField field, uint16_t mask);
+    void setDisplayBlankMask(front_panel::DisplayField field, uint16_t mask);
     void refreshDisplays();
 
     void pollInputs();
@@ -162,8 +177,14 @@ private:
     front_panel::MemoryLedMode memoryMode_ = front_panel::MemoryLedMode::None;
     bool memory_ = false;
     bool sequence_ = false;
-    uint8_t firstCharFlags_ = 0;
+    uint8_t firstCharFlags_ = front_panel::kPowerOneBlank;
     uint8_t decimalPointFlags_ = 0;
+    uint16_t frequencyBlankMask_ = 0;
+    uint8_t modulationBlankMask_ = 0;
+    uint8_t amplitudeBlankMask_ = 0;
+    uint16_t frequencyIcmDecimalMask_ = 0;
+    uint8_t modulationIcmDecimalMask_ = 0;
+    uint8_t amplitudeIcmDecimalMask_ = 0;
 
     front_panel::DisplayBuffers displayBuffers_ = {};
     front_panel::KeyEvent keyQueue_[kKeyQueueCapacity] = {};

@@ -4,62 +4,14 @@
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
 #include "Adret/HardwareConfig.h"
+#include "Adret/OperatingController.h"
+#include "Adret/PowerFailMonitor.h"
+#include "Adret/SettingsStore.h"
 
 namespace {
 
 using adret::front_panel::EncoderEvent;
 using adret::front_panel::KeyEvent;
-using adret::front_panel::PanelIndicator;
-
-constexpr uint32_t kIndicatorPeriodMs = 200;
-
-constexpr PanelIndicator kIndicatorSequence[] = {
-    PanelIndicator::Rf,
-    PanelIndicator::Fm,
-    PanelIndicator::Pm,
-    PanelIndicator::Am,
-    PanelIndicator::Amplitude,
-    PanelIndicator::DBm,
-    PanelIndicator::DB,
-    PanelIndicator::DBuV,
-    PanelIndicator::Volt,
-    PanelIndicator::MilliVolt,
-    PanelIndicator::MicroVolt,
-    PanelIndicator::Hz400,
-    PanelIndicator::KHz1,
-    PanelIndicator::External,
-    PanelIndicator::Cw,
-    PanelIndicator::Error,
-    PanelIndicator::Dept,
-    PanelIndicator::Normal,
-    PanelIndicator::ModRd,
-    PanelIndicator::ModKHz,
-    PanelIndicator::ModPercent,
-    PanelIndicator::Memory,
-    PanelIndicator::Sequence,
-    PanelIndicator::Remote,
-    PanelIndicator::RfInhibit,
-    PanelIndicator::ManualValidation,
-};
-
-constexpr uint8_t kIndicatorCount =
-    sizeof(kIndicatorSequence) / sizeof(kIndicatorSequence[0]);
-
-void advanceIndicatorTest()
-{
-    static uint32_t previousMs = 0;
-    static uint8_t index = 0;
-
-    const uint32_t now = millis();
-    if ((now - previousMs) < kIndicatorPeriodMs) {
-        return;
-    }
-
-    previousMs = now;
-    adret::frontPanel.clearIndicators();
-    adret::frontPanel.turnOn(kIndicatorSequence[index]);
-    index = uint8_t((index + 1u) % kIndicatorCount);
-}
 
 void printHexByte(uint8_t value)
 {
@@ -76,7 +28,7 @@ void printBinaryByte(uint8_t value)
     }
 }
 
-void reportKeyboardEvents()
+void processPanelEvents()
 {
     adret::frontPanel.pollInputs();
 
@@ -90,30 +42,21 @@ void reportKeyboardEvents()
         Serial.print(event.sample.yCode);
         Serial.print(F(" label="));
         Serial.println(adret::front_panel::keyShortLabel(event.key));
+        adret::control::operatingController.handleKey(event.key);
     }
 
-    static uint32_t frequency = 0;
     static int32_t encoderTotal = 0;
     EncoderEvent encoderEvent = {};
     while (adret::frontPanel.popEncoder(&encoderEvent)) {
         if (encoderEvent.step > 0) {
-            if (frequency < UINT32_MAX) {
-                ++frequency;
-            }
             if (encoderTotal < INT32_MAX) {
                 ++encoderTotal;
             }
         } else {
-            if (frequency > 0u) {
-                --frequency;
-            }
             if (encoderTotal > INT32_MIN) {
                 --encoderTotal;
             }
         }
-
-        adret::frontPanel.setFrequencyHz(frequency);
-        adret::frontPanel.refreshDisplays();
 
         Serial.print(F("ENC raw=0x"));
         printHexByte(encoderEvent.sample.raw);
@@ -129,10 +72,10 @@ void reportKeyboardEvents()
         }
         Serial.print(encoderEvent.step);
         Serial.print(F(" total="));
-        Serial.print(encoderTotal);
-        Serial.print(F(" freq="));
-        Serial.println(frequency);
+        Serial.println(encoderTotal);
+        adret::control::operatingController.handleEncoder(encoderEvent);
     }
+    (void)adret::frontPanel.consumeEncoderDelta();
 }
 
 void releasePendingPanelInputAtStartup()
@@ -150,20 +93,29 @@ void setup()
     Serial.begin(115200);
     adret::frontPanelBus.begin();
     adret::frontPanel.begin();
-    adret::frontPanel.clearIndicators();
-    adret::frontPanel.setFrequencyHz(0);
-    adret::frontPanel.setModulationValue(
-        0, adret::front_panel::ModulationUnitLed::None, false);
-    adret::frontPanel.setAmplitudeValue(
-        0, adret::front_panel::AmplitudeUnitLed::None6, false);
-    adret::frontPanel.refreshDisplays();
+
+    adret::control::Settings settings = adret::control::defaultSettings();
+    const bool restored = adret::settingsStore.load(&settings);
+    Serial.print(F("EEPROM restored="));
+    Serial.println(restored ? 1 : 0);
+    adret::control::operatingController.begin(settings);
+
     releasePendingPanelInputAtStartup();
     adret::frontPanelIrq.begin();
-    Serial.println(F("ADRET panel diagnostic ready"));
+    adret::powerFailMonitor.begin();
+    Serial.print(F("PA monitoring="));
+    Serial.println(adret::hw::kPowerSenseEnabled ? F("enabled") : F("disabled"));
+    Serial.println(F("ADRET front panel control ready"));
 }
 
 void loop()
 {
-    reportKeyboardEvents();
-    advanceIndicatorTest();
+    processPanelEvents();
+    adret::control::operatingController.tick(millis());
+    if (adret::powerFailMonitor.consumePending()) {
+        const bool saved = adret::settingsStore.saveNow(
+            adret::control::operatingController.settings());
+        Serial.print(F("EEPROM power_fail_save="));
+        Serial.println(saved ? F("OK") : F("ERROR"));
+    }
 }

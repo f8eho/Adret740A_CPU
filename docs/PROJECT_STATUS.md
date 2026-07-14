@@ -27,7 +27,15 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Bench-validated keyboard labels on Serial0 with unknown-code rejection and
   30 ms duplicate filtering.
 - Ten-microsecond SN5 enable and startup acknowledgement sequence for CA1.
-- PlatformIO build succeeds: RAM 452 bytes / 8192 bytes, Flash 5072 bytes /
+- Allocation-free operating controller for frequency, amplitude, FM, PM and
+  AM adjustment with independent decade steps.
+- Functional RF OFF, VALID MAN, CW/400 Hz/1 kHz/EXT and parameter-selection
+  keys, with simulated instrument commands on Serial0.
+- Per-digit ICM7218A decimal-point and blank masks for non-blocking step-digit
+  blinking.
+- Two-slot, versioned EEPROM settings storage with CRC and forced RF OFF at
+  startup.
+- PlatformIO build succeeds: RAM 606 bytes / 8192 bytes, Flash 11832 bytes /
   253952 bytes.
 
 ## Remaining Hardware Validation
@@ -37,23 +45,28 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Individual decimal-point placement and SN4 special leading characters.
 - High-level API behavior beyond the current diagnostic scan.
 
-## Current Optical Wheel Diagnostic
+## Current Functional Diagnostic
 
-- The display counters no longer advance automatically; only the LED sweep
-  remains timed at 200 ms.
+- The former automatic display and LED sweep has been removed.
 - Each SN5 wheel event is retained in a fixed-size FIFO and reported on
   Serial0 as raw hexadecimal, D7..D0 binary, count, direction, interpreted
-  step, signed total, and displayed frequency.
+  step and signed diagnostic total.
 - The provisional polarity is D6 high = clockwise = +1. This remains to be
   confirmed at the bench and is centralized as
   `kFrontPanelEncoderClockwiseLevel` in `HardwareConfig.h`.
-- Frequency decrements saturate at zero. Modulation and amplitude remain at
-  zero during this diagnostic.
+- The displayed selection and wheel target are independent. VALID MAN assigns
+  the displayed selection to the wheel without toggling an already active
+  target; all values saturate at their documented limits.
+- MUL10 and DIV10 select the decade and blink the affected digit three times.
+- Instrument-bus writes are currently represented by `INSTR` lines on
+  Serial0.
+- PA is reserved on Mega D3 / PE5 / INT5 but monitoring remains disabled until
+  its voltage and polarity are validated at the bench.
 
 ## Next Steps
 
-1. Validate optical-wheel direction and accumulation.
-2. Add decimal-point masks and SN4 leading-character APIs.
+1. Validate optical-wheel direction and all display boundary formats.
+2. Measure PA voltage, polarity and power-fail hold-up time before enabling it.
 3. Exercise cold-start CA1 recovery repeatedly.
-4. Replace the diagnostic loop with the first application state machine.
-5. Replace placeholder EPROM data with the real 2716 calibration dump.
+4. Implement the instrument-bus output layer behind the current serial events.
+5. Add numeric keypad entry and replace the placeholder calibration EPROM.

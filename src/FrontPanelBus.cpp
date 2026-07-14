@@ -63,7 +63,8 @@ void FrontPanelBus::writeDisplayFrame(front_panel::DisplayDevice device,
 
 void FrontPanelBus::writeDecimalPoints(uint8_t flags)
 {
-    writeRaw(front_panel::Select::DecimalPointsSn17, flags);
+    writeRaw(front_panel::Select::DecimalPointsSn17,
+             front_panel::makeSn17Byte(flags));
 }
 
 void FrontPanelBus::writeFirstCharFlags(uint8_t flags)

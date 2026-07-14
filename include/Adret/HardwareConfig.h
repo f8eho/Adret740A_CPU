@@ -55,6 +55,19 @@ constexpr uint8_t kFrontPanelCa1InterruptFlag = _BV(INTF4);
 constexpr uint8_t kFrontPanelCa1SenseBit0 = ISC40;
 constexpr uint8_t kFrontPanelCa1SenseBit1 = ISC41;
 
+// Future instrument-bus power-present input PA. Mega D3 is PE5 / INT5.
+// Keep disabled until its voltage and active level are confirmed at the bench.
+#define ADRET_PA_DDR DDRE
+#define ADRET_PA_PORT PORTE
+#define ADRET_PA_PIN PINE
+constexpr uint8_t kPowerSenseBit = PE5;
+constexpr bool kPowerSenseEnabled = false;
+constexpr bool kPowerSenseActiveLow = true;
+constexpr uint8_t kPowerSenseInterruptMask = _BV(INT5);
+constexpr uint8_t kPowerSenseInterruptFlag = _BV(INTF5);
+constexpr uint8_t kPowerSenseSenseBit0 = ISC50;
+constexpr uint8_t kPowerSenseSenseBit1 = ISC51;
+
 inline void waitTtlSettle()
 {
     asm volatile(
