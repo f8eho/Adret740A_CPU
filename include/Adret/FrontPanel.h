@@ -44,6 +44,12 @@ enum class DisplayField : uint8_t {
     Amplitude,
 };
 
+enum class ExecIndicator : uint8_t {
+    Off,
+    Fixed,
+    Blink,
+};
+
 enum class Key : uint8_t {
     None,
     Amplitude,
@@ -128,10 +134,11 @@ public:
     void turnOn(front_panel::PanelIndicator indicator);
     void turnOff(front_panel::PanelIndicator indicator);
     bool isOn(front_panel::PanelIndicator indicator) const;
-    void clearIndicators();
     void setMemoryMode(front_panel::MemoryLedMode mode);
+    void setExecIndicator(front_panel::ExecIndicator mode);
 
     void setFrequencyHz(uint32_t frequencyHz);
+    void setFrequencyText(const char* text);
     void setModulationValue(uint32_t value,
                             front_panel::ModulationUnitLed unit,
                             bool decimalPoint);
@@ -145,6 +152,7 @@ public:
     void setAmplitudeDisplay(int16_t tenthsDbm,
                              uint8_t icmDecimalMask,
                              bool leadingOne);
+    void setAmplitudeIncrementDisplay(uint16_t tenthsDb);
     void setDisplayDecimalMask(front_panel::DisplayField field, uint16_t mask);
     void setDisplayBlankMask(front_panel::DisplayField field, uint16_t mask);
     void refreshDisplays();
@@ -174,7 +182,7 @@ private:
     front_panel::ModulationSourceLed modulationSource_ = front_panel::ModulationSourceLed::Cw;
     front_panel::StatusLed statusLed_ = front_panel::StatusLed::Normal;
     front_panel::ModulationUnitLed modulationUnit_ = front_panel::ModulationUnitLed::None;
-    front_panel::MemoryLedMode memoryMode_ = front_panel::MemoryLedMode::None;
+    front_panel::MemoryLedMode memoryMode_ = front_panel::MemoryLedMode::Off;
     bool memory_ = false;
     bool sequence_ = false;
     uint8_t firstCharFlags_ = front_panel::kPowerOneBlank;

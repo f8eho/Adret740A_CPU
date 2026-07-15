@@ -37,9 +37,14 @@ constexpr uint8_t kIcm7218CodeBBlank = 0x8Fu;
 constexpr uint8_t codeBDigit(char digit)
 {
     // ICM7218 decimal-point data is active low: ID7=1 turns it off.
-    return uint8_t(((digit >= '0' && digit <= '9')
-                        ? uint8_t(digit - '0')
-                        : 0u) |
+    // Code B also provides '-', E, H, L, P and blank on codes A..F.
+    return uint8_t(((digit >= '0' && digit <= '9') ? uint8_t(digit - '0')
+                     : digit == '-' ? 0x0Au
+                     : digit == 'E' ? 0x0Bu
+                     : digit == 'H' ? 0x0Cu
+                     : digit == 'L' ? 0x0Du
+                     : digit == 'P' ? 0x0Eu
+                     : 0x0Fu) |
                    kIcm7218DecimalPointOff);
 }
 
@@ -119,10 +124,9 @@ enum class ModulationUnitLed : uint8_t {
 };
 
 enum class MemoryLedMode : uint8_t {
-    Q2Base = 0,
-    D25Fixed = 1,
-    None = 2,
-    D25Blink = 3,
+    Blink = 0,
+    Off = 1,
+    Fixed = 2,
 };
 
 struct KeyboardSample {

@@ -132,16 +132,16 @@ mais allumer un membre d'un groupe remplace nécessairement le précédent.
 | --- | --- | --- |
 | D7..D6 | état | 0=aucun, 1=`ERROR`, 2=`DEPT`, 3=`NORMAL` |
 | D5..D4 | unité modulation | 0=aucune, 1=`rd`, 2=`kHz`, 3=`%` |
-| D3..D2 | mode mémoire | 0=base, 1=fixe, 2=aucun, 3=clignotant |
+| D3..D2 AVR | voyant `EXEC` | 0=`clignotant`, 1=`éteint`, 2=`fixe`, 3=`éteint` |
 | D1 AVR | indépendant actif bas | voyant `SEQ` |
 | D0 AVR | indépendant actif bas | voyant `MEM` |
 
 Les deux bits indépendants apparaissent permutés par rapport aux sorties
 physiques D1=`MEM` et D0=`SEQ` de SN3 à cause du croisement du faisceau.
 
-Le sens précis des deux états matériels du champ mémoire est **à valider** en
-dehors du balayage de diagnostic ; le firmware les nomme encore
-`Q2Base`, `D25Fixed` et `D25Blink`.
+Ce codage inclut le croisement D2/D3 du faisceau et a été relevé au banc avec
+un balayage des quatre valeurs brutes. Le firmware utilise le code 1 pour
+éteindre le voyant ; le code 3, également éteint au banc, reste inutilisé.
 
 ### 4.3 SN4 sélectionné par Y2
 

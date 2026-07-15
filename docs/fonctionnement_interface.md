@@ -72,7 +72,9 @@ seuil. Toutes les valeurs saturent à leurs limites sans rebouclage.
 
 Les affichages utilisent les formats suivants :
 
-- fréquence : dix digits en hertz ;
+- fréquence : valeur en hertz sans zéros non significatifs, séparée par groupes
+  de trois chiffres (`100.000`, `1.000.000`, `10.000.000`). Le séparateur MHz
+  n'est affiché qu'à partir de 1 MHz ;
 - amplitude : un chiffre après la virgule ;
 - AM : un chiffre après la virgule ;
 - PM : deux chiffres après la virgule ;
@@ -100,8 +102,8 @@ l'inhibition de la sortie RF et son voyant. Elle reste distincte de la ligne
 ## Comportement cible du clavier d'après le manuel
 
 Les fonctions de cette section décrivent le comportement du 740A d'origine à
-reproduire. Sauf indication contraire dans le tableau d'état plus bas, elles ne
-sont pas encore prises en charge par le contrôleur du firmware.
+reproduire. Le tableau d'état plus bas distingue les fonctions maintenant
+prises en charge de celles qui restent différées ou à valider au banc.
 
 ### Préparation et exécution d'une configuration
 
@@ -182,9 +184,26 @@ exécutoire. Par exemple, un pas de fréquence de 12,5 kHz se programme par :
 RF 1 2 . 5 kHz INC
 ```
 
-Un appui sur `INC` permet de revoir un incrément déjà défini. Pour l'amplitude,
-l'incrément s'exprime exclusivement en dB, même si le niveau actif est affiché
-dans une autre unité.
+La validation de plage absolue est différée après l'unité lorsqu'une valeur
+peut encore représenter un incrément. Ainsi `12,5 kHz` n'est pas rejeté comme
+fréquence RF inférieure à 100 kHz si la touche suivante est `INC`. Toute autre
+touche, sauf `CLEAR`, confirme l'interprétation absolue et produit alors
+l'erreur de plage correspondante.
+
+Après la programmation par `valeur unité INC`, l'afficheur revient
+automatiquement à la valeur courante du paramètre afin de montrer directement
+son évolution avec `↑` et `↓`. Un appui ultérieur sur `INC`, sans nouvelle
+saisie, permet de revoir l'incrément déjà défini. Pour l'amplitude, l'incrément
+s'exprime exclusivement en dB, même si le niveau actif est affiché dans une
+autre unité. Les cinq incréments RF, amplitude, FM, PM et AM sont distincts,
+conservés uniquement en RAM et tous supprimés par `CLEAR`.
+
+Les flèches appliquent l'incrément à la configuration active et émettent
+immédiatement une transaction instrument complète. Si une autre modification
+est en attente d'`EXEC`, la valeur incrémentée est aussi synchronisée dans la
+configuration préparée afin qu'une exécution ultérieure ne l'annule pas. Une
+séquence active reste prioritaire : dans ce mode, `↑` et `↓` continuent de
+parcourir la séquence.
 
 ## Mémoires
 
@@ -274,12 +293,22 @@ la séquence. `CLEAR` efface sa définition.
 | Fonction | Comportement documenté | État du firmware |
 | --- | --- | --- |
 | Sélection RF, AMPL, FM, PM et AM | Choisit le paramètre affiché et sa future saisie | Implémenté pour la sélection et la molette |
-| Chiffres, point et unités | Préparent une valeur sans agir sur la sortie | Touches lues et tracées, saisie non implémentée |
-| `←`, `CLEAR`, `EXEC` et `X→Y` | Corrigent, annulent, exécutent ou consultent l'état actif | Touches lues et tracées, actions non implémentées |
-| `MEM` et `RECALL` | Enregistrent et rappellent 40 configurations | Touches lues et tracées, stockage mémoire non implémenté |
-| `SEQ` | Définit et exploite une plage de mémoires | Touche lue et tracée, séquences non implémentées |
-| `INC`, `↑` et `↓` | Programment et appliquent un incrément, ou parcourent une séquence | Touches lues et tracées, actions non implémentées |
+| Chiffres, point et unités | Préparent une valeur sans agir sur la sortie | Implémenté pour MHz/kHz/Hz, ±dBm, V/mV/µV, FM, PM et AM |
+| `←`, `CLEAR`, `EXEC` et `X→Y` | Corrigent, annulent, exécutent ou consultent l'état actif | Implémenté ; comportement lumineux et temporel à valider au banc |
+| `MEM` et `RECALL` | Enregistrent et rappellent 40 configurations | Implémenté pour les positions 00 à 39 avec CRC EEPROM individuel |
+| `SEQ` | Définit et exploite une plage de mémoires | Implémenté au clavier ; entrée AUX non implémentée |
+| `INC`, `↑` et `↓` | Programment et appliquent un incrément, ou parcourent une séquence | Implémenté ; séquence active prioritaire, validation au banc restante |
 | `SPL` et `ADR17` | Fonctions spéciales du clavier et d'adressage | Touches lues et tracées, actions non implémentées |
+
+Le contrôleur conserve séparément la configuration réellement exécutée et la
+configuration préparée. Les sources de modulation suivent la préparation ;
+`INHIB RF` reste immédiat et synchronise les deux états. La molette agit sur la
+préparation lorsqu'elle existe, sans émettre de commande instrument.
+
+Les réglages actifs utilisent deux slots EEPROM v3. Un ancien enregistrement
+v2 reste lisible et sera migré lors de la sauvegarde suivante. Les 40 mémoires
+de configuration occupent une zone séparée ; la définition de séquence reste
+volontairement en RAM et disparaît au redémarrage.
 
 ## Diagnostic Serial0
 

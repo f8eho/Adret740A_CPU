@@ -35,7 +35,13 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   blinking.
 - Two-slot, versioned EEPROM settings storage with CRC and forced RF OFF at
   startup.
-- PlatformIO build succeeds: RAM 606 bytes / 8192 bytes, Flash 11832 bytes /
+- Allocation-free deferred numeric entry with unit validation, correction,
+  EXEC transactions and active/prepared configuration views.
+- Forty independently CRC-protected EEPROM memories, v2 settings migration,
+  recall and keyboard-driven memory sequences.
+- Allocation-free per-parameter keyboard increments, with deferred RF
+  lower-limit validation and immediate UP/DOWN instrument transactions.
+- PlatformIO build succeeds: RAM 750 bytes / 8192 bytes, Flash 23924 bytes /
   253952 bytes.
 
 ## Remaining Hardware Validation
@@ -47,7 +53,9 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 
 ## Current Functional Diagnostic
 
-- The former automatic display and LED sweep has been removed.
+- The temporary EXEC indicator sweep has been removed after bench validation.
+  Raw SN3 D3..D2 codes are 0=blinking, 1=off, 2=fixed and 3=off; the normal
+  firmware uses codes 0, 1 and 2.
 - Each SN5 wheel event is retained in a fixed-size FIFO and reported on
   Serial0 as raw hexadecimal, D7..D0 binary, count, direction, interpreted
   step and signed diagnostic total.
@@ -57,16 +65,30 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - The displayed selection and wheel target are independent. VALID MAN assigns
   the displayed selection to the wheel without toggling an already active
   target; all values saturate at their documented limits.
+- Indicator-only refreshes preserve amplitude signs, special leading digits,
+  decimal points and the current EXEC mode. Bench validation is still required
+  for VALID MAN and RF OFF while an entry is pending.
 - MUL10 and DIV10 select the decade and blink the affected digit three times.
 - Instrument-bus writes are currently represented by `INSTR` lines on
   Serial0.
 - PA is reserved on Mega D3 / PE5 / INT5 but monitoring remains disabled until
   its voltage and polarity are validated at the bench.
+- Numeric entry, EXEC fixed/blinking modes, Code B status messages and memory
+  sequence behavior compile successfully but still require panel bench tests.
+- Keyboard increments are stored separately for RF, amplitude, FM, PM and AM;
+  active sequences retain priority over UP/DOWN. End-to-end bench validation
+  remains pending.
 
 ## Next Steps
 
 1. Validate optical-wheel direction and all display boundary formats.
 2. Measure PA voltage, polarity and power-fail hold-up time before enabling it.
 3. Exercise cold-start CA1 recovery repeatedly.
+   The application adds only about 120 us of startup acknowledgement; the
+   cold-power delay observed at the bench does not occur on a warm reset and
+   must be localized between the 5 V rail, RESET and the first CA2 activity.
 4. Implement the instrument-bus output layer behind the current serial events.
-5. Add numeric keypad entry and replace the placeholder calibration EPROM.
+5. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
+   messages on the real panel.
+6. Add keyboard increments, AUX sequence stepping and replace the placeholder
+   calibration EPROM.

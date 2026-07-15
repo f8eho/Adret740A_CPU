@@ -1,6 +1,9 @@
 #include "Adret/OperatingController.h"
 
 #include <Arduino.h>
+#include <math.h>
+
+#include "Adret/SettingsStore.h"
 
 namespace adret {
 namespace control {
@@ -9,6 +12,7 @@ namespace {
 
 using front_panel::AmplitudeUnitLed;
 using front_panel::DisplayField;
+using front_panel::ExecIndicator;
 using front_panel::Key;
 using front_panel::ModulationUnitLed;
 using front_panel::PanelIndicator;
@@ -23,6 +27,8 @@ constexpr uint16_t kAmMaximumTenthsPercent = 999u;
 constexpr uint32_t kFmFineRangeMaximumHz = 20000u;
 constexpr uint16_t kBlinkPhaseMs = 150u;
 constexpr uint8_t kBlinkPhaseCount = 6u;
+constexpr uint32_t kOverlayDurationMs = 2000u;
+constexpr uint32_t kSequenceEntryTimeoutMs = 2000u;
 
 constexpr uint32_t kFrequencySteps[] = {
     10u, 100u, 1000u, 10000u, 100000u, 1000000u, 10000000u, 100000000u,
@@ -42,6 +48,91 @@ template <typename T, uint8_t N>
 constexpr uint8_t itemCount(const T (&)[N])
 {
     return N;
+}
+
+constexpr uint32_t powerOfTen(uint8_t exponent)
+{
+    return exponent == 0u ? 1u
+        : exponent == 1u ? 10u
+        : exponent == 2u ? 100u
+        : exponent == 3u ? 1000u
+        : exponent == 4u ? 10000u
+        : exponent == 5u ? 100000u
+        : exponent == 6u ? 1000000u
+        : exponent == 7u ? 10000000u
+        : exponent == 8u ? 100000000u
+        : 1000000000u;
+}
+
+constexpr uint32_t exactScaledValue(uint32_t digits,
+                                    uint8_t fractionalDigits,
+                                    uint32_t multiplier)
+{
+    return fractionalDigits > 9u
+        ? UINT32_MAX
+        : ((uint64_t(digits) * multiplier) % powerOfTen(fractionalDigits)) != 0u
+            ? UINT32_MAX
+            : (uint64_t(digits) * multiplier) /
+                    powerOfTen(fractionalDigits) > UINT32_MAX
+                ? UINT32_MAX
+                : uint32_t((uint64_t(digits) * multiplier) /
+                           powerOfTen(fractionalDigits));
+}
+
+constexpr uint8_t decimalDigitCount(uint32_t value)
+{
+    return value >= 1000000000u ? 10u
+        : value >= 100000000u ? 9u
+        : value >= 10000000u ? 8u
+        : value >= 1000000u ? 7u
+        : value >= 100000u ? 6u
+        : value >= 10000u ? 5u
+        : value >= 1000u ? 4u
+        : value >= 100u ? 3u
+        : value >= 10u ? 2u : 1u;
+}
+
+constexpr uint16_t frequencyLeadingBlankMask(uint32_t frequencyHz)
+{
+    return uint16_t(0x03FFu &
+        ~uint16_t((uint16_t(1u) << decimalDigitCount(frequencyHz)) - 1u));
+}
+
+constexpr uint16_t frequencySeparatorMask(uint32_t frequencyHz)
+{
+    return uint16_t((uint16_t(1u) << 3u) |
+        (frequencyHz >= 1000000u ? uint16_t(1u) << 6u : 0u));
+}
+
+bool scaledInteger(uint32_t digits,
+                   uint8_t fractionalDigits,
+                   uint32_t multiplier,
+                   uint32_t* result)
+{
+    if (fractionalDigits > 9u) {
+        return false;
+    }
+    const uint64_t numerator = uint64_t(digits) * multiplier;
+    const uint32_t denominator = powerOfTen(fractionalDigits);
+    if (denominator == 0u || (numerator % denominator) != 0u ||
+        (numerator / denominator) > UINT32_MAX) {
+        return false;
+    }
+    *result = uint32_t(numerator / denominator);
+    return true;
+}
+
+bool parseDigits(const char* text, uint8_t count, uint32_t* result)
+{
+    uint64_t value = 0u;
+    for (uint8_t i = 0; i < count; ++i) {
+        value = value * 10u + uint8_t(text[i] - '0');
+        if (value > UINT32_MAX) {
+            return false;
+        }
+    }
+    *result = uint32_t(value);
+    return true;
 }
 
 constexpr uint32_t effectiveFmStep(uint32_t valueHz, uint8_t index)
@@ -68,34 +159,16 @@ constexpr DisplaySpec pmDisplaySpec(uint16_t hundredthsRd)
                        hundredthsRd >= 1000u};
 }
 
-static_assert(itemCount(kFrequencySteps) == 8u &&
-              kFrequencySteps[0] == 10u &&
-              kFrequencySteps[7] == 100000000u,
-              "Unexpected frequency step table");
-static_assert(itemCount(kAmplitudeSteps) == 3u &&
-              itemCount(kFmSteps) == 5u &&
-              itemCount(kPmSteps) == 4u &&
-              itemCount(kAmSteps) == 3u,
-              "Unexpected control step table");
-static_assert(effectiveFmStep(19999u, 0u) == 10u &&
-              effectiveFmStep(20000u, 0u) == 100u,
-              "Unexpected FM fine-range threshold");
-static_assert(fmDisplaySpec(19990u).digits == 999u &&
-              fmDisplaySpec(19990u).decimalMask == 0x04u &&
-              fmDisplaySpec(19990u).leadingOne,
-              "Unexpected 19.99 kHz display format");
-static_assert(fmDisplaySpec(20000u).digits == 200u &&
-              fmDisplaySpec(20000u).decimalMask == 0x02u &&
-              !fmDisplaySpec(20000u).leadingOne,
-              "Unexpected 20.0 kHz display format");
-static_assert(fmDisplaySpec(199900u).digits == 999u &&
-              fmDisplaySpec(199900u).leadingOne &&
-              fmDisplaySpec(200000u).digits == 200u &&
-              fmDisplaySpec(200000u).decimalMask == 0u,
-              "Unexpected upper FM display format");
-static_assert(pmDisplaySpec(1999u).digits == 999u &&
-              pmDisplaySpec(1999u).leadingOne,
-              "Unexpected 19.99 rd display format");
+constexpr uint32_t keyboardIncrementMaximum(Target target)
+{
+    return target == Target::Frequency ? kFrequencyMaximumHz
+        : target == Target::Amplitude
+            ? uint32_t(kAmplitudeMaximumTenthsDbm -
+                       kAmplitudeMinimumTenthsDbm)
+        : target == Target::Fm ? kFmMaximumHz
+        : target == Target::Pm ? kPmMaximumHundredthsRd
+        : kAmMaximumTenthsPercent;
+}
 
 const __FlashStringHelper* targetName(Target target)
 {
@@ -160,6 +233,46 @@ uint8_t decimalPosition(uint32_t step, uint32_t displayResolution)
     return position;
 }
 
+int8_t digitForKey(Key key)
+{
+    if (key >= Key::Digit0 && key <= Key::Digit9) {
+        return int8_t(uint8_t(key) - uint8_t(Key::Digit0));
+    }
+    return -1;
+}
+
+bool timeReached(uint32_t now, uint32_t deadline)
+{
+    return int32_t(now - deadline) >= 0;
+}
+
+static_assert(itemCount(kFrequencySteps) == 8u &&
+              itemCount(kAmplitudeSteps) == 3u &&
+              itemCount(kFmSteps) == 5u &&
+              itemCount(kPmSteps) == 4u &&
+              itemCount(kAmSteps) == 3u,
+              "Unexpected control step tables");
+static_assert(powerOfTen(0u) == 1u && powerOfTen(4u) == 10000u,
+              "Unexpected decimal scaling");
+static_assert(exactScaledValue(54321u, 2u, 1000000u) == 543210000u &&
+              exactScaledValue(125u, 1u, 1000u) == 12500u &&
+              exactScaledValue(1u, 1u, 1u) == UINT32_MAX,
+              "Unexpected exact unit conversion");
+static_assert(frequencySeparatorMask(999999u) == 0x0008u &&
+              frequencySeparatorMask(1000000u) == 0x0048u,
+              "Unexpected frequency separator threshold");
+static_assert(frequencyLeadingBlankMask(100000u) == 0x03C0u &&
+              frequencyLeadingBlankMask(1000000u) == 0x0380u &&
+              frequencyLeadingBlankMask(10000000u) == 0x0300u &&
+              frequencyLeadingBlankMask(560000000u) == 0x0200u,
+              "Unexpected frequency leading-zero mask");
+static_assert(effectiveFmStep(19999u, 0u) == 10u &&
+              effectiveFmStep(20000u, 0u) == 100u,
+              "Unexpected FM fine-range threshold");
+static_assert(keyboardIncrementMaximum(Target::Frequency) == 560000000u &&
+              keyboardIncrementMaximum(Target::Amplitude) == 1429u,
+              "Unexpected keyboard increment limits");
+
 }  // namespace
 
 OperatingController operatingController;
@@ -167,21 +280,22 @@ OperatingController operatingController;
 Settings defaultSettings()
 {
     Settings result = {};
-    result.frequencyHz = kFrequencyMinimumHz;
-    result.fmHz = 0;
-    result.amplitudeTenthsDbm = kAmplitudeMinimumTenthsDbm;
-    result.pmHundredthsRd = 0;
-    result.amTenthsPercent = 0;
+    result.output.frequencyHz = kFrequencyMinimumHz;
+    result.output.fmHz = 0u;
+    result.output.amplitudeTenthsDbm = kAmplitudeMinimumTenthsDbm;
+    result.output.pmHundredthsRd = 0u;
+    result.output.amTenthsPercent = 0u;
+    result.output.modulationMode = ModulationMode::Am;
+    result.output.modulationSource = ModulationSource::Cw;
+    result.output.amplitudeDisplayUnit = AmplitudeDisplayUnit::DBm;
+    result.output.rfOff = true;
     result.target = Target::Frequency;
     result.wheelTarget = Target::Frequency;
-    result.modulationMode = ModulationMode::Am;
-    result.modulationSource = ModulationSource::Cw;
     result.wheelInhibited = true;
-    result.rfOff = true;
     return result;
 }
 
-bool settingsAreValid(const Settings& value)
+bool outputConfigurationIsValid(const OutputConfiguration& value)
 {
     return value.frequencyHz >= kFrequencyMinimumHz &&
            value.frequencyHz <= kFrequencyMaximumHz &&
@@ -190,10 +304,16 @@ bool settingsAreValid(const Settings& value)
            value.amplitudeTenthsDbm <= kAmplitudeMaximumTenthsDbm &&
            value.pmHundredthsRd <= kPmMaximumHundredthsRd &&
            value.amTenthsPercent <= kAmMaximumTenthsPercent &&
-           uint8_t(value.target) <= uint8_t(Target::Am) &&
-           uint8_t(value.wheelTarget) <= uint8_t(Target::Am) &&
            uint8_t(value.modulationMode) <= uint8_t(ModulationMode::Am) &&
            uint8_t(value.modulationSource) <= uint8_t(ModulationSource::External) &&
+           uint8_t(value.amplitudeDisplayUnit) <= uint8_t(AmplitudeDisplayUnit::UV);
+}
+
+bool settingsAreValid(const Settings& value)
+{
+    return outputConfigurationIsValid(value.output) &&
+           uint8_t(value.target) <= uint8_t(Target::Am) &&
+           uint8_t(value.wheelTarget) <= uint8_t(Target::Am) &&
            value.frequencyStepIndex < itemCount(kFrequencySteps) &&
            value.amplitudeStepIndex < itemCount(kAmplitudeSteps) &&
            value.fmStepIndex < itemCount(kFmSteps) &&
@@ -204,7 +324,8 @@ bool settingsAreValid(const Settings& value)
 void OperatingController::begin(const Settings& settings)
 {
     settings_ = settingsAreValid(settings) ? settings : defaultSettings();
-    settings_.rfOff = true;
+    settings_.output.rfOff = true;
+    pending_ = settings_.output;
     renderAll();
     Serial.print(F("STATE restored target="));
     Serial.print(targetName(settings_.target));
@@ -213,52 +334,103 @@ void OperatingController::begin(const Settings& settings)
     Serial.print(F(" wheel_inhibited="));
     Serial.print(settings_.wheelInhibited ? 1 : 0);
     Serial.println(F(" rf_off=1"));
-    Serial.print(F("INSTR frequency_hz="));
-    Serial.println(settings_.frequencyHz);
-    Serial.print(F("INSTR amplitude_tenths_dbm="));
-    Serial.println(settings_.amplitudeTenthsDbm);
-    Serial.print(F("INSTR modulation_mode="));
-    switch (settings_.modulationMode) {
-    case ModulationMode::Fm: Serial.println(F("FM")); break;
-    case ModulationMode::Pm: Serial.println(F("PM")); break;
-    case ModulationMode::Am: Serial.println(F("AM")); break;
-    }
-    Serial.print(F("INSTR modulation_value="));
-    switch (settings_.modulationMode) {
-    case ModulationMode::Fm: Serial.println(settings_.fmHz); break;
-    case ModulationMode::Pm: Serial.println(settings_.pmHundredthsRd); break;
-    case ModulationMode::Am: Serial.println(settings_.amTenthsPercent); break;
-    }
-    Serial.print(F("INSTR modulation_source="));
-    Serial.println(sourceName(settings_.modulationSource));
-    Serial.println(F("INSTR rf_off=1"));
+    reportInstrumentTransaction(settings_.output);
 }
 
 void OperatingController::handleKey(Key key)
 {
+    if (overlay_ != Overlay::None) {
+        overlay_ = Overlay::None;
+        renderAll();
+    }
+
+    if (completedEntryDeferredError_ && key != Key::Increment &&
+        key != Key::Clear) {
+        const char* code = completedEntryErrorCode_;
+        restoreCompletedEntryBase();
+        failEntry(code);
+        return;
+    }
+    if (completedEntryAvailable_ && !completedEntryDeferredError_ &&
+        key != Key::Increment) {
+        completedEntryAvailable_ = false;
+    }
+    if (incrementViewActive_ && key != Key::Increment && key != Key::Up &&
+        key != Key::Down) {
+        incrementViewActive_ = false;
+    }
+
+    const int8_t digit = digitForKey(key);
+    if (digit >= 0) {
+        handleDigit(uint8_t(digit));
+        return;
+    }
+
+    if ((entryMode_ == EntryMode::Memory || entryMode_ == EntryMode::Recall ||
+         entryMode_ == EntryMode::Sequence) && key != Key::Clear &&
+        key != Key::Sequence) {
+        entryMode_ = EntryMode::None;
+        frontPanel.turnOff(PanelIndicator::Memory);
+        failEntry(nullptr);
+        return;
+    }
+
     switch (key) {
     case Key::Rf: selectTarget(Target::Frequency); break;
     case Key::Amplitude: selectTarget(Target::Amplitude); break;
     case Key::Fm: selectTarget(Target::Fm); break;
     case Key::Pm: selectTarget(Target::Pm); break;
     case Key::Am: selectTarget(Target::Am); break;
+    case Key::DecimalPoint: handleDecimalPoint(); break;
+    case Key::Left: handleLeft(); break;
+    case Key::Mhz:
+    case Key::KHz:
+    case Key::Hz:
+    case Key::DBm:
+    case Key::OneDBm:
+        handleUnit(key);
+        break;
+    case Key::Increment: handleIncrement(); break;
+    case Key::Exec: handleExec(); break;
+    case Key::Clear: handleClear(); break;
+    case Key::XToY: handleXToY(); break;
+    case Key::Memory: beginCommand(EntryMode::Memory); break;
+    case Key::Recall: beginCommand(EntryMode::Recall); break;
+    case Key::Sequence:
+        beginCommand(EntryMode::Sequence);
+        if (sequenceDefined_) {
+            sequenceActive_ = true;
+            renderIndicators();
+            char text[6] = {
+                char('0' + sequenceStart_ / 10u),
+                char('0' + sequenceStart_ % 10u), '-',
+                char('0' + sequenceEnd_ / 10u),
+                char('0' + sequenceEnd_ % 10u), '\0'};
+            renderMessage(text, kSequenceEntryTimeoutMs);
+        }
+        break;
+    case Key::Up: handleIncrementStep(true); break;
+    case Key::Down: handleIncrementStep(false); break;
     case Key::Multiply10: changeStep(true); break;
     case Key::Divide10: changeStep(false); break;
     case Key::ValidManual:
         settings_.wheelTarget = settings_.target;
         settings_.wheelInhibited = false;
-        frontPanel.setIndicator(PanelIndicator::ManualValidation, true);
+        renderIndicators();
         Serial.print(F("VALID target="));
         Serial.print(targetName(settings_.wheelTarget));
         Serial.println(F(" active=1"));
         break;
     case Key::RfOff:
-        settings_.rfOff = !settings_.rfOff;
-        frontPanel.setIndicator(PanelIndicator::RfInhibit, settings_.rfOff);
+        settings_.output.rfOff = !settings_.output.rfOff;
+        if (pendingActive_) {
+            pending_.rfOff = settings_.output.rfOff;
+        }
+        renderIndicators();
         Serial.print(F("RF_OFF value="));
-        Serial.println(settings_.rfOff ? 1 : 0);
+        Serial.println(settings_.output.rfOff ? 1 : 0);
         Serial.print(F("INSTR rf_off="));
-        Serial.println(settings_.rfOff ? 1 : 0);
+        Serial.println(settings_.output.rfOff ? 1 : 0);
         break;
     case Key::Cw: selectSource(ModulationSource::Cw); break;
     case Key::Hz400: selectSource(ModulationSource::Hz400); break;
@@ -268,65 +440,888 @@ void OperatingController::handleKey(Key key)
     }
 }
 
+void OperatingController::handleDigit(uint8_t digit)
+{
+    if (entryMode_ == EntryMode::Memory || entryMode_ == EntryMode::Recall ||
+        entryMode_ == EntryMode::Sequence) {
+        const uint8_t required = entryMode_ == EntryMode::Sequence ? 4u : 2u;
+        if (entryDigitCount_ >= required) {
+            failEntry(nullptr);
+            return;
+        }
+        entryDigits_[entryDigitCount_++] = char('0' + digit);
+        entryDigits_[entryDigitCount_] = '\0';
+        frontPanel.setFrequencyText(entryDigits_);
+        frontPanel.refreshDisplays();
+        if (entryDigitCount_ == required) {
+            if (entryMode_ == EntryMode::Memory) {
+                finishMemoryCommand();
+            } else if (entryMode_ == EntryMode::Recall) {
+                finishRecallCommand();
+            } else {
+                finishSequenceCommand();
+            }
+        }
+        return;
+    }
+
+    if (entryLocked_) {
+        Serial.println(F("ENTRY ignored=1 reason=SELECT_OR_EXEC"));
+        return;
+    }
+    if (entryMode_ == EntryMode::None) {
+        entryHadPending_ = pendingActive_;
+        ensurePending();
+        entryBase_ = pending_;
+        entryMode_ = EntryMode::Numeric;
+        entryDigitCount_ = 0u;
+        entryDecimalIndex_ = -1;
+        entryDigits_[0] = '\0';
+    }
+    const uint8_t maximumDigits = settings_.target == Target::Frequency ? 10u : 4u;
+    if (entryDigitCount_ >= maximumDigits) {
+        failEntry(nullptr);
+        return;
+    }
+    entryDigits_[entryDigitCount_++] = char('0' + digit);
+    entryDigits_[entryDigitCount_] = '\0';
+    uint32_t parsed = 0u;
+    if (!parseDigits(entryDigits_, entryDigitCount_, &parsed)) {
+        failEntry(nullptr);
+        return;
+    }
+    renderEntry();
+    updateExecIndicator();
+    Serial.print(F("ENTRY target="));
+    Serial.print(targetName(settings_.target));
+    Serial.print(F(" digits="));
+    Serial.println(entryDigits_);
+}
+
+void OperatingController::handleDecimalPoint()
+{
+    if (entryLocked_) {
+        return;
+    }
+    if (entryMode_ == EntryMode::None) {
+        entryHadPending_ = pendingActive_;
+        ensurePending();
+        entryBase_ = pending_;
+        entryMode_ = EntryMode::Numeric;
+        entryDigitCount_ = 0u;
+        entryDigits_[0] = '\0';
+    }
+    if (entryMode_ != EntryMode::Numeric || entryDecimalIndex_ >= 0) {
+        failEntry(nullptr);
+        return;
+    }
+    entryDecimalIndex_ = int8_t(entryDigitCount_);
+    renderEntry();
+    updateExecIndicator();
+}
+
+void OperatingController::handleLeft()
+{
+    if (entryMode_ != EntryMode::Numeric) {
+        return;
+    }
+    if (entryDigitCount_ > 0u) {
+        --entryDigitCount_;
+        entryDigits_[entryDigitCount_] = '\0';
+        if (entryDecimalIndex_ > int8_t(entryDigitCount_)) {
+            entryDecimalIndex_ = -1;
+        }
+    } else if (entryDecimalIndex_ >= 0) {
+        entryDecimalIndex_ = -1;
+    }
+    renderEntry();
+    if (entryDigitCount_ > 0u) {
+        correctionBlink_ = true;
+        correctionBlinkField_ = targetDisplayField();
+        correctionBlinkPosition_ = 0u;
+        blinkActive_ = true;
+        blinkBlank_ = true;
+        blinkPhasesRemaining_ = kBlinkPhaseCount;
+        previousBlinkMs_ = millis();
+        applyBlinkMask(true);
+    }
+}
+
+void OperatingController::handleUnit(Key key)
+{
+    if (entryMode_ != EntryMode::Numeric || entryDigitCount_ == 0u) {
+        failEntry(nullptr);
+        return;
+    }
+    completedEntryAvailable_ = false;
+    completedEntryDeferredError_ = false;
+    completedEntryIncrementCompatible_ = false;
+    completedEntryValue_ = 0u;
+    completedEntryErrorCode_ = nullptr;
+    const char* errorCode = nullptr;
+    if (!commitNumericEntry(key, &errorCode)) {
+        if (errorCode != nullptr && completedEntryCanBeIncrement()) {
+            completedEntryAvailable_ = true;
+            completedEntryDeferredError_ = true;
+            completedEntryErrorCode_ = errorCode;
+            entryMode_ = EntryMode::None;
+            entryLocked_ = true;
+            updateExecIndicator();
+            Serial.print(F("PENDING target="));
+            Serial.print(targetName(settings_.target));
+            Serial.println(F(" increment_candidate=1 absolute_valid=0"));
+            return;
+        }
+        failEntry(errorCode);
+        return;
+    }
+    completedEntryAvailable_ = true;
+    entryMode_ = EntryMode::None;
+    entryLocked_ = true;
+    recalledPending_ = false;
+    renderAll();
+    Serial.print(F("PENDING target="));
+    Serial.println(targetName(settings_.target));
+}
+
+bool OperatingController::completedEntryCanBeIncrement() const
+{
+    return completedEntryIncrementCompatible_ && completedEntryValue_ > 0u &&
+           completedEntryValue_ <= keyboardIncrementMaximum(settings_.target);
+}
+
+void OperatingController::restoreCompletedEntryBase()
+{
+    pending_ = entryBase_;
+    pendingActive_ = entryHadPending_;
+    entryMode_ = EntryMode::None;
+    entryLocked_ = false;
+    completedEntryAvailable_ = false;
+    completedEntryDeferredError_ = false;
+    completedEntryIncrementCompatible_ = false;
+    completedEntryErrorCode_ = nullptr;
+}
+
+void OperatingController::handleIncrement()
+{
+    const uint8_t index = uint8_t(settings_.target);
+    const uint8_t bit = uint8_t(1u << index);
+    if (completedEntryAvailable_) {
+        if (!completedEntryCanBeIncrement()) {
+            restoreCompletedEntryBase();
+            failEntry(nullptr);
+            return;
+        }
+        const uint32_t value = completedEntryValue_;
+        restoreCompletedEntryBase();
+        keyboardIncrements_[index] = value;
+        keyboardIncrementDefinedMask_ |= bit;
+        incrementViewActive_ = false;
+        renderAll();
+        Serial.print(F("INCREMENT target="));
+        Serial.print(targetName(settings_.target));
+        Serial.print(F(" value="));
+        Serial.println(value);
+        return;
+    }
+    if ((keyboardIncrementDefinedMask_ & bit) == 0u) {
+        failEntry(nullptr);
+        return;
+    }
+    incrementViewActive_ = true;
+    renderIncrementView();
+    updateExecIndicator();
+    Serial.print(F("INCREMENT view="));
+    Serial.println(targetName(settings_.target));
+}
+
+void OperatingController::handleIncrementStep(bool increase)
+{
+    if (sequenceDefined_ && sequenceActive_) {
+        stepSequence(!increase);
+        return;
+    }
+    const uint8_t index = uint8_t(settings_.target);
+    const uint8_t bit = uint8_t(1u << index);
+    if ((keyboardIncrementDefinedMask_ & bit) == 0u) {
+        return;
+    }
+    const int8_t direction = increase ? 1 : -1;
+    const uint32_t step = keyboardIncrements_[index];
+    OutputConfiguration& output = settings_.output;
+    bool changed = false;
+    switch (settings_.target) {
+    case Target::Frequency: {
+        const uint32_t previous = output.frequencyHz;
+        output.frequencyHz = clampUnsignedStep(previous, direction, step,
+                                                kFrequencyMinimumHz,
+                                                kFrequencyMaximumHz);
+        changed = previous != output.frequencyHz;
+        if (pendingActive_) {
+            pending_.frequencyHz = output.frequencyHz;
+        }
+        break;
+    }
+    case Target::Amplitude: {
+        const int16_t previous = output.amplitudeTenthsDbm;
+        output.amplitudeTenthsDbm = clampSignedStep(
+            previous, direction, uint16_t(step),
+            kAmplitudeMinimumTenthsDbm, kAmplitudeMaximumTenthsDbm);
+        changed = previous != output.amplitudeTenthsDbm;
+        if (pendingActive_) {
+            pending_.amplitudeTenthsDbm = output.amplitudeTenthsDbm;
+        }
+        break;
+    }
+    case Target::Fm: {
+        const uint32_t previous = output.fmHz;
+        output.fmHz = clampUnsignedStep(previous, direction, step,
+                                        0u, kFmMaximumHz);
+        output.modulationMode = ModulationMode::Fm;
+        changed = previous != output.fmHz;
+        if (pendingActive_) {
+            pending_.fmHz = output.fmHz;
+            pending_.modulationMode = ModulationMode::Fm;
+        }
+        break;
+    }
+    case Target::Pm: {
+        const uint16_t previous = output.pmHundredthsRd;
+        output.pmHundredthsRd = uint16_t(clampUnsignedStep(
+            previous, direction, step, 0u, kPmMaximumHundredthsRd));
+        output.modulationMode = ModulationMode::Pm;
+        changed = previous != output.pmHundredthsRd;
+        if (pendingActive_) {
+            pending_.pmHundredthsRd = output.pmHundredthsRd;
+            pending_.modulationMode = ModulationMode::Pm;
+        }
+        break;
+    }
+    case Target::Am: {
+        const uint16_t previous = output.amTenthsPercent;
+        output.amTenthsPercent = uint16_t(clampUnsignedStep(
+            previous, direction, step, 0u, kAmMaximumTenthsPercent));
+        output.modulationMode = ModulationMode::Am;
+        changed = previous != output.amTenthsPercent;
+        if (pendingActive_) {
+            pending_.amTenthsPercent = output.amTenthsPercent;
+            pending_.modulationMode = ModulationMode::Am;
+        }
+        break;
+    }
+    }
+    if (!changed) {
+        Serial.println(F("INCREMENT applied=0 reason=LIMIT"));
+        return;
+    }
+    if (incrementViewActive_) {
+        renderIndicators();
+        renderIncrementView();
+        updateExecIndicator();
+    } else {
+        renderAll();
+    }
+    reportInstrumentTransaction(settings_.output);
+    Serial.print(F("INCREMENT applied=1 direction="));
+    Serial.println(increase ? 1 : -1);
+}
+
+void OperatingController::handleExec()
+{
+    if (entryMode_ == EntryMode::Numeric) {
+        failEntry(nullptr);
+        return;
+    }
+    if (!pendingActive_) {
+        return;
+    }
+    settings_.output = pending_;
+    pendingActive_ = false;
+    recalledPending_ = false;
+    completedEntryAvailable_ = false;
+    completedEntryDeferredError_ = false;
+    entryLocked_ = false;
+    renderAll();
+    Serial.println(F("EXEC applied=1"));
+    reportInstrumentTransaction(settings_.output);
+}
+
+void OperatingController::handleClear()
+{
+    pendingActive_ = false;
+    recalledPending_ = false;
+    entryLocked_ = false;
+    entryMode_ = EntryMode::None;
+    entryDigitCount_ = 0u;
+    entryDecimalIndex_ = -1;
+    sequenceDefined_ = false;
+    sequenceActive_ = false;
+    sequenceCursorValid_ = false;
+    overlay_ = Overlay::None;
+    blinkActive_ = false;
+    correctionBlink_ = false;
+    completedEntryAvailable_ = false;
+    completedEntryDeferredError_ = false;
+    completedEntryIncrementCompatible_ = false;
+    keyboardIncrementDefinedMask_ = 0u;
+    incrementViewActive_ = false;
+    frontPanel.turnOff(PanelIndicator::Memory);
+    renderAll();
+    Serial.println(F("ENTRY cleared=1 sequence_cleared=1 increments_cleared=1"));
+}
+
+void OperatingController::handleXToY()
+{
+    if (recalledPending_) {
+        pendingActive_ = false;
+        recalledPending_ = false;
+        entryLocked_ = false;
+        renderAll();
+        Serial.println(F("PENDING recalled_cancelled=1"));
+        return;
+    }
+    if (!pendingActive_) {
+        return;
+    }
+    overlay_ = Overlay::Active;
+    overlayDeadlineMs_ = millis() + kOverlayDurationMs;
+    const bool savedPending = pendingActive_;
+    pendingActive_ = false;
+    renderAll();
+    pendingActive_ = savedPending;
+    Serial.println(F("PENDING active_view=1"));
+}
+
+void OperatingController::beginCommand(EntryMode mode)
+{
+    if (entryMode_ == EntryMode::Numeric) {
+        failEntry(nullptr);
+        return;
+    }
+    entryMode_ = mode;
+    entryDigitCount_ = 0u;
+    entryDecimalIndex_ = -1;
+    entryDigits_[0] = '\0';
+    if (mode == EntryMode::Memory) {
+        frontPanel.turnOn(PanelIndicator::Memory);
+    }
+    if (mode == EntryMode::Sequence) {
+        commandDeadlineMs_ = millis() + kSequenceEntryTimeoutMs;
+    }
+}
+
+void OperatingController::finishMemoryCommand()
+{
+    const uint8_t index = uint8_t((entryDigits_[0] - '0') * 10 +
+                                  (entryDigits_[1] - '0'));
+    entryMode_ = EntryMode::None;
+    frontPanel.turnOff(PanelIndicator::Memory);
+    if (index >= SettingsStore::kMemoryCount ||
+        !settingsStore.saveMemory(index, displayedOutput())) {
+        failEntry(nullptr);
+        return;
+    }
+    entryLocked_ = false;
+    char text[4] = {'P', entryDigits_[0], entryDigits_[1], '\0'};
+    renderMessage(text, kOverlayDurationMs);
+    Serial.print(F("MEMORY saved="));
+    Serial.println(index);
+}
+
+void OperatingController::finishRecallCommand()
+{
+    const uint8_t index = uint8_t((entryDigits_[0] - '0') * 10 +
+                                  (entryDigits_[1] - '0'));
+    entryMode_ = EntryMode::None;
+    if (index >= SettingsStore::kMemoryCount ||
+        !settingsStore.loadMemory(index, &pending_)) {
+        char text[4] = {'E', entryDigits_[0], entryDigits_[1], '\0'};
+        frontPanel.turnOn(PanelIndicator::Error);
+        renderMessage(text, kOverlayDurationMs);
+        Serial.print(F("ERROR memory_empty="));
+        Serial.println(index);
+        return;
+    }
+    pendingActive_ = true;
+    recalledPending_ = true;
+    entryLocked_ = true;
+    char text[4] = {'P', entryDigits_[0], entryDigits_[1], '\0'};
+    renderMessage(text, kOverlayDurationMs);
+    updateExecIndicator();
+    Serial.print(F("MEMORY recalled="));
+    Serial.println(index);
+}
+
+void OperatingController::finishSequenceCommand()
+{
+    const uint8_t start = uint8_t((entryDigits_[0] - '0') * 10 +
+                                  (entryDigits_[1] - '0'));
+    const uint8_t end = uint8_t((entryDigits_[2] - '0') * 10 +
+                                (entryDigits_[3] - '0'));
+    entryMode_ = EntryMode::None;
+    if (start >= SettingsStore::kMemoryCount ||
+        end >= SettingsStore::kMemoryCount || start > end) {
+        failEntry("E-89");
+        return;
+    }
+    sequenceDefined_ = true;
+    sequenceActive_ = true;
+    sequenceCursorValid_ = false;
+    sequenceStart_ = start;
+    sequenceEnd_ = end;
+    renderAll();
+    char text[6] = {entryDigits_[0], entryDigits_[1], '-',
+                    entryDigits_[2], entryDigits_[3], '\0'};
+    renderMessage(text, kOverlayDurationMs);
+    Serial.print(F("SEQUENCE start="));
+    Serial.print(start);
+    Serial.print(F(" end="));
+    Serial.println(end);
+}
+
+void OperatingController::stepSequence(bool restart)
+{
+    if (!sequenceDefined_ || !sequenceActive_) {
+        return;
+    }
+    uint8_t next = sequenceStart_;
+    if (!restart && sequenceCursorValid_) {
+        if (sequenceCursor_ >= sequenceEnd_) {
+            failEntry("E-89");
+            return;
+        }
+        next = uint8_t(sequenceCursor_ + 1u);
+    }
+    OutputConfiguration configuration = {};
+    if (!settingsStore.loadMemory(next, &configuration)) {
+        char text[4] = {'E', char('0' + next / 10u),
+                        char('0' + next % 10u), '\0'};
+        frontPanel.turnOn(PanelIndicator::Error);
+        renderMessage(text, kOverlayDurationMs);
+        Serial.print(F("ERROR memory_empty="));
+        Serial.println(next);
+        return;
+    }
+    settings_.output = configuration;
+    pendingActive_ = false;
+    recalledPending_ = false;
+    entryLocked_ = false;
+    sequenceCursor_ = next;
+    sequenceCursorValid_ = true;
+    renderAll();
+    reportInstrumentTransaction(settings_.output);
+    Serial.print(F("SEQUENCE position="));
+    Serial.println(next);
+}
+
+void OperatingController::ensurePending()
+{
+    if (!pendingActive_) {
+        pending_ = settings_.output;
+        pendingActive_ = true;
+    }
+}
+
+void OperatingController::cancelNumericEntry()
+{
+    if (entryMode_ == EntryMode::Numeric) {
+        pending_ = entryBase_;
+        if (!entryHadPending_) {
+            pendingActive_ = false;
+        }
+    }
+    entryMode_ = EntryMode::None;
+    entryDigitCount_ = 0u;
+    entryDecimalIndex_ = -1;
+    entryDigits_[0] = '\0';
+}
+
+void OperatingController::failEntry(const char* code)
+{
+    cancelNumericEntry();
+    entryLocked_ = false;
+    frontPanel.turnOn(PanelIndicator::Error);
+    Serial.print(F("ERROR code="));
+    if (code == nullptr) {
+        Serial.println(F("UNSPECIFIED"));
+    } else {
+        Serial.println(code);
+    }
+    if (code != nullptr) {
+        renderMessage(code, kOverlayDurationMs);
+    } else {
+        overlay_ = Overlay::Message;
+        overlayDeadlineMs_ = millis() + kOverlayDurationMs;
+        updateExecIndicator();
+    }
+}
+
+bool OperatingController::commitNumericEntry(Key unitKey, const char** errorCode)
+{
+    uint32_t digits = 0u;
+    if (!parseDigits(entryDigits_, entryDigitCount_, &digits)) {
+        *errorCode = nullptr;
+        return false;
+    }
+    const uint8_t fractionalDigits = entryDecimalIndex_ < 0
+        ? 0u
+        : uint8_t(entryDigitCount_ - uint8_t(entryDecimalIndex_));
+    uint32_t value = 0u;
+
+    switch (settings_.target) {
+    case Target::Frequency: {
+        const uint32_t multiplier = unitKey == Key::Mhz ? 1000000u
+            : unitKey == Key::KHz ? 1000u
+            : unitKey == Key::Hz ? 1u : 0u;
+        if (multiplier == 0u ||
+            !scaledInteger(digits, fractionalDigits, multiplier, &value) ||
+            (value % 10u) != 0u) {
+            *errorCode = nullptr;
+            return false;
+        }
+        completedEntryValue_ = value;
+        completedEntryIncrementCompatible_ = true;
+        if (value > kFrequencyMaximumHz) {
+            *errorCode = "E-21";
+            return false;
+        }
+        if (value < kFrequencyMinimumHz) {
+            *errorCode = "E-22";
+            return false;
+        }
+        pending_.frequencyHz = value;
+        break;
+    }
+    case Target::Amplitude:
+        if (unitKey == Key::DBm || unitKey == Key::OneDBm) {
+            if (!scaledInteger(digits, fractionalDigits, 10u, &value) ||
+                value > uint32_t(INT16_MAX)) {
+                *errorCode = nullptr;
+                return false;
+            }
+            const int32_t signedValue = unitKey == Key::DBm
+                ? -int32_t(value) : int32_t(value);
+            completedEntryValue_ = value;
+            completedEntryIncrementCompatible_ = true;
+            if (signedValue > kAmplitudeMaximumTenthsDbm) {
+                *errorCode = "E-41";
+                return false;
+            }
+            if (signedValue < kAmplitudeMinimumTenthsDbm) {
+                *errorCode = "E-42";
+                return false;
+            }
+            pending_.amplitudeTenthsDbm = int16_t(signedValue);
+            pending_.amplitudeDisplayUnit = AmplitudeDisplayUnit::DBm;
+        } else {
+            const float denominator = float(powerOfTen(fractionalDigits));
+            const float unitScale = unitKey == Key::Mhz ? 1.0f
+                : unitKey == Key::KHz ? 0.001f
+                : unitKey == Key::Hz ? 0.000001f : 0.0f;
+            if (unitScale == 0.0f || digits == 0u ||
+                (float(digits) / denominator) > 1999.0f) {
+                *errorCode = nullptr;
+                return false;
+            }
+            const float volts = (float(digits) / denominator) * unitScale;
+            const int32_t tenthsDbm = int32_t(lroundf(
+                200.0f * log10f(volts) + 130.103f));
+            completedEntryValue_ = uint32_t(tenthsDbm < 0
+                ? -tenthsDbm : tenthsDbm);
+            completedEntryIncrementCompatible_ = false;
+            if (tenthsDbm > kAmplitudeMaximumTenthsDbm) {
+                *errorCode = "E-41";
+                return false;
+            }
+            if (tenthsDbm < kAmplitudeMinimumTenthsDbm) {
+                *errorCode = "E-42";
+                return false;
+            }
+            pending_.amplitudeTenthsDbm = int16_t(tenthsDbm);
+            pending_.amplitudeDisplayUnit = unitKey == Key::Mhz
+                ? AmplitudeDisplayUnit::V
+                : unitKey == Key::KHz
+                    ? AmplitudeDisplayUnit::MV
+                    : AmplitudeDisplayUnit::UV;
+        }
+        break;
+    case Target::Fm: {
+        const uint32_t multiplier = unitKey == Key::KHz ? 1000u
+            : unitKey == Key::Hz ? 1u : 0u;
+        if (multiplier == 0u ||
+            !scaledInteger(digits, fractionalDigits, multiplier, &value) ||
+            (value % 10u) != 0u) {
+            *errorCode = "E-77";
+            return false;
+        }
+        completedEntryValue_ = value;
+        completedEntryIncrementCompatible_ = true;
+        if (value > kFmMaximumHz) {
+            *errorCode = "E-71";
+            return false;
+        }
+        pending_.fmHz = value;
+        pending_.modulationMode = ModulationMode::Fm;
+        break;
+    }
+    case Target::Pm:
+        if (unitKey != Key::Hz ||
+            !scaledInteger(digits, fractionalDigits, 100u, &value)) {
+            *errorCode = "E-77";
+            return false;
+        }
+        completedEntryValue_ = value;
+        completedEntryIncrementCompatible_ = true;
+        if (value > kPmMaximumHundredthsRd) {
+            *errorCode = "E-71";
+            return false;
+        }
+        pending_.pmHundredthsRd = uint16_t(value);
+        pending_.modulationMode = ModulationMode::Pm;
+        break;
+    case Target::Am:
+        if (unitKey != Key::Mhz ||
+            !scaledInteger(digits, fractionalDigits, 10u, &value)) {
+            *errorCode = nullptr;
+            return false;
+        }
+        completedEntryValue_ = value;
+        completedEntryIncrementCompatible_ = true;
+        if (value > kAmMaximumTenthsPercent) {
+            *errorCode = "E-61";
+            return false;
+        }
+        pending_.amTenthsPercent = uint16_t(value);
+        pending_.modulationMode = ModulationMode::Am;
+        break;
+    }
+    return true;
+}
+
+void OperatingController::renderEntry()
+{
+    renderDisplays();
+    uint32_t digits = 0u;
+    (void)parseDigits(entryDigits_, entryDigitCount_, &digits);
+    const uint8_t fractionalDigits = entryDecimalIndex_ < 0
+        ? 0u
+        : uint8_t(entryDigitCount_ - uint8_t(entryDecimalIndex_));
+    const uint16_t decimalMask = entryDecimalIndex_ < 0
+        ? 0u : uint16_t(1u) << fractionalDigits;
+
+    switch (settings_.target) {
+    case Target::Frequency: {
+        frontPanel.setFrequencyHz(digits);
+        const uint16_t visible = entryDigitCount_ >= 10u
+            ? 0x03FFu : uint16_t((uint16_t(1u) << entryDigitCount_) - 1u);
+        frontPanel.setDisplayBlankMask(DisplayField::Frequency,
+                                       uint16_t(0x03FFu & ~visible));
+        frontPanel.setDisplayDecimalMask(DisplayField::Frequency, decimalMask);
+        break;
+    }
+    case Target::Amplitude: {
+        const OutputConfiguration& configuration = displayedOutput();
+        AmplitudeUnitLed unit = AmplitudeUnitLed::DBm;
+        if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::V) {
+            unit = AmplitudeUnitLed::V;
+        } else if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::MV) {
+            unit = AmplitudeUnitLed::MV;
+        } else if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::UV) {
+            unit = AmplitudeUnitLed::UV;
+        }
+        frontPanel.setAmplitudeValue(int32_t(digits), unit, false);
+        frontPanel.setDisplayDecimalMask(DisplayField::Amplitude,
+                                         uint8_t(decimalMask & 0x07u));
+        const uint8_t visible = entryDigitCount_ >= 3u
+            ? 0x07u : uint8_t((uint8_t(1u) << entryDigitCount_) - 1u);
+        frontPanel.setDisplayBlankMask(DisplayField::Amplitude,
+                                       uint8_t(0x07u & ~visible));
+        break;
+    }
+    case Target::Fm:
+    case Target::Pm:
+    case Target::Am: {
+        const ModulationUnitLed unit = settings_.target == Target::Fm
+            ? ModulationUnitLed::KHz
+            : settings_.target == Target::Pm
+                ? ModulationUnitLed::Rd : ModulationUnitLed::Percent;
+        frontPanel.setModulationDisplay(uint16_t(digits % 1000u), unit,
+                                        uint8_t(decimalMask & 0x07u),
+                                        digits >= 1000u);
+        const uint8_t visible = entryDigitCount_ >= 3u
+            ? 0x07u : uint8_t((uint8_t(1u) << entryDigitCount_) - 1u);
+        frontPanel.setDisplayBlankMask(DisplayField::Modulation,
+                                       uint8_t(0x07u & ~visible));
+        break;
+    }
+    }
+    frontPanel.refreshDisplays();
+}
+
+void OperatingController::renderIncrementView()
+{
+    renderDisplays();
+    const uint32_t value = keyboardIncrements_[uint8_t(settings_.target)];
+    switch (settings_.target) {
+    case Target::Frequency:
+        frontPanel.setFrequencyHz(value);
+        frontPanel.setDisplayBlankMask(DisplayField::Frequency,
+                                       frequencyLeadingBlankMask(value));
+        frontPanel.setDisplayDecimalMask(DisplayField::Frequency,
+                                         frequencySeparatorMask(value));
+        break;
+    case Target::Amplitude:
+        frontPanel.setDisplayBlankMask(DisplayField::Amplitude, 0u);
+        frontPanel.setAmplitudeIncrementDisplay(uint16_t(value));
+        break;
+    case Target::Fm: {
+        const DisplaySpec spec = fmDisplaySpec(value);
+        frontPanel.setDisplayBlankMask(DisplayField::Modulation, 0u);
+        frontPanel.setModulationDisplay(spec.digits, ModulationUnitLed::KHz,
+                                        spec.decimalMask, spec.leadingOne);
+        break;
+    }
+    case Target::Pm: {
+        const DisplaySpec spec = pmDisplaySpec(uint16_t(value));
+        frontPanel.setDisplayBlankMask(DisplayField::Modulation, 0u);
+        frontPanel.setModulationDisplay(spec.digits, ModulationUnitLed::Rd,
+                                        spec.decimalMask, spec.leadingOne);
+        break;
+    }
+    case Target::Am:
+        frontPanel.setDisplayBlankMask(DisplayField::Modulation, 0u);
+        frontPanel.setModulationDisplay(uint16_t(value),
+                                        ModulationUnitLed::Percent,
+                                        0x02u, false);
+        break;
+    }
+    frontPanel.refreshDisplays();
+}
+
+void OperatingController::renderMessage(const char* text, uint32_t durationMs)
+{
+    frontPanel.setFrequencyText(text);
+    frontPanel.refreshDisplays();
+    overlay_ = Overlay::Message;
+    overlayDeadlineMs_ = millis() + durationMs;
+}
+
+void OperatingController::updateExecIndicator()
+{
+    const ExecIndicator mode = entryMode_ == EntryMode::Numeric
+        ? ExecIndicator::Fixed
+        : pendingActive_ ? ExecIndicator::Blink : ExecIndicator::Off;
+    frontPanel.setExecIndicator(mode);
+}
+
+void OperatingController::reportInstrumentTransaction(
+    const OutputConfiguration& configuration) const
+{
+    Serial.println(F("INSTR BEGIN"));
+    Serial.print(F("INSTR frequency_hz="));
+    Serial.println(configuration.frequencyHz);
+    Serial.print(F("INSTR amplitude_tenths_dbm="));
+    Serial.println(configuration.amplitudeTenthsDbm);
+    Serial.print(F("INSTR modulation_mode="));
+    switch (configuration.modulationMode) {
+    case ModulationMode::Fm: Serial.println(F("FM")); break;
+    case ModulationMode::Pm: Serial.println(F("PM")); break;
+    case ModulationMode::Am: Serial.println(F("AM")); break;
+    }
+    Serial.print(F("INSTR fm_hz="));
+    Serial.println(configuration.fmHz);
+    Serial.print(F("INSTR pm_hundredths_rd="));
+    Serial.println(configuration.pmHundredthsRd);
+    Serial.print(F("INSTR am_tenths_percent="));
+    Serial.println(configuration.amTenthsPercent);
+    Serial.print(F("INSTR modulation_source="));
+    Serial.println(sourceName(configuration.modulationSource));
+    Serial.print(F("INSTR rf_off="));
+    Serial.println(configuration.rfOff ? 1 : 0);
+    Serial.println(F("INSTR END"));
+}
+
 void OperatingController::handleEncoder(const front_panel::EncoderEvent& event)
 {
     if (settings_.wheelInhibited) {
         Serial.println(F("VALUE applied=0 reason=VALID"));
         return;
     }
+    if (entryMode_ == EntryMode::Numeric) {
+        Serial.println(F("VALUE applied=0 reason=ENTRY"));
+        return;
+    }
 
+    OutputConfiguration& output = editableOutput();
     bool changed = false;
     switch (settings_.wheelTarget) {
     case Target::Frequency: {
-        const uint32_t previous = settings_.frequencyHz;
-        settings_.frequencyHz = clampUnsignedStep(
-            previous, event.step, currentStep(),
-            kFrequencyMinimumHz, kFrequencyMaximumHz);
-        changed = previous != settings_.frequencyHz;
+        const uint32_t previous = output.frequencyHz;
+        output.frequencyHz = clampUnsignedStep(previous, event.step, currentStep(),
+                                                kFrequencyMinimumHz,
+                                                kFrequencyMaximumHz);
+        changed = previous != output.frequencyHz;
         break;
     }
     case Target::Amplitude: {
-        const int16_t previous = settings_.amplitudeTenthsDbm;
-        settings_.amplitudeTenthsDbm = clampSignedStep(
+        const int16_t previous = output.amplitudeTenthsDbm;
+        output.amplitudeTenthsDbm = clampSignedStep(
             previous, event.step, uint16_t(currentStep()),
             kAmplitudeMinimumTenthsDbm, kAmplitudeMaximumTenthsDbm);
-        changed = previous != settings_.amplitudeTenthsDbm;
+        changed = previous != output.amplitudeTenthsDbm;
         break;
     }
     case Target::Fm: {
-        const uint32_t previous = settings_.fmHz;
-        settings_.fmHz = clampUnsignedStep(previous, event.step, currentStep(),
-                                            0u, kFmMaximumHz);
-        changed = previous != settings_.fmHz;
+        const uint32_t previous = output.fmHz;
+        output.fmHz = clampUnsignedStep(previous, event.step, currentStep(),
+                                        0u, kFmMaximumHz);
+        output.modulationMode = ModulationMode::Fm;
+        changed = previous != output.fmHz;
         break;
     }
     case Target::Pm: {
-        const uint16_t previous = settings_.pmHundredthsRd;
-        settings_.pmHundredthsRd = uint16_t(clampUnsignedStep(
+        const uint16_t previous = output.pmHundredthsRd;
+        output.pmHundredthsRd = uint16_t(clampUnsignedStep(
             previous, event.step, currentStep(), 0u, kPmMaximumHundredthsRd));
-        changed = previous != settings_.pmHundredthsRd;
+        output.modulationMode = ModulationMode::Pm;
+        changed = previous != output.pmHundredthsRd;
         break;
     }
     case Target::Am: {
-        const uint16_t previous = settings_.amTenthsPercent;
-        settings_.amTenthsPercent = uint16_t(clampUnsignedStep(
+        const uint16_t previous = output.amTenthsPercent;
+        output.amTenthsPercent = uint16_t(clampUnsignedStep(
             previous, event.step, currentStep(), 0u, kAmMaximumTenthsPercent));
-        changed = previous != settings_.amTenthsPercent;
+        output.modulationMode = ModulationMode::Am;
+        changed = previous != output.amTenthsPercent;
         break;
     }
     }
-
     if (!changed) {
         Serial.println(F("VALUE applied=0 reason=LIMIT"));
         return;
     }
-
-    renderDisplays();
-    reportValue(settings_.wheelTarget, true);
+    renderAll();
+    reportValue(settings_.wheelTarget, false);
+    if (!pendingActive_) {
+        reportInstrumentTransaction(settings_.output);
+    }
 }
 
 void OperatingController::tick(uint32_t nowMs)
 {
+    if (entryMode_ == EntryMode::Sequence &&
+        timeReached(nowMs, commandDeadlineMs_)) {
+        entryMode_ = EntryMode::None;
+        entryDigitCount_ = 0u;
+        if (sequenceDefined_) {
+            sequenceActive_ = true;
+        }
+        renderAll();
+    }
+    if (overlay_ != Overlay::None && timeReached(nowMs, overlayDeadlineMs_)) {
+        overlay_ = Overlay::None;
+        renderAll();
+    }
     if (!blinkActive_ || (nowMs - previousBlinkMs_) < kBlinkPhaseMs) {
         return;
     }
@@ -338,6 +1333,7 @@ void OperatingController::tick(uint32_t nowMs)
     if (blinkPhasesRemaining_ == 0u) {
         blinkActive_ = false;
         blinkBlank_ = false;
+        correctionBlink_ = false;
     }
     applyBlinkMask(blinkBlank_);
 }
@@ -349,36 +1345,31 @@ const Settings& OperatingController::settings() const
 
 void OperatingController::selectTarget(Target target)
 {
-    settings_.target = target;
-    if (target == Target::Fm) {
-        settings_.modulationMode = ModulationMode::Fm;
-    } else if (target == Target::Pm) {
-        settings_.modulationMode = ModulationMode::Pm;
-    } else if (target == Target::Am) {
-        settings_.modulationMode = ModulationMode::Am;
+    if (entryMode_ == EntryMode::Numeric) {
+        failEntry(nullptr);
+        return;
     }
+    settings_.target = target;
+    entryLocked_ = false;
+    sequenceActive_ = false;
+    sequenceCursorValid_ = false;
     blinkActive_ = false;
+    correctionBlink_ = false;
     renderAll();
     reportTarget();
-    if (target == Target::Fm || target == Target::Pm || target == Target::Am) {
-        Serial.print(F("INSTR modulation_mode="));
-        Serial.println(targetName(target));
-        reportValue(target, true);
-    }
 }
 
 void OperatingController::selectSource(ModulationSource source)
 {
-    settings_.modulationSource = source;
-    switch (source) {
-    case ModulationSource::Cw: frontPanel.turnOn(PanelIndicator::Cw); break;
-    case ModulationSource::Hz400: frontPanel.turnOn(PanelIndicator::Hz400); break;
-    case ModulationSource::KHz1: frontPanel.turnOn(PanelIndicator::KHz1); break;
-    case ModulationSource::External: frontPanel.turnOn(PanelIndicator::External); break;
+    if (entryMode_ == EntryMode::Numeric) {
+        failEntry(nullptr);
+        return;
     }
-    Serial.print(F("SOURCE value="));
-    Serial.println(sourceName(source));
-    Serial.print(F("INSTR modulation_source="));
+    ensurePending();
+    pending_.modulationSource = source;
+    recalledPending_ = false;
+    renderAll();
+    Serial.print(F("PENDING source="));
     Serial.println(sourceName(source));
 }
 
@@ -404,6 +1395,7 @@ void OperatingController::changeStep(bool multiply)
 
 void OperatingController::startStepBlink()
 {
+    correctionBlink_ = false;
     blinkActive_ = true;
     blinkBlank_ = true;
     blinkPhasesRemaining_ = kBlinkPhaseCount;
@@ -413,17 +1405,52 @@ void OperatingController::startStepBlink()
 
 void OperatingController::applyBlinkMask(bool blank)
 {
-    frontPanel.setDisplayBlankMask(DisplayField::Frequency, 0u);
-    frontPanel.setDisplayBlankMask(DisplayField::Modulation, 0u);
-    frontPanel.setDisplayBlankMask(DisplayField::Amplitude, 0u);
-    if (blank) {
-        const uint8_t position = displayStepPosition();
-        const DisplayField field = targetDisplayField();
-        const uint16_t mask = (position >= 3u && field == DisplayField::Modulation)
-            ? 0x07u
-            : uint16_t(1u) << position;
-        frontPanel.setDisplayBlankMask(field, mask);
+    if (overlay_ != Overlay::None) {
+        frontPanel.refreshDisplays();
+        return;
     }
+
+    uint16_t frequencyMask =
+        frequencyLeadingBlankMask(displayedOutput().frequencyHz);
+    uint8_t modulationMask = 0u;
+    uint8_t amplitudeMask = 0u;
+    if (entryMode_ == EntryMode::Numeric) {
+        const uint8_t visibleDigits = entryDigitCount_;
+        if (settings_.target == Target::Frequency) {
+            const uint16_t visible = visibleDigits >= 10u
+                ? 0x03FFu
+                : uint16_t((uint16_t(1u) << visibleDigits) - 1u);
+            frequencyMask = uint16_t(0x03FFu & ~visible);
+        } else if (settings_.target == Target::Amplitude) {
+            const uint8_t visible = visibleDigits >= 3u
+                ? 0x07u
+                : uint8_t((uint8_t(1u) << visibleDigits) - 1u);
+            amplitudeMask = uint8_t(0x07u & ~visible);
+        } else {
+            const uint8_t visible = visibleDigits >= 3u
+                ? 0x07u
+                : uint8_t((uint8_t(1u) << visibleDigits) - 1u);
+            modulationMask = uint8_t(0x07u & ~visible);
+        }
+    }
+    if (blank) {
+        const uint8_t position = correctionBlink_
+            ? correctionBlinkPosition_ : displayStepPosition();
+        const DisplayField field = correctionBlink_
+            ? correctionBlinkField_ : targetDisplayField();
+        const uint16_t mask = (position >= 3u && field == DisplayField::Modulation)
+            ? 0x07u : uint16_t(1u) << position;
+        if (field == DisplayField::Frequency) {
+            frequencyMask = uint16_t(frequencyMask | mask);
+        } else if (field == DisplayField::Modulation) {
+            modulationMask = uint8_t(modulationMask | uint8_t(mask));
+        } else {
+            amplitudeMask = uint8_t(amplitudeMask | uint8_t(mask));
+        }
+    }
+    frontPanel.setDisplayBlankMask(DisplayField::Frequency, frequencyMask);
+    frontPanel.setDisplayBlankMask(DisplayField::Modulation, modulationMask);
+    frontPanel.setDisplayBlankMask(DisplayField::Amplitude, amplitudeMask);
     frontPanel.refreshDisplays();
 }
 
@@ -431,11 +1458,11 @@ void OperatingController::renderAll()
 {
     renderIndicators();
     renderDisplays();
+    updateExecIndicator();
 }
 
 void OperatingController::renderIndicators()
 {
-    frontPanel.clearIndicators();
     switch (settings_.target) {
     case Target::Frequency: frontPanel.turnOn(PanelIndicator::Rf); break;
     case Target::Amplitude: frontPanel.turnOn(PanelIndicator::Amplitude); break;
@@ -443,61 +1470,110 @@ void OperatingController::renderIndicators()
     case Target::Pm: frontPanel.turnOn(PanelIndicator::Pm); break;
     case Target::Am: frontPanel.turnOn(PanelIndicator::Am); break;
     }
-    frontPanel.turnOn(PanelIndicator::DBm);
-    switch (settings_.modulationMode) {
-    case ModulationMode::Fm: frontPanel.turnOn(PanelIndicator::ModKHz); break;
-    case ModulationMode::Pm: frontPanel.turnOn(PanelIndicator::ModRd); break;
-    case ModulationMode::Am: frontPanel.turnOn(PanelIndicator::ModPercent); break;
+    const OutputConfiguration& configuration = displayedOutput();
+    switch (configuration.amplitudeDisplayUnit) {
+    case AmplitudeDisplayUnit::DBm: frontPanel.turnOn(PanelIndicator::DBm); break;
+    case AmplitudeDisplayUnit::V: frontPanel.turnOn(PanelIndicator::Volt); break;
+    case AmplitudeDisplayUnit::MV: frontPanel.turnOn(PanelIndicator::MilliVolt); break;
+    case AmplitudeDisplayUnit::UV: frontPanel.turnOn(PanelIndicator::MicroVolt); break;
     }
-    switch (settings_.modulationSource) {
+    const Target modulationTarget = settings_.target == Target::Fm ||
+                                    settings_.target == Target::Pm ||
+                                    settings_.target == Target::Am
+        ? settings_.target
+        : configuration.modulationMode == ModulationMode::Fm ? Target::Fm
+            : configuration.modulationMode == ModulationMode::Pm ? Target::Pm
+            : Target::Am;
+    if (modulationTarget == Target::Fm) {
+        frontPanel.turnOn(PanelIndicator::ModKHz);
+    } else if (modulationTarget == Target::Pm) {
+        frontPanel.turnOn(PanelIndicator::ModRd);
+    } else {
+        frontPanel.turnOn(PanelIndicator::ModPercent);
+    }
+    switch (configuration.modulationSource) {
     case ModulationSource::Cw: frontPanel.turnOn(PanelIndicator::Cw); break;
     case ModulationSource::Hz400: frontPanel.turnOn(PanelIndicator::Hz400); break;
     case ModulationSource::KHz1: frontPanel.turnOn(PanelIndicator::KHz1); break;
     case ModulationSource::External: frontPanel.turnOn(PanelIndicator::External); break;
     }
+    frontPanel.turnOn(PanelIndicator::Normal);
     frontPanel.setIndicator(PanelIndicator::ManualValidation,
                             !settings_.wheelInhibited &&
                             settings_.target == settings_.wheelTarget);
-    frontPanel.setIndicator(PanelIndicator::RfInhibit, settings_.rfOff);
+    frontPanel.setIndicator(PanelIndicator::RfInhibit, settings_.output.rfOff);
+    frontPanel.setIndicator(PanelIndicator::Sequence, sequenceActive_);
 }
 
 void OperatingController::renderDisplays()
 {
-    frontPanel.setDisplayBlankMask(DisplayField::Frequency, 0u);
+    const OutputConfiguration& configuration = displayedOutput();
+    frontPanel.setDisplayBlankMask(
+        DisplayField::Frequency,
+        frequencyLeadingBlankMask(configuration.frequencyHz));
     frontPanel.setDisplayBlankMask(DisplayField::Modulation, 0u);
     frontPanel.setDisplayBlankMask(DisplayField::Amplitude, 0u);
-    frontPanel.setFrequencyHz(settings_.frequencyHz);
-    const uint16_t amplitudeMagnitude = settings_.amplitudeTenthsDbm < 0
-        ? uint16_t(-int32_t(settings_.amplitudeTenthsDbm))
-        : uint16_t(settings_.amplitudeTenthsDbm);
-    frontPanel.setAmplitudeDisplay(settings_.amplitudeTenthsDbm, 0x02u,
-                                   amplitudeMagnitude >= 1000u);
-    renderModulationDisplay();
+    frontPanel.setDisplayDecimalMask(
+        DisplayField::Frequency,
+        frequencySeparatorMask(configuration.frequencyHz));
+    frontPanel.setFrequencyHz(configuration.frequencyHz);
+
+    if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::DBm) {
+        const uint16_t magnitude = configuration.amplitudeTenthsDbm < 0
+            ? uint16_t(-int32_t(configuration.amplitudeTenthsDbm))
+            : uint16_t(configuration.amplitudeTenthsDbm);
+        frontPanel.setAmplitudeDisplay(configuration.amplitudeTenthsDbm, 0x02u,
+                                       magnitude >= 1000u);
+    } else {
+        const float volts = powf(10.0f,
+            (float(configuration.amplitudeTenthsDbm) / 10.0f - 13.0103f) / 20.0f);
+        AmplitudeUnitLed unit = AmplitudeUnitLed::V;
+        int32_t displayed = int32_t(lroundf(volts * 1000.0f));
+        bool decimalPoint = true;
+        if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::MV) {
+            unit = AmplitudeUnitLed::MV;
+            displayed = int32_t(lroundf(volts * 1000.0f));
+            decimalPoint = false;
+        } else if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::UV) {
+            unit = AmplitudeUnitLed::UV;
+            displayed = int32_t(lroundf(volts * 1000000.0f));
+            decimalPoint = false;
+        }
+        if (displayed > 1999) {
+            unit = unit == AmplitudeUnitLed::UV ? AmplitudeUnitLed::MV
+                                                : AmplitudeUnitLed::V;
+            displayed = int32_t(lroundf(volts * (unit == AmplitudeUnitLed::V
+                ? 1000.0f : 1000.0f)));
+            decimalPoint = unit == AmplitudeUnitLed::V;
+        }
+        frontPanel.setAmplitudeValue(displayed, unit, decimalPoint);
+    }
+    renderModulationDisplay(configuration);
     frontPanel.refreshDisplays();
 }
 
-void OperatingController::renderModulationDisplay()
+void OperatingController::renderModulationDisplay(
+    const OutputConfiguration& configuration)
 {
-    switch (settings_.modulationMode) {
-    case ModulationMode::Am:
-        frontPanel.setModulationDisplay(settings_.amTenthsPercent,
+    const Target target = settings_.target == Target::Fm ||
+                          settings_.target == Target::Pm ||
+                          settings_.target == Target::Am
+        ? settings_.target
+        : configuration.modulationMode == ModulationMode::Fm ? Target::Fm
+            : configuration.modulationMode == ModulationMode::Pm ? Target::Pm
+            : Target::Am;
+    if (target == Target::Am) {
+        frontPanel.setModulationDisplay(configuration.amTenthsPercent,
                                         ModulationUnitLed::Percent,
                                         0x02u, false);
-        break;
-    case ModulationMode::Pm:
-        {
-            const DisplaySpec spec = pmDisplaySpec(settings_.pmHundredthsRd);
-            frontPanel.setModulationDisplay(spec.digits, ModulationUnitLed::Rd,
-                                            spec.decimalMask, spec.leadingOne);
-        }
-        break;
-    case ModulationMode::Fm:
-        {
-            const DisplaySpec spec = fmDisplaySpec(settings_.fmHz);
-            frontPanel.setModulationDisplay(spec.digits, ModulationUnitLed::KHz,
-                                            spec.decimalMask, spec.leadingOne);
-        }
-        break;
+    } else if (target == Target::Pm) {
+        const DisplaySpec spec = pmDisplaySpec(configuration.pmHundredthsRd);
+        frontPanel.setModulationDisplay(spec.digits, ModulationUnitLed::Rd,
+                                        spec.decimalMask, spec.leadingOne);
+    } else {
+        const DisplaySpec spec = fmDisplaySpec(configuration.fmHz);
+        frontPanel.setModulationDisplay(spec.digits, ModulationUnitLed::KHz,
+                                        spec.decimalMask, spec.leadingOne);
     }
 }
 
@@ -517,36 +1593,38 @@ void OperatingController::reportStep() const
 
 void OperatingController::reportValue(Target target, bool instrumentEvent) const
 {
+    const OutputConfiguration& output = displayedOutput();
     Serial.print(F("VALUE target="));
     Serial.print(targetName(target));
     Serial.print(F(" value="));
     switch (target) {
-    case Target::Frequency: Serial.println(settings_.frequencyHz); break;
-    case Target::Amplitude: Serial.println(settings_.amplitudeTenthsDbm); break;
-    case Target::Fm: Serial.println(settings_.fmHz); break;
-    case Target::Pm: Serial.println(settings_.pmHundredthsRd); break;
-    case Target::Am: Serial.println(settings_.amTenthsPercent); break;
+    case Target::Frequency: Serial.println(output.frequencyHz); break;
+    case Target::Amplitude: Serial.println(output.amplitudeTenthsDbm); break;
+    case Target::Fm: Serial.println(output.fmHz); break;
+    case Target::Pm: Serial.println(output.pmHundredthsRd); break;
+    case Target::Am: Serial.println(output.amTenthsPercent); break;
     }
     if (instrumentEvent) {
         Serial.print(F("INSTR parameter="));
         Serial.print(targetName(target));
         Serial.print(F(" value="));
         switch (target) {
-        case Target::Frequency: Serial.println(settings_.frequencyHz); break;
-        case Target::Amplitude: Serial.println(settings_.amplitudeTenthsDbm); break;
-        case Target::Fm: Serial.println(settings_.fmHz); break;
-        case Target::Pm: Serial.println(settings_.pmHundredthsRd); break;
-        case Target::Am: Serial.println(settings_.amTenthsPercent); break;
+        case Target::Frequency: Serial.println(output.frequencyHz); break;
+        case Target::Amplitude: Serial.println(output.amplitudeTenthsDbm); break;
+        case Target::Fm: Serial.println(output.fmHz); break;
+        case Target::Pm: Serial.println(output.pmHundredthsRd); break;
+        case Target::Am: Serial.println(output.amTenthsPercent); break;
         }
     }
 }
 
 uint32_t OperatingController::currentStep() const
 {
+    const OutputConfiguration& output = displayedOutput();
     switch (settings_.wheelTarget) {
     case Target::Frequency: return kFrequencySteps[settings_.frequencyStepIndex];
     case Target::Amplitude: return kAmplitudeSteps[settings_.amplitudeStepIndex];
-    case Target::Fm: return effectiveFmStep(settings_.fmHz, settings_.fmStepIndex);
+    case Target::Fm: return effectiveFmStep(output.fmHz, settings_.fmStepIndex);
     case Target::Pm: return kPmSteps[settings_.pmStepIndex];
     case Target::Am: return kAmSteps[settings_.amStepIndex];
     }
@@ -579,15 +1657,14 @@ uint8_t OperatingController::currentStepMaximumIndex() const
 
 uint8_t OperatingController::displayStepPosition() const
 {
+    const OutputConfiguration& output = displayedOutput();
     switch (settings_.wheelTarget) {
-    case Target::Frequency:
-        return uint8_t(currentStepIndex() + 1u);
+    case Target::Frequency: return uint8_t(currentStepIndex() + 1u);
     case Target::Amplitude:
     case Target::Am:
-    case Target::Pm:
-        return currentStepIndex();
+    case Target::Pm: return currentStepIndex();
     case Target::Fm:
-        return decimalPosition(currentStep(), settings_.fmHz < 20000u ? 10u : 100u);
+        return decimalPosition(currentStep(), output.fmHz < 20000u ? 10u : 100u);
     }
     return 0u;
 }
@@ -599,10 +1676,19 @@ DisplayField OperatingController::targetDisplayField() const
     case Target::Amplitude: return DisplayField::Amplitude;
     case Target::Fm:
     case Target::Pm:
-    case Target::Am:
-        return DisplayField::Modulation;
+    case Target::Am: return DisplayField::Modulation;
     }
     return DisplayField::Frequency;
+}
+
+OutputConfiguration& OperatingController::editableOutput()
+{
+    return pendingActive_ ? pending_ : settings_.output;
+}
+
+const OutputConfiguration& OperatingController::displayedOutput() const
+{
+    return pendingActive_ ? pending_ : settings_.output;
 }
 
 }  // namespace control

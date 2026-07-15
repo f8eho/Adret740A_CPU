@@ -42,6 +42,9 @@ static_assert(kIcm7218CodeBFrameCommand == 0x90u,
               "Unexpected ICM7218A Code B frame command");
 static_assert(codeBDigit('0') == 0x80u && codeBDigit('9') == 0x89u,
               "Unexpected ICM7218A Code B digit encoding");
+static_assert(codeBDigit('P') == 0x8Eu && codeBDigit('E') == 0x8Bu &&
+              codeBDigit('-') == 0x8Au,
+              "Unexpected ICM7218A Code B status character encoding");
 static_assert(decoratedCodeBDigit('5', true, false) == 0x05u &&
               decoratedCodeBDigit('5', false, true) == 0x8Fu,
               "Unexpected ICM7218A decimal point or blank encoding");
@@ -71,15 +74,15 @@ static_assert(makeSn2Byte(FunctionLed::Amplitude,
               "Unexpected SN2 AMP/uV/CW byte");
 static_assert(makeSn3Byte(StatusLed::Normal,
                           ModulationUnitLed::Percent,
-                          MemoryLedMode::D25Blink,
+                          MemoryLedMode::Blink,
                           true,
-                          true) == 0xFCu,
+                          true) == 0xF0u,
               "Unexpected SN3 all-selected byte");
 static_assert(makeSn3Byte(StatusLed::None,
                           ModulationUnitLed::None,
-                          MemoryLedMode::None,
+                          MemoryLedMode::Off,
                           false,
-                          false) == 0x0Bu,
+                          false) == 0x07u,
               "Unexpected SN3 cleared byte");
 static_assert(keyboardX(0x28u) == 0u && keyboardY(0x28u) == 5u,
               "Unexpected AMPL keyboard coordinates");
@@ -163,7 +166,7 @@ void FrontPanel::reset()
     modulationSource_ = ModulationSourceLed::Cw;
     statusLed_ = StatusLed::Normal;
     modulationUnit_ = ModulationUnitLed::None;
-    memoryMode_ = MemoryLedMode::None;
+    memoryMode_ = MemoryLedMode::Off;
     memory_ = false;
     sequence_ = false;
     firstCharFlags_ = kPowerOneBlank;
@@ -409,24 +412,19 @@ bool FrontPanel::isOn(PanelIndicator indicator) const
     return false;
 }
 
-void FrontPanel::clearIndicators()
-{
-    functionLed_ = FunctionLed::None0;
-    amplitudeUnit_ = AmplitudeUnitLed::None6;
-    modulationSource_ = ModulationSourceLed::Cw;
-    statusLed_ = StatusLed::None;
-    modulationUnit_ = ModulationUnitLed::None;
-    memoryMode_ = MemoryLedMode::None;
-    memory_ = false;
-    sequence_ = false;
-    firstCharFlags_ = kPowerOneBlank;
-    decimalPointFlags_ = 0;
-    flushOutputs();
-}
-
 void FrontPanel::setMemoryMode(MemoryLedMode mode)
 {
     memoryMode_ = mode;
+    flushOutputs();
+}
+
+void FrontPanel::setExecIndicator(ExecIndicator mode)
+{
+    switch (mode) {
+    case ExecIndicator::Off: memoryMode_ = MemoryLedMode::Off; break;
+    case ExecIndicator::Fixed: memoryMode_ = MemoryLedMode::Fixed; break;
+    case ExecIndicator::Blink: memoryMode_ = MemoryLedMode::Blink; break;
+    }
     flushOutputs();
 }
 
@@ -441,6 +439,33 @@ void FrontPanel::setFrequencyHz(uint32_t frequencyHz)
     displayBuffers_.frequencySn11[0] = displayBuffers_.frequencyHz[8];
     displayBuffers_.frequencySn11[1] = displayBuffers_.frequencyHz[9];
     displayBuffers_.frequencySn11[2] = '\0';
+}
+
+void FrontPanel::setFrequencyText(const char* text)
+{
+    uint8_t length = 0;
+    if (text != nullptr) {
+        while (text[length] != '\0' && length < 10u) {
+            ++length;
+        }
+    }
+    const uint8_t padding = uint8_t(10u - length);
+    for (uint8_t i = 0; i < padding; ++i) {
+        displayBuffers_.frequencyHz[i] = ' ';
+    }
+    for (uint8_t i = 0; i < length; ++i) {
+        displayBuffers_.frequencyHz[uint8_t(padding + i)] = text[i];
+    }
+    displayBuffers_.frequencyHz[10] = '\0';
+    for (uint8_t i = 0; i < 8u; ++i) {
+        displayBuffers_.frequencySn10[i] = displayBuffers_.frequencyHz[i];
+    }
+    displayBuffers_.frequencySn10[8] = '\0';
+    displayBuffers_.frequencySn11[0] = displayBuffers_.frequencyHz[8];
+    displayBuffers_.frequencySn11[1] = displayBuffers_.frequencyHz[9];
+    displayBuffers_.frequencySn11[2] = '\0';
+    frequencyIcmDecimalMask_ = 0u;
+    frequencyBlankMask_ = 0u;
 }
 
 void FrontPanel::setModulationValue(uint32_t value,
@@ -518,6 +543,19 @@ void FrontPanel::setAmplitudeDisplay(int16_t tenthsDbm,
         firstCharFlags_ |= kPowerMinus;
     } else {
         firstCharFlags_ |= kPowerPlus;
+    }
+    flushOutputs();
+}
+
+void FrontPanel::setAmplitudeIncrementDisplay(uint16_t tenthsDb)
+{
+    formatUnsigned(tenthsDb, displayBuffers_.amplitude, kAmplitudeTextWidth);
+    amplitudeUnit_ = AmplitudeUnitLed::DB;
+    amplitudeIcmDecimalMask_ = 0x02u;
+    decimalPointFlags_ &= uint8_t(~kAmplitudeDecimalPoint);
+    firstCharFlags_ &= uint8_t(~(kPowerOneBlank | kPowerMinus | kPowerPlus));
+    if (tenthsDb < 1000u) {
+        firstCharFlags_ |= kPowerOneBlank;
     }
     flushOutputs();
 }
