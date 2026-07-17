@@ -5,7 +5,7 @@ Elle décrit les codes lus dans le registre d'entrée `SN5`.
 
 | Y \ X | X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Y5 | AMPL | — | — | — | — | — | — | ADR17 |
+| Y5 | AMPL | — | — | — | — | — | — | ADR RTL |
 | Y4 | RF | SPL | 0 | 5 | MHz | CW | ÷10 | MEM |
 | Y3 | FM | X→Y | 1 | 6 | kHz | EXT | VALID MAN | SEQ |
 | Y2 | PM | ← | 2 | 7 | Hz | 1kHz | ×10 | RAPPEL |
@@ -34,7 +34,7 @@ aucune touche connue. Le firmware les classe comme `UNKNOWN` puis les ignore.
 
 ## Libellés série
 
-Le diagnostic envoie une ligne par touche reconnue. Les codes inconnus sont
+Le mode de diagnostic peut envoyer une ligne par touche reconnue. Les codes inconnus sont
 ignorés et deux événements identiques reçus à moins de 30 ms d'intervalle sont
 filtrés comme rebonds :
 

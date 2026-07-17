@@ -56,9 +56,15 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   then leaves the remaining three digits untimed.
 - Sequence UP/DOWN navigation saturates silently at its end/start positions
   without re-executing the boundary memory or raising `E-89`.
-- PlatformIO normal build succeeds: RAM 471 bytes / 8192 bytes, Flash 19664
-  bytes / 253952 bytes. Serial debug build succeeds with 750 bytes RAM and
-  24468 bytes Flash.
+- Allocation-free Serial0 remote protocol with the historical `F`, `A`, `RF`,
+  modulation, memory and sequence mnemonics, atomic deferred transactions,
+  local/remote lockout states and status/error responses.
+- `Adr RTL` on SN12.X7 / SN14.Y5 returns from `REMS` to local, is ignored in
+  `RWLS`, and has no address-display action in local mode.
+- Serial0 command execution has been bench-validated with PuTTY using both
+  the historical `?` terminator and `CR/LF` line endings.
+- Host parser/framing tests pass. The single PlatformIO firmware succeeds with
+  853 bytes RAM / 8192 bytes and 27108 bytes Flash / 253952 bytes.
 
 ## Remaining Hardware Validation
 
@@ -66,13 +72,14 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Exact left/right sign of the optical wheel delta.
 - Individual decimal-point placement and SN4 special leading characters.
 - High-level API behavior beyond the current diagnostic scan.
+- End-to-end Serial0 command sessions, `REM` indication, panel inhibition and
+  `Adr RTL` behavior on the assembled instrument.
 
 ## Current Functional Diagnostic
 
-- Serial0 diagnostics are compile-time controlled by `ADRET_DEBUG_SERIAL` in
-  `platformio.ini`. The normal build sets it to `0`; changing it to `1`
-  restores all current `KEY`, `ENTRY`, `PENDING`, `INSTR`, EEPROM and CA1
-  traces at 115200 baud.
+- The firmware uses Serial0 at 115200 baud for remote commands. It sets
+  `ADRET_REMOTE_SERIAL=1` and `ADRET_DEBUG_SERIAL=0`; a compile-time guard
+  prevents diagnostic traces from sharing the command channel.
 - The temporary EXEC indicator sweep has been removed after bench validation.
   Raw SN3 D3..D2 codes are 0=blinking, 1=off, 2=fixed and 3=off; the normal
   firmware uses codes 0, 1 and 2.
@@ -88,8 +95,8 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Indicator-only refreshes preserve amplitude signs, special leading digits,
   decimal points and the current EXEC mode. Bench validation is still required
   for VALID MAN and RF OFF while an entry is pending.
-- The active-low SN4/D5 REM indicator is forced off by default and reserved for
-  a possible future Serial0 remote mode; no GPIB hardware is planned.
+- The active-low SN4/D5 REM indicator follows the Serial0 remote state; no GPIB
+  hardware is planned.
 - MUL10 and DIV10 select the decade and blink the affected digit three times.
 - Instrument-bus writes are currently represented by `INSTR` lines on
   Serial0.
@@ -109,8 +116,9 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
    The application adds only about 120 us of startup acknowledgement; the
    cold-power delay observed at the bench does not occur on a warm reset and
    must be localized between the 5 V rail, RESET and the first CA2 activity.
-4. Implement the instrument-bus output layer behind the current serial events.
-5. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
+4. Validate the Serial0 protocol and `Adr RTL` local return on the instrument.
+5. Implement the instrument-bus output layer behind the current state changes.
+6. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
    messages on the real panel.
-6. Add keyboard increments, AUX sequence stepping and replace the placeholder
+7. Add AUX sequence stepping and replace the placeholder
    calibration EPROM.

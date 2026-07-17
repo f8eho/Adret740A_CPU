@@ -22,8 +22,8 @@ L'état RF OFF est toujours forcé au démarrage, même si l'EEPROM contenait un
 état différent.
 
 Le voyant `REM`, historiquement associé au contrôle GPIB, est éteint par
-défaut. Aucun port GPIB matériel ne sera implémenté ; ce voyant reste réservé à
-un éventuel futur mode de télécommande sur Serial0.
+défaut. Aucun port GPIB matériel n'est implémenté ; ce voyant est piloté par le
+mode de télécommande sur Serial0.
 
 La configuration utilise deux slots EEPROM versionnés avec CRC. La sauvegarde
 n'est déclenchée que par la future entrée `PA` de présence alimentation. Cette
@@ -319,7 +319,8 @@ la séquence. `CLEAR` efface sa définition.
 | `MEM` et `RECALL` | Enregistrent et rappellent 40 configurations | Implémenté pour les positions 00 à 39 avec CRC EEPROM individuel |
 | `SEQ` | Définit et exploite une plage de mémoires | Implémenté au clavier ; entrée AUX non implémentée |
 | `INC`, `↑` et `↓` | Programment et appliquent un incrément, ou parcourent une séquence | Implémenté ; séquence active prioritaire, validation au banc restante |
-| `SPL` et `ADR17` | Fonctions spéciales du clavier et d'adressage | Touches lues et tracées, actions non implémentées |
+| `SPL` | Fonctions spéciales du clavier | Touche lue, actions non implémentées |
+| `Adr RTL` | Retour du mode distant au mode local | Implémenté en `REMS`, ignoré sous verrouillage `RWLS` et sans effet en local |
 
 Le contrôleur conserve séparément la configuration réellement exécutée et la
 configuration préparée. Les sources de modulation suivent la préparation ;
@@ -331,13 +332,16 @@ v2 reste lisible et sera migré lors de la sauvegarde suivante. Les 40 mémoires
 de configuration occupent une zone séparée ; la définition de séquence reste
 volontairement en RAM et disparaît au redémarrage.
 
-## Diagnostic Serial0
+## Télécommande et diagnostic Serial0
 
-Les diagnostics série sont contrôlés à la compilation par
-`ADRET_DEBUG_SERIAL` dans `platformio.ini`. La valeur normale est `0` :
-Serial0 n'est pas initialisé et aucune trace de diagnostic n'est incluse dans
-le firmware. Passer la directive à `1` rétablit toutes les traces à 115200
-bauds, notamment :
+Le firmware utilise Serial0 à 115200 bauds pour le protocole décrit dans
+`Adret_740A_util/Adret_740A_util_serial.md`. Le build fixe
+`ADRET_REMOTE_SERIAL=1` et `ADRET_DEBUG_SERIAL=0` : aucune trace libre ne peut
+donc polluer les réponses du protocole.
+
+Les anciennes traces de diagnostic restent conditionnées dans le code par
+`ADRET_DEBUG_SERIAL`, mais une protection de compilation interdit de les
+activer en même temps que la télécommande. Elles comprennent notamment :
 
 ```text
 TARGET value=FM

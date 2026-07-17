@@ -14,11 +14,11 @@ principales ont été validées au banc :
 - l'interruption CA1 commune clavier/roue;
 - une couche d'etat haut niveau pour les voyants, les flags SN4/SN17,
   les buffers d'affichage, le clavier et la roue codeuse;
-- une séquence de diagnostic simultanée pour les voyants, les trois groupes
-  d'affichage numérique et le clavier.
+- la logique fonctionnelle du panneau, les mémoires et les séquences ;
+- un protocole de télécommande ASCII sur Serial0.
 
-Le firmware courant balaie les voyants, incrémente les trois afficheurs toutes
-les 200 ms et publie les touches reconnues sur Serial0 à 115200 bauds.
+Le firmware courant pilote le panneau avant et accepte à 115200 bauds les
+commandes historiques du bus GPIB transposées sur Serial0.
 
 ## Regles de base
 
@@ -26,7 +26,7 @@ les 200 ms et publie les touches reconnues sur Serial0 à 115200 bauds.
 - Les tables volumineuses restent en Flash via `PROGMEM`.
 - Les bus 8 bits sont manipules par registres AVR, pas par `digitalWrite`.
 - Les modules sont des objets statiques globaux.
-- Les broches Serial0 Arduino D0/D1 restent libres pour un dialogue externe.
+- Les broches Serial0 Arduino D0/D1 sont réservées à la télécommande externe.
 
 ## Fichiers principaux
 
@@ -44,7 +44,7 @@ les 200 ms et publie les touches reconnues sur Serial0 à 115200 bauds.
   versionnés avec CRC.
 - `src/PowerFailMonitor.cpp` prépare l'interruption PA future sur D3 / INT5.
 - `src/CalibrationEprom.cpp` reserve le dump 2716 en Flash.
-- `src/main.cpp` contient le mode de debug courant, d'abord le balayage LED.
+- `src/main.cpp` orchestre le panneau, la télécommande et la persistance.
 
 ## Couche panneau avant
 
@@ -72,9 +72,10 @@ ecrit via `FrontPanelBus`.
 - RF, AMPL, FM, PM et AM sélectionnent la valeur réglée par la roue codeuse.
 - VALID MAN affecte la sélection affichée à la roue ; MUL10 et DIV10 changent
   le pas de la dernière cible validée et font clignoter le digit correspondant.
-- CW, 400 Hz, 1 kHz, EXT et RF OFF mettent à jour les voyants et produisent des
-  commandes instrument provisoires sur Serial0.
-- Les touches et la roue conservent leurs traces brutes à 115200 bauds.
+- CW, 400 Hz, 1 kHz, EXT et RF OFF mettent à jour les voyants et l'état de
+  sortie préparé ou actif.
+- En mode distant, le panneau est inhibé sauf la touche `Adr RTL` lorsque le
+  retour local n'est pas verrouillé.
 - Une EEPROM à deux slots et CRC restaure les réglages, tout en forçant RF OFF
   au démarrage. La future entrée PA reste désactivée jusqu'à validation.
 
@@ -86,6 +87,12 @@ Depuis un terminal ou Codex, si `pio` n'est pas dans le PATH :
 
 ```powershell
 & "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run
+```
+
+Les tests hôte du parseur et du cadrage série se lancent avec :
+
+```powershell
+& ".\scripts\test_serial_protocol.ps1"
 ```
 
 ## Résultats et points restant à valider

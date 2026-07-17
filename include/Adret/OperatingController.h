@@ -7,6 +7,15 @@
 namespace adret {
 namespace control {
 
+constexpr uint32_t kFrequencyMinimumHz = 100000u;
+constexpr uint32_t kFrequencyMaximumHz = 560000000u;
+constexpr int16_t kAmplitudeMinimumTenthsDbm = -1299;
+constexpr int16_t kAmplitudeMaximumTenthsDbm = 130;
+constexpr uint32_t kFmMaximumHz = 200000u;
+constexpr uint16_t kPmMaximumHundredthsRd = 1999u;
+constexpr uint16_t kAmMaximumTenthsPercent = 999u;
+constexpr uint32_t kFmFineRangeMaximumHz = 20000u;
+
 enum class Target : uint8_t {
     Frequency,
     Amplitude,
@@ -73,6 +82,13 @@ public:
     void handleKey(front_panel::Key key);
     void handleEncoder(const front_panel::EncoderEvent& event);
     void tick(uint32_t nowMs);
+
+    void enterRemoteControl();
+    void applyRemoteConfiguration(const OutputConfiguration& configuration);
+    void defineRemoteSequence(uint8_t start, uint8_t end);
+    void clearRemoteSequence();
+    void showRemoteError(const char* code, int8_t memoryIndex = -1);
+    void clearRemoteError();
 
     const Settings& settings() const;
 

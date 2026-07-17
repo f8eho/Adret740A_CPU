@@ -154,7 +154,7 @@ const __FlashStringHelper* front_panel::keyShortLabel(Key key)
     case Key::Recall: return F("RECALL");
     case Key::Increment: return F("INC");
     case Key::RfOff: return F("RF_OFF");
-    case Key::Address17: return F("ADR17");
+    case Key::AddressRtl: return F("ADR_RTL");
     case Key::XToY: return F("X_TO_Y");
     case Key::Left: return F("LEFT");
     case Key::Clear: return F("CLEAR");
@@ -916,7 +916,7 @@ Key FrontPanel::keyForSample(const KeyboardSample& sample)
         case 0:
             return Key::Amplitude;
         case 7:
-            return Key::Address17;
+            return Key::AddressRtl;
         default:
             return Key::None;
         }

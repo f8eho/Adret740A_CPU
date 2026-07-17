@@ -8,6 +8,7 @@
 #include "Adret/OperatingController.h"
 #include "Adret/PowerFailMonitor.h"
 #include "Adret/SettingsStore.h"
+#include "Adret/SerialRemoteController.h"
 
 namespace {
 
@@ -40,12 +41,16 @@ void processPanelEvents()
         Serial.print(F(" label="));
         Serial.println(adret::front_panel::keyShortLabel(event.key));
 #endif
-        adret::control::operatingController.handleKey(event.key);
+        if (!adret::serialRemoteController.handlePanelKey(event.key)) {
+            adret::control::operatingController.handleKey(event.key);
+        }
     }
 
     EncoderEvent encoderEvent = {};
     while (adret::frontPanel.popEncoder(&encoderEvent)) {
-        adret::control::operatingController.handleEncoder(encoderEvent);
+        if (adret::serialRemoteController.localControlsEnabled()) {
+            adret::control::operatingController.handleEncoder(encoderEvent);
+        }
     }
     (void)adret::frontPanel.consumeEncoderDelta();
 }
@@ -77,6 +82,7 @@ void setup()
     (void)restored;
 #endif
     adret::control::operatingController.begin(settings);
+    adret::serialRemoteController.begin();
 
     releasePendingPanelInputAtStartup();
     adret::frontPanelIrq.begin();
@@ -90,6 +96,7 @@ void setup()
 
 void loop()
 {
+    adret::serialRemoteController.poll();
     processPanelEvents();
     adret::control::operatingController.tick(millis());
     if (adret::powerFailMonitor.consumePending()) {

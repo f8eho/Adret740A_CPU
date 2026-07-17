@@ -18,14 +18,6 @@ using front_panel::Key;
 using front_panel::ModulationUnitLed;
 using front_panel::PanelIndicator;
 
-constexpr uint32_t kFrequencyMinimumHz = 100000u;
-constexpr uint32_t kFrequencyMaximumHz = 560000000u;
-constexpr int16_t kAmplitudeMinimumTenthsDbm = -1299;
-constexpr int16_t kAmplitudeMaximumTenthsDbm = 130;
-constexpr uint32_t kFmMaximumHz = 200000u;
-constexpr uint16_t kPmMaximumHundredthsRd = 1999u;
-constexpr uint16_t kAmMaximumTenthsPercent = 999u;
-constexpr uint32_t kFmFineRangeMaximumHz = 20000u;
 constexpr uint16_t kBlinkPhaseMs = 150u;
 constexpr uint8_t kBlinkPhaseCount = 6u;
 constexpr uint32_t kOverlayDurationMs = 2000u;
@@ -349,6 +341,88 @@ void OperatingController::begin(const Settings& settings)
     Serial.println(F(" rf_off=1"));
 #endif
     reportInstrumentTransaction(settings_.output);
+}
+
+void OperatingController::enterRemoteControl()
+{
+    pendingActive_ = false;
+    recalledPending_ = false;
+    entryHadPending_ = false;
+    entryLocked_ = false;
+    entryMode_ = EntryMode::None;
+    entryDigitCount_ = 0u;
+    entryDecimalIndex_ = -1;
+    entryDigits_[0] = '\0';
+    completedEntryAvailable_ = false;
+    completedEntryDeferredError_ = false;
+    completedEntryIncrementCompatible_ = false;
+    completedEntryErrorCode_ = nullptr;
+    incrementViewActive_ = false;
+    overlay_ = Overlay::None;
+    blinkActive_ = false;
+    blinkBlank_ = false;
+    correctionBlink_ = false;
+    sequenceActive_ = false;
+    sequenceCursorValid_ = false;
+    frontPanel.turnOff(PanelIndicator::Memory);
+    renderAll();
+}
+
+void OperatingController::applyRemoteConfiguration(
+    const OutputConfiguration& configuration)
+{
+    if (!outputConfigurationIsValid(configuration)) {
+        return;
+    }
+    settings_.output = configuration;
+    pending_ = configuration;
+    pendingActive_ = false;
+    recalledPending_ = false;
+    entryLocked_ = false;
+    overlay_ = Overlay::None;
+    renderAll();
+    reportInstrumentTransaction(settings_.output);
+}
+
+void OperatingController::defineRemoteSequence(uint8_t start, uint8_t end)
+{
+    if (start >= SettingsStore::kMemoryCount ||
+        end >= SettingsStore::kMemoryCount || start > end) {
+        return;
+    }
+    sequenceDefined_ = true;
+    sequenceActive_ = true;
+    sequenceCursorValid_ = false;
+    sequenceStart_ = start;
+    sequenceEnd_ = end;
+    renderIndicators();
+}
+
+void OperatingController::clearRemoteSequence()
+{
+    sequenceDefined_ = false;
+    sequenceActive_ = false;
+    sequenceCursorValid_ = false;
+    renderIndicators();
+}
+
+void OperatingController::showRemoteError(const char* code, int8_t memoryIndex)
+{
+    frontPanel.turnOn(PanelIndicator::Error);
+    if (memoryIndex >= 0 && memoryIndex < int8_t(SettingsStore::kMemoryCount)) {
+        const char text[4] = {
+            'E', char('0' + uint8_t(memoryIndex) / 10u),
+            char('0' + uint8_t(memoryIndex) % 10u), '\0'};
+        renderMessage(text, kOverlayDurationMs);
+        return;
+    }
+    renderMessage(code == nullptr ? "E-00" : code, kOverlayDurationMs);
+}
+
+void OperatingController::clearRemoteError()
+{
+    overlay_ = Overlay::None;
+    renderAll();
 }
 
 void OperatingController::handleKey(Key key)

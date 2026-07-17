@@ -84,7 +84,7 @@ enum class Key : uint8_t {
     Recall,
     Increment,
     RfOff,
-    Address17,
+    AddressRtl,
     XToY,
     Left,
     Clear,

@@ -2,10 +2,8 @@
 
 ## Objet et statut du document
 
-Ce document spécifie l'interface de télécommande série de la nouvelle carte
-CPU de l'Adret 740A basée sur un Arduino Mega 2560. Il constitue la référence
-pour une implémentation future ; il ne décrit pas une fonction déjà disponible
-dans le firmware.
+Ce document spécifie l'interface de télécommande série implémentée par la
+nouvelle carte CPU de l'Adret 740A basée sur un Arduino Mega 2560.
 
 Le langage de commande reprend celui de l'interface IEEE-488 d'origine décrit
 dans [Adret_740A_util_gpib.md](Adret_740A_util_gpib.md). Les mnémoniques de
@@ -32,10 +30,10 @@ Un adaptateur de niveaux approprié est obligatoire pour un raccordement
 RS-232. Le convertisseur USB-série présent sur certaines cartes Mega peut
 également donner accès à `Serial0` ; le protocole reste identique.
 
-En fonctionnement normal, `Serial0` est exclusivement réservé à l'interface
-de commande. Celle-ci et les traces compilées avec `ADRET_DEBUG_SERIAL=1` ne
-doivent jamais être actives simultanément. Une version du firmware offrant la
-télécommande doit donc être construite avec `ADRET_DEBUG_SERIAL=0`.
+Le firmware unique du projet utilise `Serial0` exclusivement pour cette
+interface, avec `ADRET_REMOTE_SERIAL=1` et `ADRET_DEBUG_SERIAL=0`. Une
+protection de compilation interdit d'activer simultanément le protocole et les
+anciennes traces libres.
 
 ## Constitution des messages
 
@@ -54,6 +52,9 @@ télécommande doit donc être construite avec `ADRET_DEBUG_SERIAL=0`.
   la forme du chiffre ASCII `0`.
 - Plusieurs commandes de réglage peuvent être regroupées dans un même
   message, dans l'ordre où elles doivent être préparées.
+- `STB?` doit être transmis seul. Une transaction ne peut contenir qu'une
+  seule commande `M nn`, obligatoirement en dernière position ; les réglages
+  placés avant `M` sont appliqués et mémorisés ensemble.
 - Un message contient au maximum 128 caractères, espaces compris et caractère
   d'exécution exclu.
 
@@ -138,6 +139,9 @@ sont acceptées dans tous les modes et sont insensibles à la casse.
 
 Les commandes de réglage de l'instrument ne sont acceptées qu'en mode
 distant (`REMS` ou `RWLS`). Leur réception en mode local produit `E-00`.
+Les transitions regroupées avec des réglages sont évaluées dans l'ordre du
+message : `REN 1 F 1e6` est valide, contrairement à `F 1e6 REN 1` lorsque
+l'instrument était local.
 
 ### États
 
@@ -155,11 +159,19 @@ suivantes :
 - `REN 0` ou `GTL` transforme `REMS` en `LOCS` et `RWLS` en `LWLS` ;
 - `LLO 1` transforme `LOCS` en `LWLS` et `REMS` en `RWLS` ;
 - `LLO 0` transforme `LWLS` en `LOCS` et `RWLS` en `REMS` ;
-- le bouton `RTL` transforme uniquement `REMS` en `LOCS`.
+- le bouton `Adr RTL`, décodé en `SN12.X7 / SN14.Y5`, transforme uniquement
+  `REMS` en `LOCS`.
 
-En local, le bouton `RTL` n'affiche pas d'adresse : la liaison série est point
-à point et ne possède ni adresse primaire ni équivalent de `MLA`. Les notions
-IEEE-488 de listener, talker et adressage ne sont donc pas applicables.
+En distant, toutes les autres touches et la molette sont acquittées puis
+ignorées. Lors du passage par `REN 1`, une saisie locale inachevée et les
+animations sont abandonnées. Une séquence active est désactivée et son curseur
+est réinitialisé, mais sa définition, les incréments et les réglages de
+molette sont conservés.
+
+En local, `Adr RTL` n'a aucun effet et n'affiche pas d'adresse : la liaison
+série est point à point et ne possède ni adresse primaire ni équivalent de
+`MLA`. Les notions IEEE-488 de listener, talker et adressage ne sont donc pas
+applicables.
 
 ## Commandes de réglage
 
@@ -263,6 +275,11 @@ message ; en l'absence de nouveau réglage dans ce message, la configuration
 active est enregistrée. `RM nn` rappelle la configuration de la position
 `nn`. Le rappel est appliqué au signal lors de l'exécution du message, ou lors
 de l'exécution ultérieure si le message se termine par `!`.
+
+Une transaction ne peut réaliser qu'une écriture EEPROM. `M nn` doit donc être
+sa dernière commande. `RM nn` peut être suivi de réglages qui modifient la
+configuration rappelée avant son application, par exemple
+`RM 05 A -20 M 06`.
 
 La nouvelle carte CPU utilise 40 positions numérotées de `00` à `39`. Cette
 plage diffère du texte GPIB d'origine, qui indique `01` à `40`. Il s'agit d'un

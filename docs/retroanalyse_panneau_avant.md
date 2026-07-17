@@ -88,8 +88,8 @@ aux octets de voyants ou d'affichage.
 | `CA2` | `PB4` | **10** | sortie | validation active bas |
 | `CA1` | `PE4 / INT4` | **2** | entrée | IRQ active bas |
 
-Serial0, broches Arduino 0 et 1, reste réservé au diagnostic et aux futures
-communications externes.
+Serial0, broches Arduino 0 et 1, est réservé au protocole de télécommande
+série.
 
 ## 3. Décodage des périphériques
 
@@ -165,9 +165,9 @@ du registre SN4 donnée dans la table mémoire.
 L'indicateur de façade `INHIB RF` piloté ici ne doit pas être confondu avec la
 touche `RF OFF` lue dans SN5, ni avec la ligne d'alimentation `INHIB`.
 
-Le voyant `REM` est éteint par défaut en maintenant SN4/D5 à 1. Il reste
-réservé à un éventuel futur mode distant sur Serial0 ; aucune interface GPIB
-matérielle n'est prévue sur la nouvelle carte CPU.
+Le voyant `REM` est éteint par défaut en maintenant SN4/D5 à 1. Il est piloté
+par le mode distant sur Serial0 ; aucune interface GPIB matérielle n'est prévue
+sur la nouvelle carte CPU.
 
 ### 4.4 SN17 sélectionné par Y1
 
@@ -261,7 +261,7 @@ d'un code stable. C15 couple cette détection au compteur SN13.
 
 | Y \ X | X0 | X1 | X2 | X3 | X4 | X5 | X6 | X7 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Y5 | AMPL | — | — | — | — | — | — | ADR17 |
+| Y5 | AMPL | — | — | — | — | — | — | ADR RTL |
 | Y4 | RF | SPL | 0 | 5 | MHz | CW | ÷10 | MEM |
 | Y3 | FM | X→Y | 1 | 6 | kHz | EXT | VALID MAN | SEQ |
 | Y2 | PM | ← | 2 | 7 | Hz | 1kHz | ×10 | RAPPEL |
