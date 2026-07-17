@@ -1,0 +1,811 @@
+{
+  "table_of_contents": [
+    {
+      "title": "III.5. UTILISATION DU BUS IEEE 488",
+      "heading_level": null,
+      "page_id": 31,
+      "polygon": [
+        [
+          81.68136020151134,
+          112.3828125
+        ],
+        [
+          298.9987405541562,
+          112.3828125
+        ],
+        [
+          298.9987405541562,
+          123.8671875
+        ],
+        [
+          81.68136020151134,
+          123.8671875
+        ]
+      ]
+    },
+    {
+      "title": "PRINCIPE",
+      "heading_level": null,
+      "page_id": 31,
+      "polygon": [
+        [
+          80.18261964735517,
+          150.0
+        ],
+        [
+          133.38790931989925,
+          148.4765625
+        ],
+        [
+          133.38790931989925,
+          159.75
+        ],
+        [
+          80.18261964735517,
+          159.9609375
+        ]
+      ]
+    },
+    {
+      "title": "RACCORDEMENT AU BUS, ADRESSAGE",
+      "heading_level": null,
+      "page_id": 31,
+      "polygon": [
+        [
+          80.18261964735517,
+          364.62890625
+        ],
+        [
+          268.2745591939547,
+          362.98828125
+        ],
+        [
+          268.2745591939547,
+          375.75
+        ],
+        [
+          80.18261964735517,
+          375.75
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DES MODES LOCAL/DISTANCE",
+      "heading_level": null,
+      "page_id": 32,
+      "polygon": [
+        [
+          59.20025188916877,
+          234.19921875
+        ],
+        [
+          296.00125944584386,
+          232.55859375
+        ],
+        [
+          296.00125944584386,
+          244.86328125
+        ],
+        [
+          58.10546875,
+          246.50390625
+        ]
+      ]
+    },
+    {
+      "title": "Messages de commande",
+      "heading_level": null,
+      "page_id": 32,
+      "polygon": [
+        [
+          59.8486328125,
+          319.5
+        ],
+        [
+          185.84382871536525,
+          318.28125
+        ],
+        [
+          185.84382871536525,
+          330.0
+        ],
+        [
+          58.6865234375,
+          331.40625
+        ]
+      ]
+    },
+    {
+      "title": "Modes",
+      "heading_level": null,
+      "page_id": 32,
+      "polygon": [
+        [
+          59.55810546875,
+          429.0
+        ],
+        [
+          94.4206549118388,
+          427.3828125
+        ],
+        [
+          94.4206549118388,
+          438.0
+        ],
+        [
+          59.55810546875,
+          438.8671875
+        ]
+      ]
+    },
+    {
+      "title": "Passage en mode distance",
+      "heading_level": null,
+      "page_id": 33,
+      "polygon": [
+        [
+          64.44584382871537,
+          128.37890625
+        ],
+        [
+          215.0692695214106,
+          126.73828125
+        ],
+        [
+          215.0692695214106,
+          139.04296875
+        ],
+        [
+          63.916015625,
+          140.68359375
+        ]
+      ]
+    },
+    {
+      "title": "CONSTITUTION DES MESSAGES",
+      "heading_level": null,
+      "page_id": 33,
+      "polygon": [
+        [
+          63.916015625,
+          212.25
+        ],
+        [
+          221.0642317380353,
+          211.640625
+        ],
+        [
+          221.0642317380353,
+          223.125
+        ],
+        [
+          62.75390625,
+          224.765625
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DE LA FREQUENCE RF",
+      "heading_level": null,
+      "page_id": 33,
+      "polygon": [
+        [
+          65.94458438287154,
+          513.0
+        ],
+        [
+          263.798828125,
+          512.6953125
+        ],
+        [
+          263.77833753148616,
+          523.5
+        ],
+        [
+          65.078125,
+          524.1796875
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DU NIVEAU DE SORTIE",
+      "heading_level": null,
+      "page_id": 34,
+      "polygon": [
+        [
+          70.44080604534005,
+          126.73828125
+        ],
+        [
+          275.01889168765746,
+          126.73828125
+        ],
+        [
+          275.01889168765746,
+          137.40234375
+        ],
+        [
+          70.44080604534005,
+          137.40234375
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DE L'INHIBITION RF",
+      "heading_level": null,
+      "page_id": 34,
+      "polygon": [
+        [
+          71.19017632241814,
+          317.87109375
+        ],
+        [
+          268.2745591939547,
+          316.23046875
+        ],
+        [
+          268.2745591939547,
+          328.53515625
+        ],
+        [
+          70.59814453125,
+          330.17578125
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DES MODULATIONS",
+      "heading_level": null,
+      "page_id": 34,
+      "polygon": [
+        [
+          71.19017632241814,
+          390.75
+        ],
+        [
+          250.28967254408062,
+          389.6484375
+        ],
+        [
+          250.28967254408062,
+          401.1328125
+        ],
+        [
+          71.19017632241814,
+          402.7734375
+        ]
+      ]
+    },
+    {
+      "title": "* Modulation d'amplitude",
+      "heading_level": null,
+      "page_id": 34,
+      "polygon": [
+        [
+          71.76025390625,
+          414.2578125
+        ],
+        [
+          221.0642317380353,
+          412.6171875
+        ],
+        [
+          221.0642317380353,
+          426.0
+        ],
+        [
+          71.76025390625,
+          427.3828125
+        ]
+      ]
+    },
+    {
+      "title": "* Modulation de fr\u00e9quence",
+      "heading_level": null,
+      "page_id": 34,
+      "polygon": [
+        [
+          72.68891687657431,
+          619.3359375
+        ],
+        [
+          227.05919395465997,
+          617.6953125
+        ],
+        [
+          227.05919395465997,
+          630.8203125
+        ],
+        [
+          72.68891687657431,
+          632.4609375
+        ]
+      ]
+    },
+    {
+      "title": "* Modulation de phase",
+      "heading_level": null,
+      "page_id": 35,
+      "polygon": [
+        [
+          72.68891687657431,
+          271.5
+        ],
+        [
+          203.8287153652393,
+          269.8828125
+        ],
+        [
+          203.8287153652393,
+          282.0
+        ],
+        [
+          72.68891687657431,
+          283.0078125
+        ]
+      ]
+    },
+    {
+      "title": "* Modulation d'impulsion",
+      "heading_level": null,
+      "page_id": 35,
+      "polygon": [
+        [
+          72.6318359375,
+          474.55078125
+        ],
+        [
+          222.56297229219143,
+          472.91015625
+        ],
+        [
+          222.56297229219143,
+          486.0
+        ],
+        [
+          72.6318359375,
+          486.85546875
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DES MEMOIRES",
+      "heading_level": null,
+      "page_id": 35,
+      "polygon": [
+        [
+          72.68891687657431,
+          572.25
+        ],
+        [
+          233.80352644836273,
+          570.9375
+        ],
+        [
+          233.80352644836273,
+          582.75
+        ],
+        [
+          72.68891687657431,
+          582.75
+        ]
+      ]
+    },
+    {
+      "title": "PROGRAMMATION DES SEQUENCES",
+      "heading_level": null,
+      "page_id": 36,
+      "polygon": [
+        [
+          52.455919395466,
+          122.2265625
+        ],
+        [
+          220.3148614609572,
+          122.2265625
+        ],
+        [
+          220.3148614609572,
+          133.7109375
+        ],
+        [
+          51.42333984375,
+          133.7109375
+        ]
+      ]
+    },
+    {
+      "title": "TRAITEMENT DES ERREURS",
+      "heading_level": null,
+      "page_id": 36,
+      "polygon": [
+        [
+          52.455919395466,
+          290.80078125
+        ],
+        [
+          190.34005037783376,
+          289.16015625
+        ],
+        [
+          190.34005037783376,
+          300.75
+        ],
+        [
+          52.455919395466,
+          301.46484375
+        ]
+      ]
+    },
+    {
+      "title": "* Fonction d'interface",
+      "heading_level": null,
+      "page_id": 36,
+      "polygon": [
+        [
+          53.74755859375,
+          651.0
+        ],
+        [
+          191.08942065491186,
+          650.09765625
+        ],
+        [
+          191.08942065491186,
+          661.5
+        ],
+        [
+          53.74755859375,
+          662.40234375
+        ]
+      ]
+    },
+    {
+      "title": "CHAPITRE IV\nPRINCIPE DE FONCTIONNEMENT",
+      "heading_level": null,
+      "page_id": 37,
+      "polygon": [
+        [
+          200.83123425692696,
+          127.5
+        ],
+        [
+          429.3994140625,
+          125.91796875
+        ],
+        [
+          429.3891687657431,
+          166.5
+        ],
+        [
+          200.83123425692696,
+          167.75390625
+        ]
+      ]
+    },
+    {
+      "title": "PRINCIPE GENERAL",
+      "heading_level": null,
+      "page_id": 37,
+      "polygon": [
+        [
+          94.7119140625,
+          287.25
+        ],
+        [
+          197.08438287153655,
+          287.109375
+        ],
+        [
+          197.08438287153655,
+          297.75
+        ],
+        [
+          94.7119140625,
+          298.59375
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 31,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          31
+        ],
+        [
+          "TableCell",
+          14
+        ],
+        [
+          "Span",
+          11
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 32,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          63
+        ],
+        [
+          "Span",
+          18
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "ListItem",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 33,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          46
+        ],
+        [
+          "Span",
+          11
+        ],
+        [
+          "Text",
+          7
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 34,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          64
+        ],
+        [
+          "Span",
+          31
+        ],
+        [
+          "Text",
+          17
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 35,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          45
+        ],
+        [
+          "Span",
+          24
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 36,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          64
+        ],
+        [
+          "Span",
+          31
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 37,
+      "text_extraction_method": "surya",
+      "block_counts": [
+        [
+          "Line",
+          29
+        ],
+        [
+          "Span",
+          6
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data\\Adret_740A_util"
+}

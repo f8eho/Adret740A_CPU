@@ -185,7 +185,8 @@ private:
     front_panel::MemoryLedMode memoryMode_ = front_panel::MemoryLedMode::Off;
     bool memory_ = false;
     bool sequence_ = false;
-    uint8_t firstCharFlags_ = front_panel::kPowerOneBlank;
+    uint8_t firstCharFlags_ =
+        front_panel::withRemoteIndicator(front_panel::kPowerOneBlank, false);
     uint8_t decimalPointFlags_ = 0;
     uint16_t frequencyBlankMask_ = 0;
     uint8_t modulationBlankMask_ = 0;
@@ -204,6 +205,9 @@ private:
     uint8_t encoderCount_ = 0;
     uint8_t encoderOverflowCount_ = 0;
     int16_t encoderDelta_ = 0;
+    bool ca1FailureLatched_ = false;
+    uint16_t ca1RecoveryCount_ = 0;
+    uint16_t ca1FailureCount_ = 0;
     front_panel::Key lastQueuedKey_ = front_panel::Key::None;
     uint32_t lastQueuedKeyMs_ = 0;
 };

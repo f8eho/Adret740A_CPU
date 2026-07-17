@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 
+#include "Adret/Debug.h"
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
 #include "Adret/HardwareConfig.h"
@@ -55,6 +56,9 @@ static_assert(kModulationOne == 0x01u && kModulationP == 0x02u &&
               kPowerOneBlank == 0x04u &&
               kPowerPlus == 0x08u && kPowerMinus == 0x10u,
               "Unexpected bench-validated SN4 bus mapping");
+static_assert(withRemoteIndicator(kPowerOneBlank, false) == 0x24u &&
+              withRemoteIndicator(kPowerOneBlank, true) == 0x04u,
+              "Unexpected active-low REM encoding");
 static_assert(reversedCodeBDigit("12345678", 8u, 0u) == 0x88u &&
               reversedCodeBDigit("12345678", 8u, 7u) == 0x81u,
               "Unexpected SN10 frame order");
@@ -84,6 +88,17 @@ static_assert(makeSn3Byte(StatusLed::None,
                           false,
                           false) == 0x07u,
               "Unexpected SN3 cleared byte");
+static_assert(makeSn3Byte(StatusLed::None,
+                          ModulationUnitLed::None,
+                          MemoryLedMode::Off,
+                          true,
+                          false) == 0x05u &&
+              makeSn3Byte(StatusLed::None,
+                          ModulationUnitLed::None,
+                          MemoryLedMode::Off,
+                          false,
+                          true) == 0x06u,
+              "Unexpected SN3 MEM/SEQ mapping");
 static_assert(keyboardX(0x28u) == 0u && keyboardY(0x28u) == 5u,
               "Unexpected AMPL keyboard coordinates");
 static_assert(keyboardX(0x05u) == 5u && keyboardY(0x05u) == 0u,
@@ -169,7 +184,7 @@ void FrontPanel::reset()
     memoryMode_ = MemoryLedMode::Off;
     memory_ = false;
     sequence_ = false;
-    firstCharFlags_ = kPowerOneBlank;
+    firstCharFlags_ = withRemoteIndicator(kPowerOneBlank, false);
     decimalPointFlags_ = 0;
     frequencyBlankMask_ = 0;
     modulationBlankMask_ = 0;
@@ -184,6 +199,9 @@ void FrontPanel::reset()
     encoderCount_ = 0;
     encoderOverflowCount_ = 0;
     encoderDelta_ = 0;
+    ca1FailureLatched_ = false;
+    ca1RecoveryCount_ = 0u;
+    ca1FailureCount_ = 0u;
     lastQueuedKey_ = Key::None;
     lastQueuedKeyMs_ = 0;
 
@@ -318,11 +336,7 @@ void FrontPanel::setIndicator(PanelIndicator indicator, bool enabled)
         sequence_ = enabled;
         break;
     case PanelIndicator::Remote:
-        if (enabled) {
-            firstCharFlags_ |= kRemote;
-        } else {
-            firstCharFlags_ &= uint8_t(~kRemote);
-        }
+        firstCharFlags_ = withRemoteIndicator(firstCharFlags_, enabled);
         break;
     case PanelIndicator::RfInhibit:
         if (enabled) {
@@ -403,7 +417,7 @@ bool FrontPanel::isOn(PanelIndicator indicator) const
     case PanelIndicator::Sequence:
         return sequence_;
     case PanelIndicator::Remote:
-        return (firstCharFlags_ & kRemote) != 0u;
+        return (firstCharFlags_ & kRemote) == 0u;
     case PanelIndicator::RfInhibit:
         return (firstCharFlags_ & kRfInhibit) != 0u;
     case PanelIndicator::ManualValidation:
@@ -637,8 +651,12 @@ void FrontPanel::makeDisplayFrames(uint8_t* sn10, uint8_t* sn11) const
 void FrontPanel::pollInputs()
 {
     const uint8_t pendingPanelEvents = frontPanelIrq.consumePending();
+    bool haveLastAcknowledgedSample = false;
+    uint8_t lastAcknowledgedRaw = 0u;
     for (uint8_t i = 0; i < pendingPanelEvents; ++i) {
         const KeyboardSample sample = frontPanelBus.readKeyboard();
+        haveLastAcknowledgedSample = true;
+        lastAcknowledgedRaw = sample.raw;
         if (sample.encoderCountLine) {
             const int8_t step =
                 sample.encoderDirectionLine == hw::kFrontPanelEncoderClockwiseLevel
@@ -653,6 +671,91 @@ void FrontPanel::pollInputs()
         } else {
             pushKey(sample);
         }
+    }
+
+    if (!frontPanelIrq.ca1Asserted()) {
+        ca1FailureLatched_ = false;
+        return;
+    }
+    // A new edge can arrive just after consumePending(). Leave its latched SN5
+    // sample untouched so the next poll processes the key instead of treating
+    // it as a failed acknowledgement.
+    if (pendingPanelEvents == 0u || frontPanelIrq.hasPending()) {
+        return;
+    }
+    if (ca1FailureLatched_) {
+        return;
+    }
+
+    uint8_t attempts = 0u;
+#if ADRET_DEBUG_SERIAL
+    uint8_t recoveredKeys = 0u;
+#endif
+    KeyboardSample lastSample = {};
+    delayMicroseconds(hw::kFrontPanelRecoveryAcknowledgeGapUs);
+    if (!frontPanelIrq.ca1Asserted() || frontPanelIrq.hasPending()) {
+        return;
+    }
+    while (frontPanelIrq.ca1Asserted() &&
+           attempts < hw::kFrontPanelRecoveryAcknowledgeCount) {
+        if (frontPanelIrq.hasPending()) {
+            return;
+        }
+        lastSample = frontPanelBus.readKeyboard();
+        ++attempts;
+        // The extra read usually returns the same key while completing the
+        // acknowledgement. If it already contains a different keyboard key,
+        // preserve it instead of silently discarding a fast following press.
+        // Recovered encoder samples remain ignored to avoid double steps.
+        if (!lastSample.encoderCountLine &&
+            (!haveLastAcknowledgedSample ||
+             lastSample.raw != lastAcknowledgedRaw)) {
+            pushKey(lastSample);
+#if ADRET_DEBUG_SERIAL
+            ++recoveredKeys;
+#endif
+        }
+        haveLastAcknowledgedSample = true;
+        lastAcknowledgedRaw = lastSample.raw;
+        delayMicroseconds(hw::kFrontPanelRecoveryAcknowledgeGapUs);
+    }
+    if (frontPanelIrq.ca1Asserted()) {
+        ca1FailureLatched_ = true;
+        if (ca1FailureCount_ < UINT16_MAX) {
+            ++ca1FailureCount_;
+        }
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("CA1_STUCK_LOW attempts="));
+        Serial.print(attempts);
+        Serial.print(F(" pending="));
+        Serial.print(pendingPanelEvents);
+        Serial.print(F(" recovered_keys="));
+        Serial.print(recoveredKeys);
+        Serial.print(F(" last_raw=0x"));
+        if (lastSample.raw < 0x10u) {
+            Serial.print('0');
+        }
+        Serial.print(lastSample.raw, HEX);
+        Serial.print(F(" total="));
+        Serial.println(ca1FailureCount_);
+#endif
+        return;
+    }
+    if (ca1RecoveryCount_ < UINT16_MAX) {
+        ++ca1RecoveryCount_;
+    }
+    if (attempts > 1u || ca1RecoveryCount_ == 1u ||
+        (ca1RecoveryCount_ & 0x001Fu) == 0u) {
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("CA1_RECOVERED attempts="));
+        Serial.print(attempts);
+        Serial.print(F(" pending="));
+        Serial.print(pendingPanelEvents);
+        Serial.print(F(" recovered_keys="));
+        Serial.print(recoveredKeys);
+        Serial.print(F(" total="));
+        Serial.println(ca1RecoveryCount_);
+#endif
     }
 }
 

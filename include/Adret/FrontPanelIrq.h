@@ -12,7 +12,9 @@ public:
 
     void begin();
     uint8_t consumePending();
+    bool hasPending() const;
     void onCa1FromIsr();
+    bool ca1Asserted() const;
 
 private:
     volatile uint8_t pending_ = 0;

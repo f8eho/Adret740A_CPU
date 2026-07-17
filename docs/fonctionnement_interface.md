@@ -1,8 +1,8 @@
 # Fonctionnement de l'interface
 
 Ce document décrit la première logique fonctionnelle du panneau avant. Le bus
-instrument réel n'est pas encore piloté : les commandes correspondantes sont
-émises sur Serial0 sous la forme `INSTR ...`.
+instrument réel n'est pas encore piloté. En mode diagnostic, les commandes
+correspondantes sont représentées sur Serial0 sous la forme `INSTR ...`.
 
 ## État initial et persistance
 
@@ -20,6 +20,10 @@ l'absence de configuration valide, il utilise :
 
 L'état RF OFF est toujours forcé au démarrage, même si l'EEPROM contenait un
 état différent.
+
+Le voyant `REM`, historiquement associé au contrôle GPIB, est éteint par
+défaut. Aucun port GPIB matériel ne sera implémenté ; ce voyant reste réservé à
+un éventuel futur mode de télécommande sur Serial0.
 
 La configuration utilise deux slots EEPROM versionnés avec CRC. La sauvegarde
 n'est déclenchée que par la future entrée `PA` de présence alimentation. Cette
@@ -65,6 +69,12 @@ propre indice de pas en RAM et dans la configuration EEPROM.
 | AM | 0 à 99,9 % | 0,1 / 1 / 10 % |
 | PM | 0 à 19,99 rd | 0,01 / 0,1 / 1 / 10 rd |
 | FM | 0 à 200 kHz | 10 Hz à 100 kHz par décades |
+
+La saisie et l'affichage de fréquence possèdent un chiffre de résolution au
+hertz. Le générateur ne sait toutefois appliquer que des pas de 10 Hz : lors
+de la validation de l'unité, le chiffre des unités est forcé à zéro. Ainsi,
+`123456 Hz` est visible pendant la frappe puis prépare `123450 Hz`. La molette
+et les incréments utilisent eux aussi un pas minimal de 10 Hz.
 
 Au-dessus de 20 kHz FM, le pas effectif minimal devient 100 Hz. Un pas de
 10 Hz reste mémorisé et redevient actif lorsque la valeur repasse sous ce
@@ -266,7 +276,13 @@ RF 1 2 MHz       MEM 1 2
 SEQ 0 8 1 2
 ```
 
-Le voyant `SEQ` s'allume lorsque la fonction est active.
+Le voyant `SEQ` s'allume dès l'appui sur la touche, pendant la saisie des
+bornes, puis reste allumé lorsque la fonction est active. Le premier chiffre
+doit être commencé dans les deux secondes suivant l'appui sur `SEQ`. Dès que
+ce premier chiffre est reçu, la temporisation ne s'applique plus et
+l'utilisateur peut terminer normalement les trois chiffres restants. Le
+voyant `MEM` s'allume pendant la saisie des deux chiffres d'une commande `MEM`
+ou `RECALL`.
 
 ### Exploitation, inhibition et suppression
 
@@ -277,7 +293,12 @@ Tant que la séquence est active :
 - `↓` revient au début de la séquence selon le paragraphe détaillé du manuel ;
 - une pédale ou un cadenceur raccordé à la prise arrière `AUX` permet également
   de faire défiler les positions avec exécution à chaque pas ;
-- un dépassement de borne produit l'erreur `E-89`.
+- aux bornes, les nouveaux appuis sont ignorés : `↑` reste sur la position de
+  fin et `↓` reste sur la position de début, sans réexécuter la configuration.
+
+Le code `E-89` reste utilisé pour une définition de séquence invalide, par
+exemple des bornes hors de `00..39` ou une borne de début supérieure à celle
+de fin. Il n'est pas émis lorsqu'une touche de défilement atteint une butée.
 
 La légende générale du panneau décrit `↑` et `↓` comme une
 incrémentation/décrémentation du paramètre sélectionné. Il s'agit de leur
@@ -312,15 +333,18 @@ volontairement en RAM et disparaît au redémarrage.
 
 ## Diagnostic Serial0
 
-Serial0 reste à 115200 bauds. Le firmware conserve les lignes brutes `KEY` et
-`ENC` et ajoute notamment :
+Les diagnostics série sont contrôlés à la compilation par
+`ADRET_DEBUG_SERIAL` dans `platformio.ini`. La valeur normale est `0` :
+Serial0 n'est pas initialisé et aucune trace de diagnostic n'est incluse dans
+le firmware. Passer la directive à `1` rétablit toutes les traces à 115200
+bauds, notamment :
 
 ```text
 TARGET value=FM
 STEP target=FM value=100
 VALUE target=FM value=12500
 VALID target=FM active=1
-SOURCE value=1KHZ
+PENDING source=1KHZ
 RF_OFF value=1
 INSTR parameter=FM value=12500
 ```

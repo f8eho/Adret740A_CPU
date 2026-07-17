@@ -69,6 +69,13 @@ enum FirstCharFlags : uint8_t {
     kManualValidation = 1u << 7,
 };
 
+constexpr uint8_t withRemoteIndicator(uint8_t flags, bool enabled)
+{
+    // REM is active low on SN4/D5.
+    return enabled ? uint8_t(flags & uint8_t(~kRemote))
+                   : uint8_t(flags | kRemote);
+}
+
 enum DecimalPointFlags : uint8_t {
     kModulationDecimalPoint = 1u << 0,
     kAmplitudeDecimalPoint = 1u << 1,
@@ -162,13 +169,13 @@ constexpr uint8_t makeSn3Byte(StatusLed status,
                               bool memory,
                               bool sequence)
 {
-    // The harness swaps the two independent outputs: AVR D0 reaches the MEM
-    // lamp and AVR D1 reaches SEQ. Both lamp controls are active low.
+    // Bench-validated independent active-low outputs: D1 drives MEM and D0
+    // drives SEQ.
     return uint8_t((uint8_t(status) << 6) |
                    (uint8_t(modulationUnit) << 4) |
                    (uint8_t(memoryMode) << 2) |
-                   (memory ? 0u : (1u << 0)) |
-                   (sequence ? 0u : (1u << 1)));
+                   (memory ? 0u : (1u << 1)) |
+                   (sequence ? 0u : (1u << 0)));
 }
 
 }  // namespace front_panel

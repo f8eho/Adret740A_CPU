@@ -17,7 +17,7 @@ void FrontPanelIrq::begin()
     EIMSK &= uint8_t(~hw::kFrontPanelCa1InterruptMask);
     EICRB = uint8_t((EICRB & uint8_t(~(_BV(hw::kFrontPanelCa1SenseBit0) |
                                       _BV(hw::kFrontPanelCa1SenseBit1)))) |
-                    _BV(hw::kFrontPanelCa1SenseBit1));  // Rising edge on CA1.
+                    _BV(hw::kFrontPanelCa1SenseBit1));  // Falling edge on CA1.
     EIFR = hw::kFrontPanelCa1InterruptFlag;
     EIMSK |= hw::kFrontPanelCa1InterruptMask;
 }
@@ -32,11 +32,21 @@ uint8_t FrontPanelIrq::consumePending()
     return result;
 }
 
+bool FrontPanelIrq::hasPending() const
+{
+    return pending_ != 0u;
+}
+
 void FrontPanelIrq::onCa1FromIsr()
 {
     if (pending_ != 0xFFu) {
         ++pending_;
     }
+}
+
+bool FrontPanelIrq::ca1Asserted() const
+{
+    return (ADRET_FP_CA1_PIN & _BV(hw::kFrontPanelCa1Bit)) == 0u;
 }
 
 }  // namespace adret

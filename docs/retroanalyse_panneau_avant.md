@@ -133,11 +133,11 @@ mais allumer un membre d'un groupe remplace nécessairement le précédent.
 | D7..D6 | état | 0=aucun, 1=`ERROR`, 2=`DEPT`, 3=`NORMAL` |
 | D5..D4 | unité modulation | 0=aucune, 1=`rd`, 2=`kHz`, 3=`%` |
 | D3..D2 AVR | voyant `EXEC` | 0=`clignotant`, 1=`éteint`, 2=`fixe`, 3=`éteint` |
-| D1 AVR | indépendant actif bas | voyant `SEQ` |
-| D0 AVR | indépendant actif bas | voyant `MEM` |
+| D1 AVR | indépendant actif bas | voyant `MEM` |
+| D0 AVR | indépendant actif bas | voyant `SEQ` |
 
-Les deux bits indépendants apparaissent permutés par rapport aux sorties
-physiques D1=`MEM` et D0=`SEQ` de SN3 à cause du croisement du faisceau.
+Ce mapping a été corrigé après validation au banc : l'activation logique de
+`MEM` doit mettre D1 à zéro et celle de `SEQ` doit mettre D0 à zéro.
 
 Ce codage inclut le croisement D2/D3 du faisceau et a été relevé au banc avec
 un balayage des quatre valeurs brutes. Le firmware utilise le code 1 pour
@@ -154,7 +154,7 @@ SN4 pilote des segments ou indicateurs indépendants.
 | D2 AVR | `kPowerOneBlank` | extinction active haut du `1` d'amplitude |
 | D3 AVR | `kPowerPlus` | signe plus amplitude |
 | D4 AVR | `kPowerMinus` | signe moins amplitude |
-| D5 | `kRemote` | indicateur `REM` |
+| D5 | `kRemote` | indicateur `REM`, actif à l'état bas |
 | D6 | `kRfInhibit` | indicateur lumineux `INHIB RF` |
 | D7 | `kManualValidation` | indicateur `VALID MAN` |
 
@@ -164,6 +164,10 @@ du registre SN4 donnée dans la table mémoire.
 
 L'indicateur de façade `INHIB RF` piloté ici ne doit pas être confondu avec la
 touche `RF OFF` lue dans SN5, ni avec la ligne d'alimentation `INHIB`.
+
+Le voyant `REM` est éteint par défaut en maintenant SN4/D5 à 1. Il reste
+réservé à un éventuel futur mode distant sur Serial0 ; aucune interface GPIB
+matérielle n'est prévue sur la nouvelle carte CPU.
 
 ### 4.4 SN17 sélectionné par Y1
 
@@ -397,6 +401,7 @@ prête et expose `saveNow()` pour les essais sans raccordement de PA.
 | Tous les points ICM allumés | bit DP actif à zéro | données Code B avec `ID7=1` |
 | Touches doublées ou positions inconnues | rebonds/transitions de scan | rejet des inconnues et filtre 30 ms |
 | Clavier perdu après permutation D6/D7 | ligne sens prise pour comptage | interprétation AVR bits 7/6 corrigée |
+| Clavier/molette parfois figés après une touche | CA1 peut rester basse après l'acquittement | diagnostic et quatre acquittements SN5 supplémentaires bornés |
 
 ## 11. État validé et travaux restants
 

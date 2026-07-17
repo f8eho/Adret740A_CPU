@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <math.h>
 
+#include "Adret/Debug.h"
 #include "Adret/SettingsStore.h"
 
 namespace adret {
@@ -104,6 +105,11 @@ constexpr uint16_t frequencySeparatorMask(uint32_t frequencyHz)
         (frequencyHz >= 1000000u ? uint16_t(1u) << 6u : 0u));
 }
 
+constexpr uint32_t quantizedFrequencyHz(uint32_t frequencyHz)
+{
+    return frequencyHz - (frequencyHz % 10u);
+}
+
 bool scaledInteger(uint32_t digits,
                    uint8_t fractionalDigits,
                    uint32_t multiplier,
@@ -170,6 +176,7 @@ constexpr uint32_t keyboardIncrementMaximum(Target target)
         : kAmMaximumTenthsPercent;
 }
 
+#if ADRET_DEBUG_SERIAL
 const __FlashStringHelper* targetName(Target target)
 {
     switch (target) {
@@ -192,6 +199,7 @@ const __FlashStringHelper* sourceName(ModulationSource source)
     }
     return F("UNKNOWN");
 }
+#endif
 
 uint32_t clampUnsignedStep(uint32_t value,
                            int8_t direction,
@@ -256,11 +264,15 @@ static_assert(powerOfTen(0u) == 1u && powerOfTen(4u) == 10000u,
               "Unexpected decimal scaling");
 static_assert(exactScaledValue(54321u, 2u, 1000000u) == 543210000u &&
               exactScaledValue(125u, 1u, 1000u) == 12500u &&
+              exactScaledValue(123456u, 0u, 1u) == 123456u &&
               exactScaledValue(1u, 1u, 1u) == UINT32_MAX,
               "Unexpected exact unit conversion");
 static_assert(frequencySeparatorMask(999999u) == 0x0008u &&
               frequencySeparatorMask(1000000u) == 0x0048u,
               "Unexpected frequency separator threshold");
+static_assert(quantizedFrequencyHz(123456u) == 123450u &&
+              quantizedFrequencyHz(123450u) == 123450u,
+              "Unexpected 10 Hz frequency quantization");
 static_assert(frequencyLeadingBlankMask(100000u) == 0x03C0u &&
               frequencyLeadingBlankMask(1000000u) == 0x0380u &&
               frequencyLeadingBlankMask(10000000u) == 0x0300u &&
@@ -327,6 +339,7 @@ void OperatingController::begin(const Settings& settings)
     settings_.output.rfOff = true;
     pending_ = settings_.output;
     renderAll();
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("STATE restored target="));
     Serial.print(targetName(settings_.target));
     Serial.print(F(" wheel_target="));
@@ -334,6 +347,7 @@ void OperatingController::begin(const Settings& settings)
     Serial.print(F(" wheel_inhibited="));
     Serial.print(settings_.wheelInhibited ? 1 : 0);
     Serial.println(F(" rf_off=1"));
+#endif
     reportInstrumentTransaction(settings_.output);
 }
 
@@ -371,6 +385,7 @@ void OperatingController::handleKey(Key key)
         key != Key::Sequence) {
         entryMode_ = EntryMode::None;
         frontPanel.turnOff(PanelIndicator::Memory);
+        frontPanel.setIndicator(PanelIndicator::Sequence, sequenceActive_);
         failEntry(nullptr);
         return;
     }
@@ -417,9 +432,11 @@ void OperatingController::handleKey(Key key)
         settings_.wheelTarget = settings_.target;
         settings_.wheelInhibited = false;
         renderIndicators();
+#if ADRET_DEBUG_SERIAL
         Serial.print(F("VALID target="));
         Serial.print(targetName(settings_.wheelTarget));
         Serial.println(F(" active=1"));
+#endif
         break;
     case Key::RfOff:
         settings_.output.rfOff = !settings_.output.rfOff;
@@ -427,10 +444,12 @@ void OperatingController::handleKey(Key key)
             pending_.rfOff = settings_.output.rfOff;
         }
         renderIndicators();
+#if ADRET_DEBUG_SERIAL
         Serial.print(F("RF_OFF value="));
         Serial.println(settings_.output.rfOff ? 1 : 0);
         Serial.print(F("INSTR rf_off="));
         Serial.println(settings_.output.rfOff ? 1 : 0);
+#endif
         break;
     case Key::Cw: selectSource(ModulationSource::Cw); break;
     case Key::Hz400: selectSource(ModulationSource::Hz400); break;
@@ -466,7 +485,9 @@ void OperatingController::handleDigit(uint8_t digit)
     }
 
     if (entryLocked_) {
+#if ADRET_DEBUG_SERIAL
         Serial.println(F("ENTRY ignored=1 reason=SELECT_OR_EXEC"));
+#endif
         return;
     }
     if (entryMode_ == EntryMode::None) {
@@ -492,10 +513,12 @@ void OperatingController::handleDigit(uint8_t digit)
     }
     renderEntry();
     updateExecIndicator();
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("ENTRY target="));
     Serial.print(targetName(settings_.target));
     Serial.print(F(" digits="));
     Serial.println(entryDigits_);
+#endif
 }
 
 void OperatingController::handleDecimalPoint()
@@ -567,11 +590,23 @@ void OperatingController::handleUnit(Key key)
             entryMode_ = EntryMode::None;
             entryLocked_ = true;
             updateExecIndicator();
+#if ADRET_DEBUG_SERIAL
             Serial.print(F("PENDING target="));
             Serial.print(targetName(settings_.target));
             Serial.println(F(" increment_candidate=1 absolute_valid=0"));
+#endif
             return;
         }
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("ERROR entry_target="));
+        Serial.print(targetName(settings_.target));
+        Serial.print(F(" unit="));
+        Serial.print(keyShortLabel(key));
+        Serial.print(F(" digits="));
+        Serial.print(entryDigits_);
+        Serial.print(F(" decimal_index="));
+        Serial.println(entryDecimalIndex_);
+#endif
         failEntry(errorCode);
         return;
     }
@@ -580,8 +615,10 @@ void OperatingController::handleUnit(Key key)
     entryLocked_ = true;
     recalledPending_ = false;
     renderAll();
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("PENDING target="));
     Serial.println(targetName(settings_.target));
+#endif
 }
 
 bool OperatingController::completedEntryCanBeIncrement() const
@@ -618,10 +655,12 @@ void OperatingController::handleIncrement()
         keyboardIncrementDefinedMask_ |= bit;
         incrementViewActive_ = false;
         renderAll();
+#if ADRET_DEBUG_SERIAL
         Serial.print(F("INCREMENT target="));
         Serial.print(targetName(settings_.target));
         Serial.print(F(" value="));
         Serial.println(value);
+#endif
         return;
     }
     if ((keyboardIncrementDefinedMask_ & bit) == 0u) {
@@ -631,8 +670,10 @@ void OperatingController::handleIncrement()
     incrementViewActive_ = true;
     renderIncrementView();
     updateExecIndicator();
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("INCREMENT view="));
     Serial.println(targetName(settings_.target));
+#endif
 }
 
 void OperatingController::handleIncrementStep(bool increase)
@@ -711,7 +752,9 @@ void OperatingController::handleIncrementStep(bool increase)
     }
     }
     if (!changed) {
+#if ADRET_DEBUG_SERIAL
         Serial.println(F("INCREMENT applied=0 reason=LIMIT"));
+#endif
         return;
     }
     if (incrementViewActive_) {
@@ -722,8 +765,10 @@ void OperatingController::handleIncrementStep(bool increase)
         renderAll();
     }
     reportInstrumentTransaction(settings_.output);
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("INCREMENT applied=1 direction="));
     Serial.println(increase ? 1 : -1);
+#endif
 }
 
 void OperatingController::handleExec()
@@ -742,7 +787,9 @@ void OperatingController::handleExec()
     completedEntryDeferredError_ = false;
     entryLocked_ = false;
     renderAll();
+#if ADRET_DEBUG_SERIAL
     Serial.println(F("EXEC applied=1"));
+#endif
     reportInstrumentTransaction(settings_.output);
 }
 
@@ -767,7 +814,9 @@ void OperatingController::handleClear()
     incrementViewActive_ = false;
     frontPanel.turnOff(PanelIndicator::Memory);
     renderAll();
+#if ADRET_DEBUG_SERIAL
     Serial.println(F("ENTRY cleared=1 sequence_cleared=1 increments_cleared=1"));
+#endif
 }
 
 void OperatingController::handleXToY()
@@ -777,7 +826,9 @@ void OperatingController::handleXToY()
         recalledPending_ = false;
         entryLocked_ = false;
         renderAll();
+#if ADRET_DEBUG_SERIAL
         Serial.println(F("PENDING recalled_cancelled=1"));
+#endif
         return;
     }
     if (!pendingActive_) {
@@ -789,7 +840,9 @@ void OperatingController::handleXToY()
     pendingActive_ = false;
     renderAll();
     pendingActive_ = savedPending;
+#if ADRET_DEBUG_SERIAL
     Serial.println(F("PENDING active_view=1"));
+#endif
 }
 
 void OperatingController::beginCommand(EntryMode mode)
@@ -802,10 +855,11 @@ void OperatingController::beginCommand(EntryMode mode)
     entryDigitCount_ = 0u;
     entryDecimalIndex_ = -1;
     entryDigits_[0] = '\0';
-    if (mode == EntryMode::Memory) {
+    if (mode == EntryMode::Memory || mode == EntryMode::Recall) {
         frontPanel.turnOn(PanelIndicator::Memory);
     }
     if (mode == EntryMode::Sequence) {
+        frontPanel.turnOn(PanelIndicator::Sequence);
         commandDeadlineMs_ = millis() + kSequenceEntryTimeoutMs;
     }
 }
@@ -824,8 +878,10 @@ void OperatingController::finishMemoryCommand()
     entryLocked_ = false;
     char text[4] = {'P', entryDigits_[0], entryDigits_[1], '\0'};
     renderMessage(text, kOverlayDurationMs);
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("MEMORY saved="));
     Serial.println(index);
+#endif
 }
 
 void OperatingController::finishRecallCommand()
@@ -833,13 +889,16 @@ void OperatingController::finishRecallCommand()
     const uint8_t index = uint8_t((entryDigits_[0] - '0') * 10 +
                                   (entryDigits_[1] - '0'));
     entryMode_ = EntryMode::None;
+    frontPanel.turnOff(PanelIndicator::Memory);
     if (index >= SettingsStore::kMemoryCount ||
         !settingsStore.loadMemory(index, &pending_)) {
         char text[4] = {'E', entryDigits_[0], entryDigits_[1], '\0'};
         frontPanel.turnOn(PanelIndicator::Error);
         renderMessage(text, kOverlayDurationMs);
+#if ADRET_DEBUG_SERIAL
         Serial.print(F("ERROR memory_empty="));
         Serial.println(index);
+#endif
         return;
     }
     pendingActive_ = true;
@@ -848,8 +907,10 @@ void OperatingController::finishRecallCommand()
     char text[4] = {'P', entryDigits_[0], entryDigits_[1], '\0'};
     renderMessage(text, kOverlayDurationMs);
     updateExecIndicator();
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("MEMORY recalled="));
     Serial.println(index);
+#endif
 }
 
 void OperatingController::finishSequenceCommand()
@@ -861,6 +922,7 @@ void OperatingController::finishSequenceCommand()
     entryMode_ = EntryMode::None;
     if (start >= SettingsStore::kMemoryCount ||
         end >= SettingsStore::kMemoryCount || start > end) {
+        frontPanel.setIndicator(PanelIndicator::Sequence, sequenceActive_);
         failEntry("E-89");
         return;
     }
@@ -873,10 +935,12 @@ void OperatingController::finishSequenceCommand()
     char text[6] = {entryDigits_[0], entryDigits_[1], '-',
                     entryDigits_[2], entryDigits_[3], '\0'};
     renderMessage(text, kOverlayDurationMs);
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("SEQUENCE start="));
     Serial.print(start);
     Serial.print(F(" end="));
     Serial.println(end);
+#endif
 }
 
 void OperatingController::stepSequence(bool restart)
@@ -885,12 +949,18 @@ void OperatingController::stepSequence(bool restart)
         return;
     }
     uint8_t next = sequenceStart_;
-    if (!restart && sequenceCursorValid_) {
-        if (sequenceCursor_ >= sequenceEnd_) {
-            failEntry("E-89");
-            return;
+    if (sequenceCursorValid_) {
+        if (restart) {
+            if (sequenceCursor_ <= sequenceStart_) {
+                return;
+            }
+            next = sequenceStart_;
+        } else {
+            if (sequenceCursor_ >= sequenceEnd_) {
+                return;
+            }
+            next = uint8_t(sequenceCursor_ + 1u);
         }
-        next = uint8_t(sequenceCursor_ + 1u);
     }
     OutputConfiguration configuration = {};
     if (!settingsStore.loadMemory(next, &configuration)) {
@@ -898,8 +968,10 @@ void OperatingController::stepSequence(bool restart)
                         char('0' + next % 10u), '\0'};
         frontPanel.turnOn(PanelIndicator::Error);
         renderMessage(text, kOverlayDurationMs);
+#if ADRET_DEBUG_SERIAL
         Serial.print(F("ERROR memory_empty="));
         Serial.println(next);
+#endif
         return;
     }
     settings_.output = configuration;
@@ -910,8 +982,10 @@ void OperatingController::stepSequence(bool restart)
     sequenceCursorValid_ = true;
     renderAll();
     reportInstrumentTransaction(settings_.output);
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("SEQUENCE position="));
     Serial.println(next);
+#endif
 }
 
 void OperatingController::ensurePending()
@@ -941,12 +1015,14 @@ void OperatingController::failEntry(const char* code)
     cancelNumericEntry();
     entryLocked_ = false;
     frontPanel.turnOn(PanelIndicator::Error);
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("ERROR code="));
     if (code == nullptr) {
         Serial.println(F("UNSPECIFIED"));
     } else {
         Serial.println(code);
     }
+#endif
     if (code != nullptr) {
         renderMessage(code, kOverlayDurationMs);
     } else {
@@ -974,11 +1050,11 @@ bool OperatingController::commitNumericEntry(Key unitKey, const char** errorCode
             : unitKey == Key::KHz ? 1000u
             : unitKey == Key::Hz ? 1u : 0u;
         if (multiplier == 0u ||
-            !scaledInteger(digits, fractionalDigits, multiplier, &value) ||
-            (value % 10u) != 0u) {
+            !scaledInteger(digits, fractionalDigits, multiplier, &value)) {
             *errorCode = nullptr;
             return false;
         }
+        value = quantizedFrequencyHz(value);
         completedEntryValue_ = value;
         completedEntryIncrementCompatible_ = true;
         if (value > kFrequencyMaximumHz) {
@@ -1217,6 +1293,7 @@ void OperatingController::updateExecIndicator()
 void OperatingController::reportInstrumentTransaction(
     const OutputConfiguration& configuration) const
 {
+#if ADRET_DEBUG_SERIAL
     Serial.println(F("INSTR BEGIN"));
     Serial.print(F("INSTR frequency_hz="));
     Serial.println(configuration.frequencyHz);
@@ -1239,16 +1316,17 @@ void OperatingController::reportInstrumentTransaction(
     Serial.print(F("INSTR rf_off="));
     Serial.println(configuration.rfOff ? 1 : 0);
     Serial.println(F("INSTR END"));
+#else
+    (void)configuration;
+#endif
 }
 
 void OperatingController::handleEncoder(const front_panel::EncoderEvent& event)
 {
     if (settings_.wheelInhibited) {
-        Serial.println(F("VALUE applied=0 reason=VALID"));
         return;
     }
     if (entryMode_ == EntryMode::Numeric) {
-        Serial.println(F("VALUE applied=0 reason=ENTRY"));
         return;
     }
 
@@ -1297,7 +1375,6 @@ void OperatingController::handleEncoder(const front_panel::EncoderEvent& event)
     }
     }
     if (!changed) {
-        Serial.println(F("VALUE applied=0 reason=LIMIT"));
         return;
     }
     renderAll();
@@ -1309,7 +1386,7 @@ void OperatingController::handleEncoder(const front_panel::EncoderEvent& event)
 
 void OperatingController::tick(uint32_t nowMs)
 {
-    if (entryMode_ == EntryMode::Sequence &&
+    if (entryMode_ == EntryMode::Sequence && entryDigitCount_ == 0u &&
         timeReached(nowMs, commandDeadlineMs_)) {
         entryMode_ = EntryMode::None;
         entryDigitCount_ = 0u;
@@ -1369,8 +1446,10 @@ void OperatingController::selectSource(ModulationSource source)
     pending_.modulationSource = source;
     recalledPending_ = false;
     renderAll();
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("PENDING source="));
     Serial.println(sourceName(source));
+#endif
 }
 
 void OperatingController::changeStep(bool multiply)
@@ -1579,20 +1658,25 @@ void OperatingController::renderModulationDisplay(
 
 void OperatingController::reportTarget() const
 {
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("TARGET value="));
     Serial.println(targetName(settings_.target));
+#endif
 }
 
 void OperatingController::reportStep() const
 {
+#if ADRET_DEBUG_SERIAL
     Serial.print(F("STEP target="));
     Serial.print(targetName(settings_.wheelTarget));
     Serial.print(F(" value="));
     Serial.println(currentStep());
+#endif
 }
 
 void OperatingController::reportValue(Target target, bool instrumentEvent) const
 {
+#if ADRET_DEBUG_SERIAL
     const OutputConfiguration& output = displayedOutput();
     Serial.print(F("VALUE target="));
     Serial.print(targetName(target));
@@ -1616,6 +1700,10 @@ void OperatingController::reportValue(Target target, bool instrumentEvent) const
         case Target::Am: Serial.println(output.amTenthsPercent); break;
         }
     }
+#else
+    (void)target;
+    (void)instrumentEvent;
+#endif
 }
 
 uint32_t OperatingController::currentStep() const

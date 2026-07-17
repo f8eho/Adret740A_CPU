@@ -38,6 +38,8 @@ constexpr bool kFrontPanelCa2ActiveLow = true;
 constexpr uint8_t kFrontPanelKeyboardEnableUs = 10;
 constexpr uint8_t kFrontPanelStartupAcknowledgeCount = 4;
 constexpr uint8_t kFrontPanelStartupAcknowledgeGapUs = 20;
+constexpr uint8_t kFrontPanelRecoveryAcknowledgeCount = 4;
+constexpr uint8_t kFrontPanelRecoveryAcknowledgeGapUs = 20;
 
 // Provisional wheel polarity. Bench validation must confirm that a high SN5
 // direction line corresponds to clockwise rotation on the assembled panel.
