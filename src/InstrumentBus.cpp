@@ -67,7 +67,12 @@ bool InstrumentBus::begin()
 
 bool InstrumentBus::recover()
 {
-    return begin();
+    ++timing_.recoveryAttempts;
+    const bool recovered = begin();
+    if (recovered) {
+        ++timing_.successfulRecoveries;
+    }
+    return recovered;
 }
 
 bool InstrumentBus::initializeExpander()
@@ -179,6 +184,9 @@ bool InstrumentBus::finishTransmission()
 void InstrumentBus::recordError(InstrumentBusError error)
 {
     lastError_ = error;
+    if (error != InstrumentBusError::None) {
+        lastFault_ = error;
+    }
 }
 
 void InstrumentBus::recordWriteDuration(uint32_t startedUs, bool success)
@@ -212,6 +220,11 @@ bool InstrumentBus::ready() const
 InstrumentBusError InstrumentBus::lastError() const
 {
     return lastError_;
+}
+
+InstrumentBusError InstrumentBus::lastFault() const
+{
+    return lastFault_;
 }
 
 uint8_t InstrumentBus::dataImage() const

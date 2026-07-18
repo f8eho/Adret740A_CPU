@@ -197,10 +197,8 @@ constexpr DisplaySpec fmDisplaySpec(uint32_t valueHz)
     return valueHz < 20000u
         ? DisplaySpec{uint16_t((valueHz / 10u) % 1000u),
                       0x04u, (valueHz / 10u) >= 1000u}
-        : (valueHz < 200000u
-            ? DisplaySpec{uint16_t((valueHz / 100u) % 1000u),
-                          0x02u, (valueHz / 100u) >= 1000u}
-            : DisplaySpec{200u, 0u, false});
+        : DisplaySpec{uint16_t((valueHz / 100u) % 1000u),
+                      0x02u, (valueHz / 100u) >= 1000u};
 }
 
 constexpr DisplaySpec pmDisplaySpec(uint16_t hundredthsRd)
@@ -325,6 +323,9 @@ static_assert(frequencyLeadingBlankMask(100000u) == 0x03C0u &&
 static_assert(effectiveFmStep(19999u, 0u) == 10u &&
               effectiveFmStep(20000u, 0u) == 100u,
               "Unexpected FM fine-range threshold");
+static_assert(kFmMaximumHz ==
+                  instrument_bus::kFmMaximumExactlyEncodedHz,
+              "Controller FM limit must remain physically encodable");
 static_assert(keyboardIncrementMaximum(Target::Frequency) == 560000000u &&
               keyboardIncrementMaximum(Target::Amplitude) == 1429u,
               "Unexpected keyboard increment limits");
@@ -1463,8 +1464,7 @@ void OperatingController::reportInstrumentTransaction(
             correctionTenthsDb,
             instrumentRegisters_,
             &program);
-    if (result != instrument_bus::InstrumentProgramResult::Ok ||
-        !instrument_bus::instrumentBus.ready()) {
+    if (result != instrument_bus::InstrumentProgramResult::Ok) {
 #if ADRET_DEBUG_SERIAL
         Serial.print(F("INSTR BUS skipped program_result="));
         Serial.print(uint8_t(result));
@@ -1474,18 +1474,54 @@ void OperatingController::reportInstrumentTransaction(
         return;
     }
 
-    for (uint8_t i = 0u; i < program.writeCount; ++i) {
-        const instrument_bus::InstrumentWrite& write = program.writes[i];
-        if (!instrument_bus::instrumentBus.write(write.address, write.value)) {
+    bool recoveryUsed = false;
+    if (!instrument_bus::instrumentBus.ready()) {
+        recoveryUsed = true;
+        if (!instrument_bus::instrumentBus.recover()) {
 #if ADRET_DEBUG_SERIAL
-            Serial.print(F("INSTR BUS failed index="));
-            Serial.print(i);
-            Serial.print(F(" error="));
+            Serial.print(F("INSTR BUS recovery failed error="));
             Serial.println(uint8_t(instrument_bus::instrumentBus.lastError()));
 #endif
             return;
         }
-        instrumentRegisters_[write.address] = write.value;
+    }
+
+    for (;;) {
+        bool complete = true;
+        for (uint8_t i = 0u; i < program.writeCount; ++i) {
+            const instrument_bus::InstrumentWrite& write = program.writes[i];
+            if (!instrument_bus::instrumentBus.write(write.address,
+                                                       write.value)) {
+                complete = false;
+#if ADRET_DEBUG_SERIAL
+                Serial.print(F("INSTR BUS failed index="));
+                Serial.print(i);
+                Serial.print(F(" error="));
+                Serial.println(uint8_t(instrument_bus::instrumentBus.lastError()));
+#endif
+                break;
+            }
+            instrumentRegisters_[write.address] = write.value;
+        }
+        if (complete) {
+            return;
+        }
+
+        // One recovery at most per requested configuration. When a transfer
+        // fails from an initially healthy bus, safely reinitialize the MCP and
+        // replay the complete program once. A later user transaction may make
+        // one fresh attempt, but this call can never loop indefinitely.
+        if (recoveryUsed) {
+            return;
+        }
+        recoveryUsed = true;
+        if (!instrument_bus::instrumentBus.recover()) {
+#if ADRET_DEBUG_SERIAL
+            Serial.print(F("INSTR BUS recovery failed error="));
+            Serial.println(uint8_t(instrument_bus::instrumentBus.lastError()));
+#endif
+            return;
+        }
     }
 #endif
 }

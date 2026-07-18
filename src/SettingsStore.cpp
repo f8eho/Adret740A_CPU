@@ -154,7 +154,11 @@ control::OutputConfiguration decodeOutput(const PersistentOutput& payload)
 {
     control::OutputConfiguration result = {};
     result.frequencyHz = payload.frequencyHz;
-    result.fmHz = payload.fmHz;
+    // Firmware versions that exposed the undocumented 200 kHz endpoint could
+    // persist it even though no corresponding bus code is known. Preserve the
+    // rest of those settings and migrate only that endpoint to 199.9 kHz.
+    result.fmHz = payload.fmHz == 200000u
+        ? control::kFmMaximumHz : payload.fmHz;
     result.amplitudeTenthsDbm = payload.amplitudeTenthsDbm;
     result.pmHundredthsRd = payload.pmHundredthsRd;
     result.amTenthsPercent = payload.amTenthsPercent;
@@ -200,7 +204,8 @@ control::Settings decodeLegacy(const LegacyPayloadV2& payload)
 {
     control::Settings result = {};
     result.output.frequencyHz = payload.frequencyHz;
-    result.output.fmHz = payload.fmHz;
+    result.output.fmHz = payload.fmHz == 200000u
+        ? control::kFmMaximumHz : payload.fmHz;
     result.output.amplitudeTenthsDbm = payload.amplitudeTenthsDbm;
     result.output.pmHundredthsRd = payload.pmHundredthsRd;
     result.output.amTenthsPercent = payload.amTenthsPercent;

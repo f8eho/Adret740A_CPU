@@ -19,6 +19,8 @@ enum class InstrumentBusError : uint8_t {
 struct InstrumentBusTiming {
     uint32_t completedWrites;
     uint32_t failedWrites;
+    uint32_t recoveryAttempts;
+    uint32_t successfulRecoveries;
     uint32_t lastWriteUs;
     uint32_t maximumWriteUs;
 };
@@ -45,6 +47,7 @@ public:
 
     bool ready() const;
     InstrumentBusError lastError() const;
+    InstrumentBusError lastFault() const;
     uint8_t dataImage() const;
     uint8_t addressImage() const;
     const InstrumentBusTiming& timing() const;
@@ -64,6 +67,7 @@ private:
     uint8_t dataImage_ = 0u;
     uint8_t controlImage_ = 0u;
     InstrumentBusError lastError_ = InstrumentBusError::NotReady;
+    InstrumentBusError lastFault_ = InstrumentBusError::None;
     InstrumentBusTiming timing_ = {};
 };
 

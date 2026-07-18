@@ -68,7 +68,7 @@ propre indice de pas en RAM et dans la configuration EEPROM.
 | amplitude | -129,9 à +13,0 dBm | 0,1 / 1 / 10 dB |
 | AM | 0 à 99,9 % | 0,1 / 1 / 10 % |
 | PM | 0 à 19,99 rd | 0,01 / 0,1 / 1 / 10 rd |
-| FM | 0 à 200 kHz | 10 Hz à 100 kHz par décades |
+| FM | 0 à 199,9 kHz provisoirement | 10 Hz à 100 kHz par décades |
 
 La saisie et l'affichage de fréquence possèdent un chiffre de résolution au
 hertz. Le générateur ne sait toutefois appliquer que des pas de 10 Hz : lors
@@ -88,7 +88,8 @@ Les affichages utilisent les formats suivants :
 - amplitude : un chiffre après la virgule ;
 - AM : un chiffre après la virgule ;
 - PM : deux chiffres après la virgule ;
-- FM : centièmes de kHz sous 20 kHz, dixièmes jusqu'à 199,9 kHz, puis 200 kHz.
+- FM : centièmes de kHz sous 20 kHz, puis dixièmes jusqu'à 199,9 kHz. La valeur
+  documentaire de 200 kHz reste désactivée tant que son code bus est inconnu.
 
 Le premier caractère spécial de modulation est commandé par SN4. Après les
 permutations du faisceau validé, D0 logiciel affiche `1`, D1 affiche `P` et les

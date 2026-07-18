@@ -153,6 +153,14 @@ void testErrorsAndAtomicBase(FakeMemories* memories)
     CHECK(result.error == ErrorCode::E61);
     result = parse("D-0.01", base, memories);
     CHECK(result.error == ErrorCode::E72);
+    result = parse("D199.9", base, memories);
+    CHECK(result.error == ErrorCode::None);
+    CHECK(result.transaction.output.fmHz == 199900u);
+    result = parse("D199.99", base, memories);
+    CHECK(result.error == ErrorCode::None);
+    CHECK(result.transaction.output.fmHz == 199900u);
+    result = parse("D200", base, memories);
+    CHECK(result.error == ErrorCode::E71);
     result = parse("D200.1", base, memories);
     CHECK(result.error == ErrorCode::E71);
     result = parse("P20", base, memories);

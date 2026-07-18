@@ -11,7 +11,10 @@ constexpr uint32_t kFrequencyMinimumHz = 100000u;
 constexpr uint32_t kFrequencyMaximumHz = 560000000u;
 constexpr int16_t kAmplitudeMinimumTenthsDbm = -1299;
 constexpr int16_t kAmplitudeMaximumTenthsDbm = 130;
-constexpr uint32_t kFmMaximumHz = 200000u;
+// The original specification says 200 kHz, but the demonstrated four-digit
+// bus encoding stops at 199.9 kHz. Keep every accepted controller value
+// physically programmable until the missing 200 kHz code is established.
+constexpr uint32_t kFmMaximumHz = 199900u;
 constexpr uint16_t kPmMaximumHundredthsRd = 1999u;
 constexpr uint16_t kAmMaximumTenthsPercent = 999u;
 constexpr uint32_t kFmFineRangeMaximumHz = 20000u;

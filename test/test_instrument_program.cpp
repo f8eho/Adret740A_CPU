@@ -93,6 +93,21 @@ void testFmAndPmFields()
     expectWrite(program, 16u, 13u, 0xAAu);
 }
 
+void testFmDemonstratedEndpoint()
+{
+    InstrumentConfiguration configuration = baseConfiguration();
+    configuration.modulationKind = ModulationKind::Fm;
+    configuration.fmDeviationHz = kFmMaximumExactlyEncodedHz;
+    InstrumentProgram program = makeProgram(configuration);
+    assert(program.writeCount == 19u);
+
+    configuration.fmDeviationHz = 200000u;
+    uint8_t registers[kInstrumentRegisterCount] = {};
+    makeInitialInstrumentRegisters(registers);
+    assert(makeInstrumentProgram(configuration, 0, registers, &program) ==
+           InstrumentProgramResult::InvalidModulation);
+}
+
 void testStandardFrequencyEndpoints()
 {
     InstrumentConfiguration configuration = baseConfiguration();
@@ -116,6 +131,7 @@ int main()
     test240MHzAmProgram();
     testRfOffClearsOnlyRelayBits();
     testFmAndPmFields();
+    testFmDemonstratedEndpoint();
     testStandardFrequencyEndpoints();
     puts("InstrumentProgram host vectors: OK");
     return 0;

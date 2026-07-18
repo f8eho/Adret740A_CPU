@@ -5,7 +5,9 @@
 Le contrôleur d'exploitation produit maintenant les mots du bus instruments
 à chaque configuration exécutée, mouvement de molette immédiatement actif ou
 basculement de `INHIB RF`. Si le MCP23017 n'est pas présent au démarrage, le
-contrôleur conserve son fonctionnement panneau/série et n'émet rien.
+contrôleur conserve son fonctionnement panneau/série. Chaque nouvelle
+configuration tente alors une unique récupération avant d'abandonner
+l'émission.
 
 L'environnement `instrument_bus_bench` reste indépendant : il ne produit que
 son motif fini de six écritures et n'envoie pas la configuration fonctionnelle.
@@ -17,6 +19,12 @@ chaque écriture I2C réussie, et non seulement à la fin de la séquence. Aprè
 une erreur en cours d'émission, l'image représente donc les mots effectivement
 acceptés avant le défaut. La configuration complète suivante peut repartir de
 cet état sans supposer que la transaction précédente était atomique.
+
+Lorsqu'une émission partie d'un bus sain échoue, le contrôleur appelle une fois
+`recover()` puis rejoue immédiatement la transaction entière. Une configuration
+qui commence avec un bus indisponible consomme cette tentative avant sa première
+émission et ne relance donc pas une seconde fois en cas de nouvel échec. Les
+compteurs et le dernier défaut sont consultables avec la requête série `IB?`.
 
 L'image initiale vaut zéro, sauf l'adresse 15 initialisée à `0x1F`. Ses cinq
 bits bas sont préservés par l'EPROM originale et cette valeur reproduit les
@@ -91,7 +99,8 @@ La suite modulation est :
 ## Limites conservées
 
 - le code exact de 200 kHz FM reste inconnu ; 199,9 kHz est la plus grande
-  valeur effectivement encodée et testée par le modèle ;
+  valeur effectivement encodée et testée par le modèle. Le contrôleur et la
+  liaison série refusent donc provisoirement 200 kHz avec `E-71` ;
 - les diviseurs impairs de la carte « 20000 » restent refusés faute de trace ;
 - les corrections de calibration sont nulles ;
 - les options doubleur et impulsions sont encodables mais désactivées dans le

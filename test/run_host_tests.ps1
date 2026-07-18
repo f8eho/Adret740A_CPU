@@ -21,4 +21,22 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 & $output
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+$serialOutput = Join-Path $PSScriptRoot '..\.pio\serial_protocol_tests.exe'
+$serialSources = @(
+    (Join-Path $PSScriptRoot 'serial_protocol\test_main.cpp'),
+    (Join-Path $PSScriptRoot '..\src\SerialCommandParser.cpp')
+)
+
+& $compiler '-std=c++17' '-Wall' '-Wextra' '-Werror' `
+    "-I$(Join-Path $PSScriptRoot '..\include')" `
+    @serialSources '-o' $serialOutput
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+& $serialOutput
 exit $LASTEXITCODE

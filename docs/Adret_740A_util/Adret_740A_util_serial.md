@@ -52,7 +52,7 @@ anciennes traces libres.
   la forme du chiffre ASCII `0`.
 - Plusieurs commandes de réglage peuvent être regroupées dans un même
   message, dans l'ordre où elles doivent être préparées.
-- `STB?` doit être transmis seul. Une transaction ne peut contenir qu'une
+- `STB?` et `IB?` doivent être transmis seuls. Une transaction ne peut contenir qu'une
   seule commande `M nn`, obligatoirement en dernière position ; les réglages
   placés avant `M` sont appliqués et mémorisés ensemble.
 - Un message contient au maximum 128 caractères, espaces compris et caractère
@@ -109,8 +109,9 @@ Toutes les réponses se terminent par `CR LF` :
 | `OK\r\n` | message accepté et, sauf terminaison `!`, exécuté |
 | `ERR E-xx\r\n` | message rejeté avec le code indiqué |
 | `STB n\r\n` | résultat de `STB?`, avec `n` compris entre 0 et 255 |
+| `IB ...\r\n` | état détaillé du bus instruments demandé par `IB?` |
 
-Une commande de lecture telle que `STB?` produit uniquement sa réponse de
+Une commande de lecture telle que `STB?` ou `IB?` produit uniquement sa réponse de
 données ; elle n'est pas suivie d'un `OK`.
 
 Lorsqu'une erreur demande l'attention du contrôleur, le 740A émet d'abord le
@@ -136,6 +137,7 @@ sont acceptées dans tous les modes et sont insensibles à la casse.
 | `LLO 1` | verrouille le retour local manuel |
 | `LLO 0` | libère le retour local manuel |
 | `STB?` | lit l'octet d'état et acquitte la demande `SRQ` |
+| `IB?` | lit l'état, les défauts et les compteurs du bus instruments |
 
 Les commandes de réglage de l'instrument ne sont acceptées qu'en mode
 distant (`REMS` ou `RWLS`). Leur réception en mode local produit `E-00`.
@@ -185,7 +187,7 @@ applicables.
 | Mode AM | `AM mode` | aucune | mode 0 à 3 |
 | Taux AM | `% valeur` | % | 0 à 99,9 % |
 | Mode FM | `FM mode` | aucune | mode 0 à 3 |
-| Déviation FM | `D valeur` | kHz | 0 à 200 kHz |
+| Déviation FM | `D valeur` | kHz | 0 à 199,9 kHz provisoirement |
 | Mode PM | `PM mode` | aucune | mode 0 à 3 |
 | Déviation PM | `P valeur` | radian | 0 à 19,99 rad |
 | Impulsions | `SL 64` / `SL 60` | aucune | validation / suppression |
@@ -244,9 +246,11 @@ AM 2 % 50.5
 externe, 2 pour la source interne 1 kHz et 3 pour la source interne 400 Hz.
 
 `D` est suivi de la déviation exprimée en kHz. Elle est comprise entre 0 et
-200 kHz. La résolution est de 0,01 kHz (10 Hz) en dessous de 20 kHz, puis de
-0,1 kHz (100 Hz) de 20 à 200 kHz. Une valeur située entre deux pas valides est
-arrondie vers le bas au pas disponible.
+199,9 kHz. La résolution est de 0,01 kHz (10 Hz) en dessous de 20 kHz, puis de
+0,1 kHz (100 Hz) de 20 à 199,9 kHz. Une valeur située entre deux pas valides est
+arrondie vers le bas au pas disponible. Le manuel annonce 200 kHz, mais cette
+valeur produit provisoirement `E-71` tant que son code exact sur le bus n'est
+pas établi.
 
 ```text
 FM3 D75
@@ -330,6 +334,28 @@ mémorisés jusqu'à l'exécution réussie d'un nouveau message de réglage. Une
 commande de gestion réussie ne les efface pas. Le voyant et l'affichage
 d'erreur du panneau avant conservent leur temporisation propre, indépendante
 de ces bits mémorisés.
+
+### Diagnostic du bus instruments
+
+`IB?` est accepté en local et en distant. Il ne modifie ni la transaction
+différée, ni l'octet d'état, et retourne une ligne de la forme :
+
+```text
+IB READY=1 ERROR=0 FAULT=0 WRITES=21 FAILED=0 RECOVERY_ATTEMPTS=0 RECOVERY_SUCCESS=0 LAST_US=210 MAX_US=225 DATA=45 ADDRESS=6
+```
+
+- `READY` indique si le MCP23017 accepte actuellement des écritures ;
+- `ERROR` est le résultat de la dernière opération et revient à zéro après une
+  opération réussie ;
+- `FAULT` conserve le dernier défaut rencontré ;
+- `WRITES` et `FAILED` comptent les mots du bus instruments ;
+- `RECOVERY_ATTEMPTS` et `RECOVERY_SUCCESS` contrôlent les relances bornées ;
+- `LAST_US` et `MAX_US` donnent les durées mesurées par le Mega ;
+- `DATA` et `ADDRESS` sont les images courantes des sorties du MCP23017.
+
+Les codes `ERROR` et `FAULT` valent 0 sans erreur, 1 non prêt, 2 adresse hors
+plage, 3 débordement du tampon I2C, 4 NACK adresse, 5 NACK donnée, 6 autre
+erreur I2C et 7 timeout. Tous les compteurs repartent de zéro au reset.
 
 ### Codes d'erreur
 

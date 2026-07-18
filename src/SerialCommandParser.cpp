@@ -320,12 +320,16 @@ ErrorCode parseFmDeviation(Cursor* cursor, Transaction* transaction)
     if (scaled == ScaleResult::Negative) {
         return ErrorCode::E72;
     }
-    if (scaled != ScaleResult::Ok || value > control::kFmMaximumHz) {
+    if (scaled != ScaleResult::Ok) {
         return ErrorCode::E71;
     }
     const uint32_t resolution = value < control::kFmFineRangeMaximumHz
         ? 10u : 100u;
-    transaction->output.fmHz = value - value % resolution;
+    value -= value % resolution;
+    if (value > control::kFmMaximumHz) {
+        return ErrorCode::E71;
+    }
+    transaction->output.fmHz = value;
     transaction->outputChanged = true;
     transaction->hasSettingCommand = true;
     return ErrorCode::None;

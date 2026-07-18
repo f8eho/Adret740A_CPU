@@ -26,6 +26,10 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   backend at 400 kHz. Output latches are preloaded before IODIR changes,
   `Chargt` is pulsed through repeated `OLATB` writes, I2C timeouts are bounded,
   and runtime timing/error counters are retained for bench measurements.
+- Bounded instrument-bus recovery: at most one MCP23017 reinitialization is
+  attempted per requested configuration, followed when applicable by one
+  complete replay. `IB?` exposes readiness, current and sticky errors, write
+  counts, recovery counts, timing and output images on Serial0.
 - Allocation-free complete instrument-program composer connected to executed
   panel and remote configurations. It combines frequency, amplitude,
   modulation and RF inhibition in at most 21 writes while retaining the
@@ -81,7 +85,7 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Serial0 command execution has been bench-validated with PuTTY using both
   the historical `?` terminator and `CR/LF` line endings.
 - Host parser/framing and instrument-program vector tests pass. The single
-  PlatformIO firmware succeeds with 1121 bytes RAM / 8192 bytes and 35314
+  PlatformIO firmware succeeds with 1133 bytes RAM / 8192 bytes and 35858
   bytes Flash / 253952 bytes, including
   the deliberately retained 2048-byte zero calibration table.
 
@@ -93,6 +97,8 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - High-level API behavior beyond the current diagnostic scan.
 - End-to-end Serial0 command sessions, `REM` indication, panel inhibition and
   `Adr RTL` behavior on the assembled instrument.
+- ISO1540/MCP23017 signal levels, absence of startup `Chargt` glitches,
+  22.5 us pulse acceptance, NACK recovery and card-by-card instrument-bus load.
 
 ## Current Functional Diagnostic
 
@@ -119,7 +125,12 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - MUL10 and DIV10 select the decade and blink the affected digit three times.
 - The MCP23017 instrument-bus backend is initialized at startup. When present,
   executed state changes now emit the complete functional transaction; when
-  absent, the front panel and remote protocol continue without bus writes.
+  absent, the front panel and remote protocol continue while each requested
+  configuration makes one bounded recovery attempt.
+- FM is provisionally limited to the largest demonstrated bus value of
+  199.9 kHz. Serial and panel entry no longer accept 200 kHz silently; persisted
+  settings from the preceding firmware migrate that single endpoint to
+  199.9 kHz.
 - A 22.5 us low width for `Chargt` is accepted provisionally from the
   falling-edge protocol, trace outliers and the successful 10 us front-panel
   acknowledgement. It remains a bench measurement when components arrive.
@@ -140,7 +151,8 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
    cold-power delay observed at the bench does not occur on a warm reset and
    must be localized between the 5 V rail, RESET and the first CA2 activity.
 4. Validate the Serial0 protocol and `Adr RTL` local return on the instrument.
-5. Implement the instrument-bus output layer behind the current state changes.
+5. Run the disconnected `instrument_bus_bench` capture, validate `IB?` and
+   NACK recovery, then connect instrument cards progressively.
 6. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
    messages on the real panel.
 7. Add AUX sequence stepping and replace the zero calibration initializer

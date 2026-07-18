@@ -251,15 +251,16 @@ de l'ancienne CPU.
 
 ## Ordre d'implémentation
 
-1. terminer le modèle des adresses 0 à 3 ;
-2. résoudre les adresses 4, 5, 6, 13 et 15 à partir des équations RF ;
+1. [x] terminer le modèle des adresses 0 à 3 ;
+2. [x] résoudre les adresses 4, 5, 6, 13 et 15 à partir des équations RF ;
 3. [x] implémenter le pilote MCP23017 indépendamment des encodeurs ;
 4. [x] ajouter l'amplitude ;
 5. [x] ajouter AM, FM et PM ;
 6. [x] ajouter les options doubleur et impulsions ;
 7. [x] composer et raccorder une configuration complète au contrôleur ;
 8. réaliser les essais sur charges logiques, puis connecter les cartes
-   instruments une par une ;
+   instruments une par une. Le motif de banc, le diagnostic série `IB?` et la
+   récupération I2C bornée sont prêts ;
 9. documenter les mesures et les fonctions encore non validées dans
    `docs/PROJECT_STATUS.md`.
 

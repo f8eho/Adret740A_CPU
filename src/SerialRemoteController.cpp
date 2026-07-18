@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include "Adret/Debug.h"
+#include "Adret/InstrumentBus.h"
 #include "Adret/SettingsStore.h"
 
 namespace adret {
@@ -26,7 +27,9 @@ char asciiUpper(char value)
     return value >= 'a' && value <= 'z' ? char(value - ('a' - 'A')) : value;
 }
 
-bool isStatusQuery(const serial_protocol::FrameResult& frame)
+bool isExactQuery(const serial_protocol::FrameResult& frame,
+                  const char* mnemonic,
+                  uint8_t mnemonicLength)
 {
     if (frame.marker != serial_protocol::ExecutionMarker::QuestionMark) {
         return false;
@@ -36,10 +39,9 @@ bool isStatusQuery(const serial_protocol::FrameResult& frame)
            (frame.text[position] == ' ' || frame.text[position] == '\t')) {
         ++position;
     }
-    constexpr char kStatus[] = "STB";
-    for (uint8_t i = 0u; i < 3u; ++i) {
+    for (uint8_t i = 0u; i < mnemonicLength; ++i) {
         if (position >= frame.length ||
-            asciiUpper(frame.text[position++]) != kStatus[i]) {
+            asciiUpper(frame.text[position++]) != mnemonic[i]) {
             return false;
         }
     }
@@ -128,9 +130,14 @@ void SerialRemoteController::processRecord(
         return;
     }
 
-    // STB? observes the actual state and never consumes a deferred transaction.
-    if (isStatusQuery(frame)) {
+    // Read-only queries observe actual state and never consume a deferred
+    // transaction.
+    if (isExactQuery(frame, "STB", 3u)) {
         sendStatus();
+        return;
+    }
+    if (isExactQuery(frame, "IB", 2u)) {
+        sendInstrumentBusStatus();
         return;
     }
 
@@ -242,6 +249,37 @@ void SerialRemoteController::sendStatus()
     Serial.print(value);
     Serial.print(F("\r\n"));
     serviceRequest_ = false;
+#endif
+}
+
+void SerialRemoteController::sendInstrumentBusStatus()
+{
+#if ADRET_REMOTE_SERIAL
+    using instrument_bus::instrumentBus;
+    const instrument_bus::InstrumentBusTiming& timing = instrumentBus.timing();
+    Serial.print(F("IB READY="));
+    Serial.print(instrumentBus.ready() ? 1 : 0);
+    Serial.print(F(" ERROR="));
+    Serial.print(uint8_t(instrumentBus.lastError()));
+    Serial.print(F(" FAULT="));
+    Serial.print(uint8_t(instrumentBus.lastFault()));
+    Serial.print(F(" WRITES="));
+    Serial.print(timing.completedWrites);
+    Serial.print(F(" FAILED="));
+    Serial.print(timing.failedWrites);
+    Serial.print(F(" RECOVERY_ATTEMPTS="));
+    Serial.print(timing.recoveryAttempts);
+    Serial.print(F(" RECOVERY_SUCCESS="));
+    Serial.print(timing.successfulRecoveries);
+    Serial.print(F(" LAST_US="));
+    Serial.print(timing.lastWriteUs);
+    Serial.print(F(" MAX_US="));
+    Serial.print(timing.maximumWriteUs);
+    Serial.print(F(" DATA="));
+    Serial.print(instrumentBus.dataImage());
+    Serial.print(F(" ADDRESS="));
+    Serial.print(instrumentBus.addressImage());
+    Serial.print(F("\r\n"));
 #endif
 }
 

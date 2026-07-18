@@ -60,6 +60,26 @@ expose le dernier défaut I2C ainsi que le nombre et la durée des écritures.
 Après un défaut pendant l'impulsion, il tente une remise au niveau haut, puis
 se déclare indisponible jusqu'à l'appel de `recover()`.
 
+Le contrôleur borne la récupération à une tentative par configuration. Si le
+bus était prêt puis échoue pendant une écriture, il réinitialise le MCP23017 et
+réémet une fois la configuration complète depuis son premier mot. Si le bus
+était déjà indisponible, il tente d'abord la récupération puis effectue une
+seule émission. Il n'existe donc aucune boucle de relance infinie.
+
+## Diagnostic série
+
+La requête `IB?`, utilisable en mode local comme distant, retourne une ligne :
+
+```text
+IB READY=1 ERROR=0 FAULT=0 WRITES=6 FAILED=0 RECOVERY_ATTEMPTS=0 RECOVERY_SUCCESS=0 LAST_US=123 MAX_US=225 DATA=255 ADDRESS=15
+```
+
+`ERROR` décrit l'état de la dernière opération, tandis que `FAULT` conserve le
+dernier défaut même après une récupération réussie. Les codes sont : 0 aucun,
+1 non prêt, 2 adresse invalide, 3 débordement du tampon I2C, 4 NACK adresse,
+5 NACK donnée, 6 autre erreur I2C et 7 timeout. Les compteurs ne sont remis à
+zéro que par un reset du Mega.
+
 ## Budget temporel à 400 kHz
 
 Un octet I2C avec acquittement occupe neuf périodes, soit 22,5 µs. Les deux
@@ -102,9 +122,13 @@ lorsque le matériel sera disponible, mais ne bloque plus le développement.
    définit `ADRET_INSTRUMENT_BUS_BENCH=1` ;
 3. vérifier qu'un reset Mega ne produit aucun front descendant sur GPIOB4
    avant le motif, puis observer les six écritures finies du motif ;
+   `IB?` doit alors indiquer `READY=1`, `WRITES=6` et `FAILED=0` ;
 4. mesurer établissement données/adresse, largeur basse de `Chargt`, durée
-   totale et comportement après NACK ou déconnexion SDA/SCL ;
-5. vérifier que `recover()` remet GPIOB4 haut avant toute nouvelle impulsion ;
+   totale et comportement au reset ;
+5. recharger le firmware normal en gardant le fond de panier déconnecté,
+   forcer SDA ou SCL bas pendant une commande fonctionnelle, puis libérer la
+   ligne et répéter la commande ; vérifier avec `IB?` qu'une seule récupération
+   a été tentée et que GPIOB4 est revenu haut avant les nouvelles impulsions ;
 6. connecter ensuite une carte instrument à la fois.
 
 Le motif teste successivement bus inchangé, donnée seule, adresse seule, puis

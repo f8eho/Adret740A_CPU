@@ -26,6 +26,7 @@ private:
     void sendError(serial_protocol::ErrorCode error,
                    int8_t memoryIndex = -1);
     void sendStatus();
+    void sendInstrumentBusStatus();
     uint8_t statusByte() const;
     void setRemoteIndicator();
 
