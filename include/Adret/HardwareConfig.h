@@ -70,6 +70,16 @@ constexpr uint8_t kPowerSenseInterruptFlag = _BV(INTF5);
 constexpr uint8_t kPowerSenseSenseBit0 = ISC50;
 constexpr uint8_t kPowerSenseSenseBit1 = ISC51;
 
+// Instrument bus through ISO1540 + MCP23017. The ATmega2560 hardware I2C pins
+// are Mega D20/SDA (PD1) and D21/SCL (PD0); neither is shared with Serial0.
+// MCP23017 A2..A0 are expected low. GPIOA carries D7..D0, GPIOB3..B0 the
+// address, and GPIOB4 the active-low Chargt strobe. GPIOB7..B5 stay inputs.
+constexpr uint8_t kInstrumentMcp23017Address = 0x20u;
+constexpr uint32_t kInstrumentI2cClockHz = 400000UL;
+constexpr uint32_t kInstrumentI2cTimeoutUs = 2500UL;
+constexpr uint8_t kInstrumentLoadBit = 4u;
+constexpr bool kInstrumentLoadActiveLow = true;
+
 inline void waitTtlSettle()
 {
     asm volatile(

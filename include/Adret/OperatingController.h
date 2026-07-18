@@ -133,7 +133,7 @@ private:
     void renderIncrementView();
     void renderMessage(const char* text, uint32_t durationMs);
     void updateExecIndicator();
-    void reportInstrumentTransaction(const OutputConfiguration& configuration) const;
+    void reportInstrumentTransaction(const OutputConfiguration& configuration);
     void changeStep(bool multiply);
     void startStepBlink();
     void applyBlinkMask(bool blank);
@@ -190,6 +190,8 @@ private:
     uint8_t correctionBlinkPosition_ = 0;
     uint8_t blinkPhasesRemaining_ = 0;
     uint32_t previousBlinkMs_ = 0;
+    uint8_t instrumentRegisters_[16] = {};
+    bool instrumentRegistersInitialized_ = false;
 };
 
 extern OperatingController operatingController;

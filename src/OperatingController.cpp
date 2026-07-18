@@ -3,7 +3,10 @@
 #include <Arduino.h>
 #include <math.h>
 
+#include "Adret/CalibrationEprom.h"
 #include "Adret/Debug.h"
+#include "Adret/InstrumentBus.h"
+#include "Adret/InstrumentProgram.h"
 #include "Adret/SettingsStore.h"
 
 namespace adret {
@@ -42,6 +45,55 @@ constexpr uint8_t itemCount(const T (&)[N])
 {
     return N;
 }
+
+#if !ADRET_INSTRUMENT_BUS_BENCH
+instrument_bus::ModulationKind instrumentModulationKind(ModulationMode mode)
+{
+    switch (mode) {
+        case ModulationMode::Fm:
+            return instrument_bus::ModulationKind::Fm;
+        case ModulationMode::Pm:
+            return instrument_bus::ModulationKind::Pm;
+        case ModulationMode::Am:
+            return instrument_bus::ModulationKind::Am;
+    }
+    return instrument_bus::ModulationKind::Am;
+}
+
+instrument_bus::ModulationSource instrumentModulationSource(
+    ModulationSource source)
+{
+    switch (source) {
+        case ModulationSource::Cw:
+            return instrument_bus::ModulationSource::Cw;
+        case ModulationSource::Hz400:
+            return instrument_bus::ModulationSource::Internal400Hz;
+        case ModulationSource::KHz1:
+            return instrument_bus::ModulationSource::Internal1kHz;
+        case ModulationSource::External:
+            return instrument_bus::ModulationSource::External;
+    }
+    return instrument_bus::ModulationSource::Cw;
+}
+
+instrument_bus::InstrumentConfiguration instrumentConfiguration(
+    const OutputConfiguration& configuration)
+{
+    return {
+        configuration.frequencyHz,
+        configuration.amplitudeTenthsDbm,
+        configuration.fmHz,
+        configuration.pmHundredthsRd,
+        configuration.amTenthsPercent,
+        instrumentModulationKind(configuration.modulationMode),
+        instrumentModulationSource(configuration.modulationSource),
+        configuration.rfOff,
+        false,
+        false,
+        false,
+    };
+}
+#endif
 
 constexpr uint32_t powerOfTen(uint8_t exponent)
 {
@@ -518,6 +570,7 @@ void OperatingController::handleKey(Key key)
             pending_.rfOff = settings_.output.rfOff;
         }
         renderIndicators();
+        reportInstrumentTransaction(settings_.output);
 #if ADRET_DEBUG_SERIAL
         Serial.print(F("RF_OFF value="));
         Serial.println(settings_.output.rfOff ? 1 : 0);
@@ -1365,7 +1418,7 @@ void OperatingController::updateExecIndicator()
 }
 
 void OperatingController::reportInstrumentTransaction(
-    const OutputConfiguration& configuration) const
+    const OutputConfiguration& configuration)
 {
 #if ADRET_DEBUG_SERIAL
     Serial.println(F("INSTR BEGIN"));
@@ -1392,6 +1445,48 @@ void OperatingController::reportInstrumentTransaction(
     Serial.println(F("INSTR END"));
 #else
     (void)configuration;
+#endif
+
+#if !ADRET_INSTRUMENT_BUS_BENCH
+    if (!instrumentRegistersInitialized_) {
+        instrument_bus::makeInitialInstrumentRegisters(instrumentRegisters_);
+        instrumentRegistersInitialized_ = true;
+    }
+
+    instrument_bus::InstrumentProgram program = {};
+    // The correction table is deliberately zero-filled. Index selection will
+    // be supplied by the calibration phase; index zero is therefore neutral.
+    const int8_t correctionTenthsDb = calibration::readCorrection(0u);
+    const instrument_bus::InstrumentProgramResult result =
+        instrument_bus::makeInstrumentProgram(
+            instrumentConfiguration(configuration),
+            correctionTenthsDb,
+            instrumentRegisters_,
+            &program);
+    if (result != instrument_bus::InstrumentProgramResult::Ok ||
+        !instrument_bus::instrumentBus.ready()) {
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("INSTR BUS skipped program_result="));
+        Serial.print(uint8_t(result));
+        Serial.print(F(" ready="));
+        Serial.println(instrument_bus::instrumentBus.ready() ? 1 : 0);
+#endif
+        return;
+    }
+
+    for (uint8_t i = 0u; i < program.writeCount; ++i) {
+        const instrument_bus::InstrumentWrite& write = program.writes[i];
+        if (!instrument_bus::instrumentBus.write(write.address, write.value)) {
+#if ADRET_DEBUG_SERIAL
+            Serial.print(F("INSTR BUS failed index="));
+            Serial.print(i);
+            Serial.print(F(" error="));
+            Serial.println(uint8_t(instrument_bus::instrumentBus.lastError()));
+#endif
+            return;
+        }
+        instrumentRegisters_[write.address] = write.value;
+    }
 #endif
 }
 

@@ -5,10 +5,15 @@
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
 #include "Adret/HardwareConfig.h"
+#include "Adret/InstrumentBus.h"
 #include "Adret/OperatingController.h"
 #include "Adret/PowerFailMonitor.h"
 #include "Adret/SettingsStore.h"
 #include "Adret/SerialRemoteController.h"
+
+#if ADRET_INSTRUMENT_BUS_BENCH
+#warning "Instrument-bus bench pattern enabled: disconnect the instrument backplane"
+#endif
 
 namespace {
 
@@ -63,6 +68,25 @@ void releasePendingPanelInputAtStartup()
     }
 }
 
+#if ADRET_INSTRUMENT_BUS_BENCH
+void runInstrumentBusBenchPattern()
+{
+    using adret::instrument_bus::instrumentBus;
+    if (!instrumentBus.ready()) {
+        return;
+    }
+
+    // Finite startup pattern for a disconnected logic load. Consecutive words
+    // exercise: unchanged bus, data only, address only, then both changed.
+    (void)instrumentBus.write(0u, 0x00u);
+    (void)instrumentBus.write(0u, 0x00u);
+    (void)instrumentBus.write(0u, 0xA5u);
+    (void)instrumentBus.write(5u, 0xA5u);
+    (void)instrumentBus.write(10u, 0x5Au);
+    (void)instrumentBus.write(15u, 0xFFu);
+}
+#endif
+
 }  // namespace
 
 void setup()
@@ -72,6 +96,10 @@ void setup()
 #endif
     adret::frontPanelBus.begin();
     adret::frontPanel.begin();
+    const bool instrumentBusReady = adret::instrument_bus::instrumentBus.begin();
+#if ADRET_INSTRUMENT_BUS_BENCH
+    runInstrumentBusBenchPattern();
+#endif
 
     adret::control::Settings settings = adret::control::defaultSettings();
     const bool restored = adret::settingsStore.load(&settings);
@@ -80,6 +108,7 @@ void setup()
     Serial.println(restored ? 1 : 0);
 #else
     (void)restored;
+    (void)instrumentBusReady;
 #endif
     adret::control::operatingController.begin(settings);
     adret::serialRemoteController.begin();
@@ -88,6 +117,8 @@ void setup()
     adret::frontPanelIrq.begin();
     adret::powerFailMonitor.begin();
 #if ADRET_DEBUG_SERIAL
+    Serial.print(F("Instrument bus MCP23017="));
+    Serial.println(instrumentBusReady ? F("ready") : F("unavailable"));
     Serial.print(F("PA monitoring="));
     Serial.println(adret::hw::kPowerSenseEnabled ? F("enabled") : F("disabled"));
     Serial.println(F("ADRET front panel control ready"));

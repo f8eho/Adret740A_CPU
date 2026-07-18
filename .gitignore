@@ -11,3 +11,8 @@
 
 *.tmp
 *.bak
+
+# Local instrument-bus captures and generated decodes are intentionally kept
+# outside Git; retain only the decoder source and launcher.
+docs/Traces_bus_instruments/Data/
+docs/Traces_bus_instruments/Out/
