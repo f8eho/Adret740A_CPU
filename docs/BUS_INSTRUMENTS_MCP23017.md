@@ -32,11 +32,12 @@ tirage I2C.
 À la mise sous tension, toutes les broches du MCP23017 sont des entrées. Le
 pilote effectue dans cet ordre :
 
-1. configuration `IOCON.SEQOP=1`, en conservant `BANK=0` ;
-2. préchargement de `OLATA=0x00` ;
-3. préchargement de `OLATB=0x10`, donc `Chargt=1` ;
-4. passage de GPIOA en sortie ;
-5. passage de GPIOB4..0 en sortie, GPIOB7..5 restant en entrée.
+1. normalisation sûre de la carte de registres en `BANK=0` ;
+2. configuration `IOCON.BANK=1` et `IOCON.SEQOP=1` ;
+3. préchargement de `OLATA=0x00` ;
+4. préchargement de `OLATB=0x10`, donc `Chargt=1` ;
+5. passage de GPIOA en sortie ;
+6. passage de GPIOB4..0 en sortie, GPIOB7..5 restant en entrée.
 
 Aucun front descendant de `Chargt` n'est produit par cette séquence. Une
 résistance externe doit néanmoins maintenir `Chargt` au niveau haut pendant
@@ -53,9 +54,12 @@ Pour chaque couple `(adresse, donnée)` :
 3. écrire deux octets successifs dans `OLATB` : `adresse`, puis
    `adresse|0x10`.
 
-`SEQOP=1` empêche l'auto-incrément du pointeur de registre : les deux derniers
-octets atteignent donc tous les deux `OLATB`. Ils produisent un unique front
-descendant, puis libèrent immédiatement `Chargt`.
+Avec `BANK=1`, `SEQOP=1` empêche l'auto-incrément du pointeur : les deux
+derniers octets atteignent donc tous les deux `OLATB`. Ils produisent un unique
+front descendant, puis libèrent immédiatement `Chargt`. Il ne faut pas utiliser
+cette technique avec `BANK=0` : dans ce mode spécial, le MCP23017 alterne le
+pointeur entre les registres A et B associés, et le second octet atteindrait
+`OLATA` en laissant `Chargt` actif bas.
 
 Le pilote conserve les images de GPIOA et GPIOB et ne fait aucune
 lecture-modification-écriture. Il refuse les adresses supérieures à 15 et
@@ -120,6 +124,85 @@ lorsque le matériel sera disponible, mais ne bloque plus le développement.
 
 ## Procédure de validation
 
+### Test I2C sans fond de panier
+
+L'environnement `i2c_probe` permet le premier essai avec les sorties du
+MCP23017 non raccordées. Il démarre à 100 kHz et recherche une réponse aux huit
+adresses possibles `0x20` à `0x27`. L'ISO1540 lui-même n'a pas d'adresse I2C.
+
+Avant la mise sous tension, vérifier :
+
+- `RESET` du MCP23017 au niveau haut ;
+- A0, A1 et A2 au niveau bas si l'adresse attendue est `0x20` ;
+- une résistance de tirage de SDA et de SCL vers chaque alimentation, de
+  chaque côté de l'ISO1540 ;
+- environ 5 V entre VCC1/GND1, puis entre VCC2/GND2 et VDD/VSS du MCP23017 ;
+- aucune continuité entre GND1 et GND2 si l'isolation galvanique doit être
+  conservée.
+
+VCC2 est une entrée d'alimentation et non une sortie produite par l'ISO1540.
+Fond de panier débranché, le côté 2 et le MCP23017 doivent donc recevoir un
+5 V externe référencé à GND2. Pour un essai de table uniquement, sans aucune
+liaison au 740A, VCC1/VCC2 et GND1/GND2 peuvent provisoirement partager le 5 V
+et la masse du Mega ; l'essai ne valide alors évidemment pas l'isolation.
+
+```powershell
+pio run -e i2c_probe
+pio run -e i2c_probe --target upload
+pio device monitor --baud 115200
+```
+
+La sonde affiche l'adresse détectée et lit `IODIRA`, `IODIRB`, `IOCON`,
+`OLATA` et `OLATB`. Si les deux registres `IODIR` valent `0xFF`, elle écrit un
+motif dans `OLATA`, le relit puis restaure sa valeur. Toutes les broches restent
+alors en entrée : ce test valide les communications dans les deux sens sans
+commander le futur bus instruments. La lettre `S` relance le test à 100 kHz et
+la lettre `F` l'exécute à la fréquence finale de 400 kHz. La lettre `M` permet
+un essai exploratoire à 1 MHz ; cette vitesse n'est pas utilisée par le
+firmware normal. La lettre `B` cherche par dichotomie la limite fiable parmi
+les fréquences réellement générables par le TWI du Mega entre 400 kHz et
+1 MHz. Chaque palier subit 50 cycles et le meilleur palier 1 000 cycles ; la
+sonde revient toujours à 400 kHz à la fin.
+
+Le premier essai isolé du 2026-07-21 fonctionne à 100 kHz avec un module
+générique MCP23017 équipé de tirages SDA/SCL de 4,7 kohm. En parallèle avec les
+10 kohm du clone de la carte Adafruit 4903, le tirage effectif côté MCP23017 est
+d'environ 3,2 kohm. Le même montage a passé 20 tests consécutifs à 400 kHz sans
+absence de réponse ni erreur de lecture/écriture. La CMJU-2317 équipée de
+10 kohm, soit environ 5 kohm effectifs, produisait des niveaux SDA
+intermédiaires incorrects. La différence peut provenir des tirages, du routage,
+du découplage ou d'un défaut propre à la CMJU ; elle n'est pas encore isolée.
+
+L'essai exploratoire à 1 MHz n'est pas exploitable : l'adresse réelle `0x20`
+n'est plus reconnue, de faux acquittements apparaissent à `0x21`, `0x23`,
+`0x25` et `0x27`, et les lectures de registres échouent. Un retour immédiat à
+400 kHz rétablit le test complet. La capacité nominale de l'ISO1540 à 1 MHz ne
+garantit donc pas cette vitesse pour l'ensemble Mega, modules, tirages et
+câblage de banc ; le firmware reste configuré à 400 kHz.
+
+Une recherche dichotomique sur les paliers TWI réellement générables par le
+Mega a ensuite validé 888 888 Hz pendant 1 000 cycles complets. Chaque cycle
+contrôle que seule l'adresse `0x20` acquitte, lit les directions et effectue
+une écriture, relecture et restauration d'`OLATA`. Le palier suivant est
+1 MHz et échoue. La limite observée se situe donc entre ces deux paliers, sans
+que 888 888 Hz constitue une marge de conception suffisante pour remplacer le
+choix conservateur de 400 kHz.
+
+Après un démarrage à froid normal, la sortie attendue à l'adresse par défaut
+contient notamment :
+
+```text
+Reponse a 0x20 (adresse firmware)
+  registres: IODIRA=0xFF IODIRB=0xFF IOCON=0x00 OLATA=0x00 OLATB=0x00
+  lecture/ecriture OLATA, broches en entree: OK
+```
+
+Si aucune adresse ne répond, mesurer au repos SDA et SCL des deux côtés de
+l'ISO1540 : les quatre points doivent être au niveau haut. Vérifier ensuite
+`RESET`, les alimentations et les tirages avant d'incriminer l'adresse.
+
+### Test des sorties et de Chargt
+
 1. ne raccorder que Mega, ISO1540, MCP23017 et analyseur logique ;
 2. compiler et charger l'environnement PlatformIO `instrument_bus_bench`, qui
    définit `ADRET_INSTRUMENT_BUS_BENCH=1` ;
@@ -140,6 +223,12 @@ produit un avertissement de compilation dans l'environnement de banc. Ce
 dernier ne doit jamais être chargé avec le fond de panier instruments
 connecté. Après les mesures, recharger impérativement l'environnement normal
 `megaatmega2560`.
+
+Le banc déconnecté du 2026-07-21, échantillonné à 4 MHz, a confirmé les six
+transactions et leurs états de données/adresse, une impulsion basse `Chargt`
+de 22,5 us par transaction, puis le retour au niveau haut inactif. Ce résultat
+valide le chemin de sortie Mega--ISO1540--MCP23017 sans charge instrument ; il
+ne valide pas encore l'acceptation du strobe par les cartes d'origine.
 
 ```powershell
 pio run -e instrument_bus_bench

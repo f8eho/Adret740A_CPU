@@ -9,15 +9,18 @@ namespace adret {
 namespace instrument_bus {
 namespace {
 
-constexpr uint8_t kIodirA = 0x00u;
-constexpr uint8_t kIodirB = 0x01u;
-constexpr uint8_t kIocon = 0x0Au;
-constexpr uint8_t kOlatA = 0x14u;
-constexpr uint8_t kOlatB = 0x15u;
+constexpr uint8_t kBank0Iocon = 0x0Au;
+constexpr uint8_t kBank0OlatB = 0x15u;
+constexpr uint8_t kBank1IodirA = 0x00u;
+constexpr uint8_t kBank1IodirB = 0x10u;
+constexpr uint8_t kBank1OlatA = 0x0Au;
+constexpr uint8_t kBank1OlatB = 0x1Au;
 
-// BANK=0 retains the standard register map. SEQOP=1 keeps the register pointer
-// fixed, allowing two consecutive bytes to pulse the same OLATB register.
-constexpr uint8_t kIoconDisableSequentialAddress = 0x20u;
+// In BANK=0 byte mode, the MCP23017 has a special behavior that toggles the
+// address pointer between paired A/B registers. BANK=1 removes that pairing;
+// SEQOP=1 then keeps the pointer fixed so two consecutive data bytes really do
+// update OLATB twice.
+constexpr uint8_t kIoconBankOneByteMode = 0xA0u;
 constexpr uint8_t kPortBReservedInputMask = 0xE0u;
 constexpr uint8_t kInstrumentAddressMask = 0x0Fu;
 constexpr uint8_t kLoadMask = uint8_t(1u << hw::kInstrumentLoadBit);
@@ -80,13 +83,18 @@ bool InstrumentBus::initializeExpander()
     dataImage_ = 0u;
     controlImage_ = inactiveControl(0u);
 
-    // All pins power up as inputs. Preload both output latches before changing
-    // IODIR so Chargt cannot make a falling edge during CPU initialization.
-    if (!writeRegister(kIocon, kIoconDisableSequentialAddress) ||
-        !writeRegister(kOlatA, dataImage_) ||
-        !writeRegister(kOlatB, controlImage_) ||
-        !writeRegister(kIodirA, 0x00u) ||
-        !writeRegister(kIodirB, kPortBReservedInputMask)) {
+    // Normalize the register map even when the Mega resets without resetting
+    // the MCP23017. Address 15h is OLATB in BANK=0, where writing 10h safely
+    // preloads an inactive Chargt. In BANK=1 it is the mirrored IOCON register,
+    // where the same write clears BANK and returns the device to BANK=0.
+    // We can then select BANK=1 byte mode from the known BANK=0 IOCON address.
+    // All pins power up as inputs; preload both latches before changing IODIR.
+    if (!writeRegister(kBank0OlatB, controlImage_) ||
+        !writeRegister(kBank0Iocon, kIoconBankOneByteMode) ||
+        !writeRegister(kBank1OlatA, dataImage_) ||
+        !writeRegister(kBank1OlatB, controlImage_) ||
+        !writeRegister(kBank1IodirA, 0x00u) ||
+        !writeRegister(kBank1IodirB, kPortBReservedInputMask)) {
         ready_ = false;
         return false;
     }
@@ -112,7 +120,7 @@ bool InstrumentBus::write(uint8_t address, uint8_t value)
 
     const uint8_t inactive = inactiveControl(address);
     if (value != dataImage_) {
-        if (!writeRegister(kOlatA, value)) {
+        if (!writeRegister(kBank1OlatA, value)) {
             ready_ = false;
             recordWriteDuration(startedUs, false);
             return false;
@@ -120,7 +128,7 @@ bool InstrumentBus::write(uint8_t address, uint8_t value)
         dataImage_ = value;
     }
     if (inactive != controlImage_) {
-        if (!writeRegister(kOlatB, inactive)) {
+        if (!writeRegister(kBank1OlatB, inactive)) {
             ready_ = false;
             recordWriteDuration(startedUs, false);
             return false;
@@ -129,7 +137,7 @@ bool InstrumentBus::write(uint8_t address, uint8_t value)
     }
 
     const uint8_t pulse[2] = {activeControl(address), inactive};
-    if (!writeRepeatedRegister(kOlatB, pulse, 2u)) {
+    if (!writeRepeatedRegister(kBank1OlatB, pulse, 2u)) {
         const InstrumentBusError pulseError = lastError_;
         bestEffortReleaseLoad(inactive);
         lastError_ = pulseError;
@@ -206,7 +214,7 @@ void InstrumentBus::recordWriteDuration(uint32_t startedUs, bool success)
 void InstrumentBus::bestEffortReleaseLoad(uint8_t inactiveControl)
 {
     const InstrumentBusError savedError = lastError_;
-    if (writeRegister(kOlatB, inactiveControl)) {
+    if (writeRegister(kBank1OlatB, inactiveControl)) {
         controlImage_ = inactiveControl;
     }
     lastError_ = savedError;

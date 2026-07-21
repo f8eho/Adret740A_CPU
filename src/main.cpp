@@ -11,6 +11,8 @@
 #include "Adret/SettingsStore.h"
 #include "Adret/SerialRemoteController.h"
 
+#if !ADRET_I2C_PROBE
+
 #if ADRET_INSTRUMENT_BUS_BENCH
 #warning "Instrument-bus bench pattern enabled: disconnect the instrument backplane"
 #endif
@@ -141,3 +143,5 @@ void loop()
 #endif
     }
 }
+
+#endif  // !ADRET_I2C_PROBE

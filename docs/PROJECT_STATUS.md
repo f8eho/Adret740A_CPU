@@ -97,8 +97,8 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - High-level API behavior beyond the current diagnostic scan.
 - End-to-end Serial0 command sessions, `REM` indication, panel inhibition and
   `Adr RTL` behavior on the assembled instrument.
-- ISO1540/MCP23017 signal levels, absence of startup `Chargt` glitches,
-  22.5 us pulse acceptance, NACK recovery and card-by-card instrument-bus load.
+- `Chargt` pulse acceptance by the original instrument cards, NACK recovery
+  and card-by-card instrument-bus load.
 
 ## Current Functional Diagnostic
 
@@ -127,13 +127,49 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   executed state changes now emit the complete functional transaction; when
   absent, the front panel and remote protocol continue while each requested
   configuration makes one bounded recovery attempt.
+- On 2026-07-21, the disconnected CMJU-2317 was validated directly on Mega
+  D20/D21 at 100 kHz: it acknowledged address `0x20`, its reset register image
+  was `IODIRA=FF`, `IODIRB=FF`, `IOCON=00`, `OLATA=00`, `OLATB=00`, and an
+  `OLATA` write/read/restore test passed while every GPIO remained an input.
+  The CMJU-2317 board with 10 kohm SDA/SCL pull-ups did not acknowledge through
+  the ISO1540 and showed invalid intermediate SDA levels. A different generic
+  MCP23017 module with 4.7 kohm pull-ups works through the isolator at both
+  100 kHz and the final 400 kHz rate. Twenty consecutive 400 kHz address,
+  register read and `OLATA` write/read/restore tests completed without a NACK
+  or failure.
+  An exploratory 1 MHz test was not reliable: it missed `0x20`, reported false
+  acknowledgements at odd addresses `0x21`, `0x23`, `0x25` and `0x27`, and all
+  register reads failed. Returning immediately to 400 kHz restored a clean
+  `0x20` register and latch test. A binary search over the exact ATmega2560 TWI
+  clock steps found 888888 Hz reliable for 1000 complete address-map,
+  register-read and latch-write cycles; the next step, 1 MHz, failed. This is
+  a bench limit rather than design margin, so the firmware remains at 400 kHz.
+  With the isolator board's 10 kohm pull-ups, the effective target-side value
+  changes from about 5 kohm to 3.2 kohm. This is the leading explanation but
+  remains to be separated from differences in module routing, decoupling or a
+  possible fault on the CMJU board.
+- A first disconnected `instrument_bus_bench` logic capture at 4 MHz exposed
+  a byte-mode error: with `BANK=0` and `SEQOP=1`, the MCP23017 toggles its
+  pointer between paired A/B registers. The intended second `OLATB` byte was
+  written to `OLATA`, corrupting data and leaving `Chargt` actively low; a
+  4.7-kohm pull-up consequently measured about 5 V / 0.02 V across its ends.
+  The driver now normalizes either retained bank state and selects
+  `BANK=1, SEQOP=1`, where both bytes address `OLATB`. A second capture with
+  the corrected bench confirmed the six requested transactions, the expected
+  data/address states, one 22.5-us low `Chargt` pulse per transaction, and an
+  inactive high final level. The isolated MCP23017 output path is therefore
+  validated; acceptance by the original instrument cards remains untested.
+- Attempts to query `IB?` and the control query `STB?` through the Mega USB
+  serial bridge returned `E-00` during this bench session. Since both queries
+  failed identically, Serial0 reception or the host-side access method must be
+  checked separately before using `IB?` as bench evidence.
 - FM is provisionally limited to the largest demonstrated bus value of
   199.9 kHz. Serial and panel entry no longer accept 200 kHz silently; persisted
   settings from the preceding firmware migrate that single endpoint to
   199.9 kHz.
-- A 22.5 us low width for `Chargt` is accepted provisionally from the
-  falling-edge protocol, trace outliers and the successful 10 us front-panel
-  acknowledgement. It remains a bench measurement when components arrive.
+- The disconnected output bench measured the expected 22.5 us low width for
+  `Chargt`, with a clean return to the inactive high level. Acceptance by the
+  original instrument cards will be checked during progressive connection.
 - PA is reserved on Mega D3 / PE5 / INT5 but monitoring remains disabled until
   its voltage and polarity are validated at the bench.
 - Numeric entry, EXEC fixed/blinking modes, Code B status messages and memory
@@ -151,8 +187,8 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
    cold-power delay observed at the bench does not occur on a warm reset and
    must be localized between the 5 V rail, RESET and the first CA2 activity.
 4. Validate the Serial0 protocol and `Adr RTL` local return on the instrument.
-5. Run the disconnected `instrument_bus_bench` capture, validate `IB?` and
-   NACK recovery, then connect instrument cards progressively.
+5. Validate `IB?` and NACK recovery with the normal firmware, then connect
+   instrument cards progressively and confirm acceptance of the 22.5-us pulse.
 6. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
    messages on the real panel.
 7. Add AUX sequence stepping and replace the zero calibration initializer

@@ -197,7 +197,7 @@ GPIOB5..7 : réserves
 
 Les deux ports du MCP23017 ne sont pas mis à jour simultanément : chaque octet
 reçu est appliqué immédiatement. Ce n'est pas bloquant si `Chargt` reste
-inactif pendant la mise à jour. Le pilote configure en plus `SEQOP=1` afin de
+inactif pendant la mise à jour. Le pilote configure `BANK=1` et `SEQOP=1` afin de
 produire la descente et la remontée de `Chargt` par deux octets visant le même
 registre `OLATB` :
 
