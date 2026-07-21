@@ -1,5 +1,8 @@
 # Pilote physique ISO1540 + MCP23017
 
+Le brochage complet Arduino, ISO1540, MCP23017 et connecteur B1 est regroupé
+dans [`BUS_INSTRUMENTS_MAPPING_HARDWARE.md`](BUS_INSTRUMENTS_MAPPING_HARDWARE.md).
+
 ## Décision d'architecture
 
 Le premier prototype utilise l'I2C. L'API publique `InstrumentBus` ne contient

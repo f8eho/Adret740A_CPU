@@ -7,6 +7,15 @@ Items explicitly listed under remaining validation are still provisional.
 
 - Arduino Serial0 pins D0/D1 are left free for external communication.
 
+## Instrument Bus
+
+- Arduino Mega D20/SDA and D21/SCL drive an ISO1540 and a MCP23017 at I2C
+  address `0x20`.
+- MCP23017 GPA0..7 drive instrument data D0..D7, GPB0..3 drive address A0..A3,
+  and GPB4 drives active-low `Chargt`.
+- The complete component and B1 connector pinout is documented in
+  [`BUS_INSTRUMENTS_MAPPING_HARDWARE.md`](BUS_INSTRUMENTS_MAPPING_HARDWARE.md).
+
 ## Front Panel Bus
 
 - Data bus: ATmega2560 PORTA, Arduino Mega pins 22..29.
