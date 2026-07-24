@@ -16,3 +16,7 @@
 # outside Git; retain only the decoder source and launcher.
 docs/Traces_bus_instruments/Data/
 docs/Traces_bus_instruments/Out/
+
+# Local reference schematics are intentionally excluded to keep the repository
+# lightweight. Documentation may still link to this directory when it exists.
+docs/Adret740a_schemas/

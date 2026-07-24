@@ -18,7 +18,8 @@ Le résultat attendu n'est pas seulement une table d'adresses. Il faut obtenir :
 ## Sources de référence
 
 - `docs/ADRET7401_Principe.md` pour les équations de synthèse et les gammes ;
-- `docs/schemas_instruments/` pour les registres, décodeurs et connexions ;
+- `docs/Adret740a_schemas/` (référence locale non versionnée) pour les
+  registres, décodeurs et connexions ;
 - `docs/Traces_bus_instruments/Data/` pour les captures brutes ;
 - `docs/Traces_bus_instruments/Out/` pour les transactions décodées ;
 - les manuels utilisateur pour les plages accessibles et les options.

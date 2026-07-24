@@ -7,6 +7,21 @@ Items explicitly listed under remaining validation are still provisional.
 
 - Arduino Serial0 pins D0/D1 are left free for external communication.
 
+## Power-Fail Input
+
+- The original supply exposes `PRESENCE ALIM (1)` on output 35. The chassis
+  routes it to `PA`, which drove the original 6802 `NMI` input directly.
+- `PA` is connected to Arduino Mega D3, ATmega2560 PE5 / INT5.
+- D3 is a high-impedance input without an internal pull-up. `PA` is normally
+  high; its falling edge requests the EEPROM settings save.
+- The supply schematic takes `PA` from its presence detector/divider, not from
+  a raw supply rail. Since the same node drove a 5 V CPU input directly, no
+  additional series resistor is required for the nominal connection. A series
+  resistor would provide only optional fault-current limiting.
+- Sources: [power-supply schematic](Adret740a_schemas/Page%2021a%20_%20alimentation_schema.pdf),
+  [chassis schematic](Adret740a_schemas/Page%2023a%20_%20chassis_schema.pdf),
+  and [original CPU schematic](Adret740a_schemas/Page%2030a%20_%20CPU_schema.pdf).
+
 ## Instrument Bus
 
 - Arduino Mega D20/SDA and D21/SCL drive an ISO1540 and a MCP23017 at I2C
