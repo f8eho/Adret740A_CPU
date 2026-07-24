@@ -42,7 +42,7 @@ commandes historiques du bus GPIB transposées sur Serial0.
   fonctionnelles du panneau.
 - `src/SettingsStore.cpp` conserve la configuration dans deux slots EEPROM
   versionnés avec CRC.
-- `src/PowerFailMonitor.cpp` prépare l'interruption PA future sur D3 / INT5.
+- `src/PowerFailMonitor.cpp` traite l'interruption PA active sur D3 / INT5.
 - `src/CalibrationEprom.cpp` reserve le dump 2716 en Flash.
 - `src/main.cpp` orchestre le panneau, la télécommande et la persistance.
 
@@ -77,7 +77,8 @@ ecrit via `FrontPanelBus`.
 - En mode distant, le panneau est inhibé sauf la touche `Adr RTL` lorsque le
   retour local n'est pas verrouillé.
 - Une EEPROM à deux slots et CRC restaure les réglages, tout en forçant RF OFF
-  au démarrage. La future entrée PA reste désactivée jusqu'à validation.
+  au démarrage. L'entrée PA sur D3 / INT5 déclenche la sauvegarde sur son front
+  descendant ; elle est configurée sans pull-up interne.
 
 ## Compilation
 

@@ -57,13 +57,15 @@ constexpr uint8_t kFrontPanelCa1InterruptFlag = _BV(INTF4);
 constexpr uint8_t kFrontPanelCa1SenseBit0 = ISC40;
 constexpr uint8_t kFrontPanelCa1SenseBit1 = ISC41;
 
-// Future instrument-bus power-present input PA. Mega D3 is PE5 / INT5.
-// Keep disabled until its voltage and active level are confirmed at the bench.
+// Instrument-bus power-present input PA. Mega D3 is PE5 / INT5. The original
+// supply drives the 6802 NMI input directly from its power-presence detector,
+// so keep this input high-impedance without the AVR internal pull-up. PA is
+// normally high and falls when the supply disappears.
 #define ADRET_PA_DDR DDRE
 #define ADRET_PA_PORT PORTE
 #define ADRET_PA_PIN PINE
 constexpr uint8_t kPowerSenseBit = PE5;
-constexpr bool kPowerSenseEnabled = false;
+constexpr bool kPowerSenseEnabled = true;
 constexpr bool kPowerSenseActiveLow = true;
 constexpr uint8_t kPowerSenseInterruptMask = _BV(INT5);
 constexpr uint8_t kPowerSenseInterruptFlag = _BV(INTF5);

@@ -59,6 +59,9 @@ static_assert(kModulationOne == 0x01u && kModulationP == 0x02u &&
 static_assert(withRemoteIndicator(kPowerOneBlank, false) == 0x24u &&
               withRemoteIndicator(kPowerOneBlank, true) == 0x04u,
               "Unexpected active-low REM encoding");
+static_assert(withRfInhibitIndicator(kPowerOneBlank, false) == 0x44u &&
+              withRfInhibitIndicator(kPowerOneBlank, true) == 0x04u,
+              "Unexpected active-low INHIB RF encoding");
 static_assert(reversedCodeBDigit("12345678", 8u, 0u) == 0x88u &&
               reversedCodeBDigit("12345678", 8u, 7u) == 0x81u,
               "Unexpected SN10 frame order");
@@ -184,7 +187,8 @@ void FrontPanel::reset()
     memoryMode_ = MemoryLedMode::Off;
     memory_ = false;
     sequence_ = false;
-    firstCharFlags_ = withRemoteIndicator(kPowerOneBlank, false);
+    firstCharFlags_ = withRfInhibitIndicator(
+        withRemoteIndicator(kPowerOneBlank, false), false);
     decimalPointFlags_ = 0;
     frequencyBlankMask_ = 0;
     modulationBlankMask_ = 0;
@@ -339,11 +343,7 @@ void FrontPanel::setIndicator(PanelIndicator indicator, bool enabled)
         firstCharFlags_ = withRemoteIndicator(firstCharFlags_, enabled);
         break;
     case PanelIndicator::RfInhibit:
-        if (enabled) {
-            firstCharFlags_ |= kRfInhibit;
-        } else {
-            firstCharFlags_ &= uint8_t(~kRfInhibit);
-        }
+        firstCharFlags_ = withRfInhibitIndicator(firstCharFlags_, enabled);
         break;
     case PanelIndicator::ManualValidation:
         if (enabled) {
@@ -419,7 +419,7 @@ bool FrontPanel::isOn(PanelIndicator indicator) const
     case PanelIndicator::Remote:
         return (firstCharFlags_ & kRemote) == 0u;
     case PanelIndicator::RfInhibit:
-        return (firstCharFlags_ & kRfInhibit) != 0u;
+        return (firstCharFlags_ & kRfInhibit) == 0u;
     case PanelIndicator::ManualValidation:
         return (firstCharFlags_ & kManualValidation) != 0u;
     }

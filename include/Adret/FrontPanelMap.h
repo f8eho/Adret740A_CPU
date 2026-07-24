@@ -76,6 +76,13 @@ constexpr uint8_t withRemoteIndicator(uint8_t flags, bool enabled)
                    : uint8_t(flags | kRemote);
 }
 
+constexpr uint8_t withRfInhibitIndicator(uint8_t flags, bool enabled)
+{
+    // INHIB RF is active low on SN4/D6.
+    return enabled ? uint8_t(flags & uint8_t(~kRfInhibit))
+                   : uint8_t(flags | kRfInhibit);
+}
+
 enum DecimalPointFlags : uint8_t {
     kModulationDecimalPoint = 1u << 0,
     kAmplitudeDecimalPoint = 1u << 1,

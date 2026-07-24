@@ -26,10 +26,12 @@ défaut. Aucun port GPIB matériel n'est implémenté ; ce voyant est piloté pa
 mode de télécommande sur Serial0.
 
 La configuration utilise deux slots EEPROM versionnés avec CRC. La sauvegarde
-n'est déclenchée que par la future entrée `PA` de présence alimentation. Cette
-entrée est réservée sur Arduino D3 / PE5 / INT5, mais reste désactivée tant que
-sa tension et sa polarité n'ont pas été validées au banc. `saveNow()` permet de
-tester directement la persistance.
+n'est déclenchée que par l'entrée `PA` de présence alimentation. Cette entrée
+est active sur Arduino D3 / PE5 / INT5, en haute impédance et sans pull-up
+interne. `PA` vaut normalement 1 ; son front descendant déclenche la sauvegarde.
+Le schéma d'origine relie ce signal directement à l'entrée `NMI` du 6802 et
+confirme qu'il provient du détecteur d'alimentation, pas d'une tension brute.
+`saveNow()` permet également de tester directement la persistance.
 
 ## Sélection du paramètre et molette
 

@@ -85,7 +85,7 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Serial0 command execution has been bench-validated with PuTTY using both
   the historical `?` terminator and `CR/LF` line endings.
 - Host parser/framing and instrument-program vector tests pass. The single
-  PlatformIO firmware succeeds with 1133 bytes RAM / 8192 bytes and 35858
+  PlatformIO firmware succeeds with 1133 bytes RAM / 8192 bytes and 35912
   bytes Flash / 253952 bytes, including
   the deliberately retained 2048-byte zero calibration table.
 
@@ -97,8 +97,8 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - High-level API behavior beyond the current diagnostic scan.
 - End-to-end Serial0 command sessions, `REM` indication, panel inhibition and
   `Adr RTL` behavior on the assembled instrument.
-- `Chargt` pulse acceptance by the original instrument cards, NACK recovery
-  and card-by-card instrument-bus load.
+- Quantitative 10 Hz step regularity, frequency accuracy and amplitude
+  calibration with suitable metrology equipment.
 
 ## Current Functional Diagnostic
 
@@ -157,21 +157,50 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   `BANK=1, SEQOP=1`, where both bytes address `OLATB`. A second capture with
   the corrected bench confirmed the six requested transactions, the expected
   data/address states, one 22.5-us low `Chargt` pulse per transaction, and an
-  inactive high final level. The isolated MCP23017 output path is therefore
-  validated; acceptance by the original instrument cards remains untested.
-- Attempts to query `IB?` and the control query `STB?` through the Mega USB
-  serial bridge returned `E-00` during this bench session. Since both queries
-  failed identically, Serial0 reception or the host-side access method must be
-  checked separately before using `IB?` as bench evidence.
+  inactive high final level. The isolated MCP23017 output path was therefore
+  validated before connection to the original instrument cards.
+- The normal firmware's address-NACK recovery was validated with the
+  instrument backplane disconnected by holding MCP23017 RESET low. The fault
+  produced `READY=0`, `ERROR=4`, `FAULT=4` and one failed functional write.
+  After RESET was released, one `RF OFF` panel command made exactly one new
+  recovery attempt, succeeded, retained sticky `FAULT=4`, and replayed the
+  complete 20-write RF-enabled program (`WRITES=41`, `FAILED=1`,
+  `RECOVERY_ATTEMPTS=15`, `RECOVERY_SUCCESS=1`). The logic capture confirmed
+  the expected replay. Short parasitic transitions were observed only while
+  the loose RESET-to-ground test lead was physically connected or removed;
+  they are recorded as a fault-injection artifact, not as recovery output.
+  A detailed cold-power waveform capture remains desirable because normal
+  POR/RESET must not produce a usable `Chargt` strobe on the instrument.
+- On 2026-07-24, the replacement CPU, ISO1540 and MCP23017 were assembled and
+  connected to the complete instrument bus. The first cold power-up completed
+  without smoke, abnormal odor or an observed startup fault, and the generator
+  produced RF successfully. Spot spectrum-analyzer checks showed plausible
+  frequencies and working amplitude control; AM, FM and PM commands all made
+  coherent spectral changes. The original cards therefore accept the 400-kHz
+  I2C backend's 22.5-us `Chargt` pulses. Apparent irregularity of the 10-Hz
+  steps remains unconfirmed pending a precision frequency counter, so no
+  frequency-plan code was changed. An approximately 5-Hz frequency offset at
+  200 MHz is also provisional because the cable and calibration setup are not
+  adequate for adjustment.
+- The same assembled-instrument test showed that SN4/D6 `INHIB RF` is active
+  low: the RF state changed correctly but its indicator was reversed. The
+  front-panel mapping now applies active-low encoding while preserving the
+  semantic rule that the indicator is lit exactly when `rfOff` is true.
+- `IB?` was subsequently exercised successfully with PuTTY during the NACK
+  test. Earlier automated attempts through the Mega USB serial bridge returned
+  `E-00` for both `IB?` and `STB?`, indicating a host-side access/framing issue;
+  `STB?` still needs an end-to-end check with the validated terminal method.
 - FM is provisionally limited to the largest demonstrated bus value of
   199.9 kHz. Serial and panel entry no longer accept 200 kHz silently; persisted
   settings from the preceding firmware migrate that single endpoint to
   199.9 kHz.
 - The disconnected output bench measured the expected 22.5 us low width for
-  `Chargt`, with a clean return to the inactive high level. Acceptance by the
-  original instrument cards will be checked during progressive connection.
-- PA is reserved on Mega D3 / PE5 / INT5 but monitoring remains disabled until
-  its voltage and polarity are validated at the bench.
+  `Chargt`, with a clean return to the inactive high level. The complete
+  instrument test then confirmed acceptance by the original cards.
+- The power-supply, chassis and original CPU schematics trace PA from
+  `PRESENCE ALIM (1)` output 35 directly to the 6802 NMI input. PA monitoring
+  is enabled on Mega D3 / PE5 / INT5 as a high-impedance input without the AVR
+  pull-up; its falling edge requests the EEPROM settings save.
 - Numeric entry, EXEC fixed/blinking modes, Code B status messages and memory
   sequence behavior compile successfully but still require panel bench tests.
 - Keyboard increments are stored separately for RF, amplitude, FM, PM and AM;
@@ -181,14 +210,15 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 ## Next Steps
 
 1. Validate optical-wheel direction and all display boundary formats.
-2. Measure PA voltage, polarity and power-fail hold-up time before enabling it.
+2. Measure PA high/low voltages and verify the power-fail hold-up time and
+   completed EEPROM save during a real power-off cycle.
 3. Exercise cold-start CA1 recovery repeatedly.
    The application adds only about 120 us of startup acknowledgement; the
    cold-power delay observed at the bench does not occur on a warm reset and
    must be localized between the 5 V rail, RESET and the first CA2 activity.
 4. Validate the Serial0 protocol and `Adr RTL` local return on the instrument.
-5. Validate `IB?` and NACK recovery with the normal firmware, then connect
-   instrument cards progressively and confirm acceptance of the 22.5-us pulse.
+5. Measure frequency accuracy and 10-Hz step regularity with a precision
+   counter, then generate the calibration table using suitable RF equipment.
 6. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
    messages on the real panel.
 7. Add AUX sequence stepping and replace the zero calibration initializer

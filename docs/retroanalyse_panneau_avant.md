@@ -155,7 +155,7 @@ SN4 pilote des segments ou indicateurs indépendants.
 | D3 AVR | `kPowerPlus` | signe plus amplitude |
 | D4 AVR | `kPowerMinus` | signe moins amplitude |
 | D5 | `kRemote` | indicateur `REM`, actif à l'état bas |
-| D6 | `kRfInhibit` | indicateur lumineux `INHIB RF` |
+| D6 | `kRfInhibit` | indicateur lumineux `INHIB RF`, actif à l'état bas |
 | D7 | `kManualValidation` | indicateur `VALID MAN` |
 
 Ces affectations sont celles observées au banc après les permutations par
@@ -380,14 +380,19 @@ est piloté séparément par SN4/D6.
 
 ### 9.3 PA, présence alimentation
 
-**À valider.** Le document [fonctionnement_interface.md](fonctionnement_interface.md)
-mentionne une ligne `PA`, présence alimentation, sur le bus instrument. Elle
-servirait à prévenir la CPU d'une coupure afin de sauvegarder les paramètres.
+**Schéma validé, essai de coupure à réaliser.** Le document
+[fonctionnement_interface.md](fonctionnement_interface.md) mentionne une ligne
+`PA`, présence alimentation, sur le bus instrument. Elle prévient la CPU d'une
+coupure afin de sauvegarder les paramètres.
 Cette ligne ne fait pas partie du bus panneau `PA0..PA7` malgré l'homonymie et
-le firmware lui réserve désormais Arduino D3 / PE5 / INT5. L'entrée et son
-interruption restent désactivées dans `HardwareConfig.h` jusqu'à validation de
-sa tension et de sa polarité. La sauvegarde EEPROM à deux slots et CRC est
-prête et expose `saveNow()` pour les essais sans raccordement de PA.
+le firmware utilise Arduino D3 / PE5 / INT5. Les schémas alimentation, châssis
+et CPU montrent `PRESENCE ALIM (1)` en sortie 35, puis une liaison directe de
+`PA` vers l'entrée `NMI` du 6802. Le signal, normalement haut, provient du
+détecteur/pont de l'alimentation et non d'une tension brute : aucune résistance
+série supplémentaire n'est nécessaire dans le câblage nominal. D3 est activée
+en entrée haute impédance sans pull-up ; le front descendant déclenche la
+sauvegarde EEPROM à deux slots et CRC. `saveNow()` reste disponible pour les
+essais sans coupure.
 
 ## 10. Anomalies rencontrées et conclusions
 
@@ -422,5 +427,6 @@ prête et expose `saveNow()` pour les essais sans raccordement de PA.
 - validation au banc du placement individuel des points décimaux ;
 - combinaisons exactes des premiers caractères SN4 ;
 - affectation et étage électrique de la commande `INHIB` ;
-- validation électrique puis activation de la présence alimentation `PA` ;
+- validation au banc de la tension et du délai de sauvegarde lors d'une coupure
+  réelle sur la présence alimentation `PA` ;
 - validation de la première logique fonctionnelle de l'instrument.

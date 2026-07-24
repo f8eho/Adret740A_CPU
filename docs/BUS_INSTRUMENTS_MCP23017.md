@@ -230,6 +230,22 @@ de 22,5 us par transaction, puis le retour au niveau haut inactif. Ce résultat
 valide le chemin de sortie Mega--ISO1540--MCP23017 sans charge instrument ; il
 ne valide pas encore l'acceptation du strobe par les cartes d'origine.
 
+Le même jour, la récupération après NACK d'adresse a été validée avec le
+firmware normal et le fond de panier débranché. RESET maintenu bas, une commande
+du panneau a donné `READY=0`, `ERROR=4`, `FAULT=4` et un seul transfert
+fonctionnel échoué. Après libération de RESET, une pression sur `RF OFF` a
+produit une nouvelle tentative, une récupération réussie et le rejeu complet
+des 20 mots de la configuration RF active : `READY=1`, `ERROR=0`, `FAULT=4`,
+`WRITES=41`, `FAILED=1`, `RECOVERY_ATTEMPTS=15` et
+`RECOVERY_SUCCESS=1`. La capture logique du rejeu est correcte.
+
+Des transitions parasites ont été observées uniquement aux instants de contact
+et de retrait du fil volant reliant RESET à la masse. Cette injection manuelle
+n'est pas un état d'exploitation et ne doit pas être utilisée avec les cartes
+instruments raccordées. Elle ne dispense pas de contrôler un cycle complet de
+mise sous tension : le tirage de `Chargt` doit le maintenir haut pendant le POR
+du MCP23017 et jusqu'à la fin de l'initialisation sûre.
+
 ```powershell
 pio run -e instrument_bus_bench
 pio run -e instrument_bus_bench --target upload
