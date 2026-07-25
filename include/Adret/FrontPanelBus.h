@@ -19,7 +19,9 @@ public:
                       front_panel::DisplayMode mode,
                       uint8_t value);
     void writeDisplayFrame(front_panel::DisplayDevice device,
-                           const uint8_t* digits);
+                           const uint8_t* digits,
+                           uint8_t command =
+                               front_panel::kIcm7218CodeBFrameCommand);
 
     void writeDecimalPoints(uint8_t flags);
     void writeFirstCharFlags(uint8_t flags);

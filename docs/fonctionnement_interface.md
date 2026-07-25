@@ -54,13 +54,23 @@ continue de modifier sa dernière cible validée. `VALID MAN` affecte la
 sélection affichée à la roue ; répéter VALID sur la même sélection ne la
 désactive pas. Le voyant VALID est allumé lorsque la sélection affichée est la
 cible effectivement pilotée, et éteint lorsqu'une nouvelle sélection reste en
-attente de validation.
+attente de validation. À chaque pression sur `VALID MAN`, le digit correspondant
+au pas de la roue clignote trois fois pour matérialiser immédiatement la décade
+qui sera modifiée.
 
 `MUL10` et `DIV10` déplacent le pas de la cible actuellement validée, même si
 une autre sélection est affichée en attente de VALID. Le digit correspondant
 au nouveau pas clignote trois fois, sans bloquer la lecture du clavier. Ces
 touches n'ont pas de voyant dédié sur le schéma. Chaque cible conserve son
 propre indice de pas en RAM et dans la configuration EEPROM.
+
+## Message de démarrage
+
+Après l'initialisation et la mise en inhibition RF, l'afficheur de fréquence
+fait défiler `1.0 by F8EHO 2026`. Le texte se construit de gauche à droite,
+puis glisse pour révéler la suite. La dernière fenêtre `F8EHO 2026` reste
+affichée pendant deux secondes avant le retour à l'affichage normal. Chaque
+position du défilement dure 320 ms.
 
 ## Valeurs, limites et pas
 

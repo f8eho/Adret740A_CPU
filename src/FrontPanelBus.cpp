@@ -47,15 +47,14 @@ void FrontPanelBus::writeDisplay(front_panel::DisplayDevice device,
 }
 
 void FrontPanelBus::writeDisplayFrame(front_panel::DisplayDevice device,
-                                      const uint8_t* digits)
+                                      const uint8_t* digits,
+                                      uint8_t command)
 {
     if (digits == nullptr) {
         return;
     }
 
-    writeDisplay(device,
-                 front_panel::DisplayMode::Command,
-                 front_panel::kIcm7218CodeBFrameCommand);
+    writeDisplay(device, front_panel::DisplayMode::Command, command);
     for (uint8_t i = 0; i < front_panel::kIcm7218DigitCount; ++i) {
         writeDisplay(device, front_panel::DisplayMode::Data, digits[i]);
     }

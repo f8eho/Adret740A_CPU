@@ -68,6 +68,9 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   keys, with simulated instrument commands on Serial0.
 - Per-digit ICM7218A decimal-point and blank masks for non-blocking step-digit
   blinking.
+- No-decode ICM7218A startup banner (`1.0 by F8EHO 2026`) and wheel-step
+  digit blink when `VALID MAN` assigns a target; build validation only, bench
+  appearance and timing still to be checked on the instrument.
 - Two-slot, versioned EEPROM settings storage with CRC and forced RF OFF at
   startup.
 - Allocation-free deferred numeric entry with unit validation, correction,

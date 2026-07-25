@@ -30,9 +30,11 @@ enum class DisplayMode : uint8_t {
 };
 
 constexpr uint8_t kIcm7218CodeBFrameCommand = 0x90u;
+constexpr uint8_t kIcm7218NoDecodeFrameCommand = 0xB0u;
 constexpr uint8_t kIcm7218DigitCount = 8u;
 constexpr uint8_t kIcm7218DecimalPointOff = 0x80u;
 constexpr uint8_t kIcm7218CodeBBlank = 0x8Fu;
+constexpr uint8_t kIcm7218NoDecodeBlank = 0x80u;
 
 constexpr uint8_t codeBDigit(char digit)
 {
@@ -55,6 +57,57 @@ constexpr uint8_t decoratedCodeBDigit(char digit, bool decimalPoint, bool blank)
         : (decimalPoint
             ? uint8_t(codeBDigit(digit) & uint8_t(~kIcm7218DecimalPointOff))
             : codeBDigit(digit));
+}
+
+// Conventional seven-segment masks below use bits 0..6 for a..g. The
+// ICM7218A no-decode inputs use the nonstandard mapping documented in its
+// Table 1: ID6..ID0 drive a, b, c, e, g, f, d respectively.
+constexpr uint8_t segmentPattern(char character)
+{
+    return character == '0' || character == 'O' ? 0x3Fu
+        : character == '1' ? 0x06u
+        : character == '2' ? 0x5Bu
+        : character == '3' ? 0x4Fu
+        : character == '4' ? 0x66u
+        : character == '5' ? 0x6Du
+        : character == '6' ? 0x7Du
+        : character == '7' ? 0x07u
+        : character == '8' ? 0x7Fu
+        : character == '9' ? 0x6Fu
+        : character == 'A' ? 0x77u
+        : character == 'b' ? 0x7Cu
+        : character == 'C' ? 0x39u
+        : character == 'd' ? 0x5Eu
+        : character == 'E' ? 0x79u
+        : character == 'F' ? 0x71u
+        : character == 'H' ? 0x76u
+        : character == 'L' ? 0x38u
+        : character == 'P' ? 0x73u
+        : character == 'U' || character == 'V' || character == 'W' ? 0x3Eu
+        : character == 'y' || character == 'Y' ? 0x6Eu
+        : character == '-' ? 0x40u
+        : 0x00u;
+}
+
+constexpr uint8_t icm7218NoDecodeSegments(uint8_t standardSegments)
+{
+    return uint8_t(
+        ((standardSegments & 0x01u) != 0u ? 0x40u : 0u) |
+        ((standardSegments & 0x02u) != 0u ? 0x20u : 0u) |
+        ((standardSegments & 0x04u) != 0u ? 0x10u : 0u) |
+        ((standardSegments & 0x08u) != 0u ? 0x01u : 0u) |
+        ((standardSegments & 0x10u) != 0u ? 0x08u : 0u) |
+        ((standardSegments & 0x20u) != 0u ? 0x02u : 0u) |
+        ((standardSegments & 0x40u) != 0u ? 0x04u : 0u));
+}
+
+// The decimal point remains active low on ID7. Some letters necessarily use
+// conventional seven-segment approximations (notably W and V, both rendered
+// as U).
+constexpr uint8_t segmentGlyph(char character, bool decimalPoint = false)
+{
+    return uint8_t(icm7218NoDecodeSegments(segmentPattern(character)) |
+                   (decimalPoint ? 0x00u : kIcm7218DecimalPointOff));
 }
 
 enum FirstCharFlags : uint8_t {

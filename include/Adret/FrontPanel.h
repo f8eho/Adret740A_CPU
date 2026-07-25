@@ -155,6 +155,7 @@ public:
     void setAmplitudeIncrementDisplay(uint16_t tenthsDb);
     void setDisplayDecimalMask(front_panel::DisplayField field, uint16_t mask);
     void setDisplayBlankMask(front_panel::DisplayField field, uint16_t mask);
+    void showFrequencySegmentFrame(const uint8_t* segments);
     void refreshDisplays();
 
     void pollInputs();

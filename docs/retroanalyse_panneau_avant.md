@@ -242,6 +242,11 @@ Le firmware ajoute donc `0x80` à chaque chiffre Code B pour éteindre les point
 pendant le test actuel. Un futur masque de points devra retirer ce bit
 uniquement pour les positions voulues.
 
+En mode sans décodage, l'ordre des segments n'est pas l'ordre sept segments
+habituel. La table 1 de la documentation ICM7218 donne la correspondance
+`ID6..ID0 = a, b, c, e, g, f, d`. Le générateur de glyphes du message de
+démarrage applique explicitement cette permutation.
+
 ## 6. Clavier
 
 ### 6.1 Chaîne matérielle

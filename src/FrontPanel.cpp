@@ -41,6 +41,8 @@ constexpr uint8_t mixedSn11CodeBDigit(const char* frequency,
 
 static_assert(kIcm7218CodeBFrameCommand == 0x90u,
               "Unexpected ICM7218A Code B frame command");
+static_assert(kIcm7218NoDecodeFrameCommand == 0xB0u,
+              "Unexpected ICM7218A no-decode frame command");
 static_assert(codeBDigit('0') == 0x80u && codeBDigit('9') == 0x89u,
               "Unexpected ICM7218A Code B digit encoding");
 static_assert(codeBDigit('P') == 0x8Eu && codeBDigit('E') == 0x8Bu &&
@@ -49,6 +51,11 @@ static_assert(codeBDigit('P') == 0x8Eu && codeBDigit('E') == 0x8Bu &&
 static_assert(decoratedCodeBDigit('5', true, false) == 0x05u &&
               decoratedCodeBDigit('5', false, true) == 0x8Fu,
               "Unexpected ICM7218A decimal point or blank encoding");
+static_assert(segmentGlyph('F') == 0xCEu &&
+              segmentGlyph('1', true) == 0x30u &&
+              segmentGlyph('0') == 0xFBu &&
+              segmentGlyph(' ') == kIcm7218NoDecodeBlank,
+              "Unexpected ICM7218A no-decode glyph encoding");
 static_assert(makeSn17Byte(0u) == 0xFFu &&
               makeSn17Byte(kModulationDecimalPoint) == 0xFEu,
               "Unexpected active-low SN17 decimal-point encoding");
@@ -611,6 +618,37 @@ void FrontPanel::refreshDisplays()
     makeDisplayFrames(sn10, sn11);
     frontPanelBus.writeDisplayFrame(DisplayDevice::FrequencySn10, sn10);
     frontPanelBus.writeDisplayFrame(DisplayDevice::MixedSn11, sn11);
+}
+
+void FrontPanel::showFrequencySegmentFrame(const uint8_t* segments)
+{
+    if (segments == nullptr) {
+        return;
+    }
+
+    uint8_t sn10[kIcm7218DigitCount] = {};
+    uint8_t sn11[kIcm7218DigitCount] = {};
+    for (uint8_t i = 0u; i < kIcm7218DigitCount; ++i) {
+        sn10[i] = segments[uint8_t(7u - i)];
+        sn11[i] = kIcm7218NoDecodeBlank;
+    }
+    sn11[6] = segments[9];
+    sn11[7] = segments[8];
+
+    // The leading modulation/power characters and their decimal points are
+    // driven outside the ICM7218s. Blank those too so the banner occupies the
+    // frequency display exclusively, while preserving the status indicators
+    // sharing SN4.
+    const uint8_t startupFirstChars = uint8_t(
+        (firstCharFlags_ & uint8_t(~(kModulationOne | kModulationP |
+                                     kPowerPlus | kPowerMinus))) |
+        kPowerOneBlank);
+    frontPanelBus.writeFirstCharFlags(startupFirstChars);
+    frontPanelBus.writeDecimalPoints(0u);
+    frontPanelBus.writeDisplayFrame(DisplayDevice::FrequencySn10, sn10,
+                                    kIcm7218NoDecodeFrameCommand);
+    frontPanelBus.writeDisplayFrame(DisplayDevice::MixedSn11, sn11,
+                                    kIcm7218NoDecodeFrameCommand);
 }
 
 void FrontPanel::makeDisplayFrames(uint8_t* sn10, uint8_t* sn11) const

@@ -560,6 +560,7 @@ void OperatingController::handleKey(Key key)
         settings_.wheelTarget = settings_.target;
         settings_.wheelInhibited = false;
         renderIndicators();
+        startStepBlink();
 #if ADRET_DEBUG_SERIAL
         Serial.print(F("VALID target="));
         Serial.print(targetName(settings_.wheelTarget));

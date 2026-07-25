@@ -23,6 +23,54 @@ namespace {
 using adret::front_panel::EncoderEvent;
 using adret::front_panel::KeyEvent;
 
+constexpr uint8_t kStartupDisplayWidth = 10u;
+constexpr uint16_t kStartupScrollStepMs = 320u;
+constexpr uint16_t kStartupHoldMs = 2000u;
+constexpr uint8_t kStartupBanner[] PROGMEM = {
+    adret::front_panel::segmentGlyph('1', true),
+    adret::front_panel::segmentGlyph('0'),
+    adret::front_panel::segmentGlyph(' '),
+    adret::front_panel::segmentGlyph('b'),
+    adret::front_panel::segmentGlyph('y'),
+    adret::front_panel::segmentGlyph(' '),
+    adret::front_panel::segmentGlyph('F'),
+    adret::front_panel::segmentGlyph('8'),
+    adret::front_panel::segmentGlyph('E'),
+    adret::front_panel::segmentGlyph('H'),
+    adret::front_panel::segmentGlyph('O'),
+    adret::front_panel::segmentGlyph(' '),
+    adret::front_panel::segmentGlyph('2'),
+    adret::front_panel::segmentGlyph('0'),
+    adret::front_panel::segmentGlyph('2'),
+    adret::front_panel::segmentGlyph('6'),
+};
+
+void showStartupBanner()
+{
+    uint8_t frame[kStartupDisplayWidth] = {};
+    const uint8_t bannerLength = uint8_t(sizeof(kStartupBanner));
+    for (uint8_t revealed = 1u; revealed <= bannerLength; ++revealed) {
+        for (uint8_t i = 0u; i < kStartupDisplayWidth; ++i) {
+            frame[i] = adret::front_panel::kIcm7218NoDecodeBlank;
+        }
+
+        const uint8_t source = revealed > kStartupDisplayWidth
+            ? uint8_t(revealed - kStartupDisplayWidth) : 0u;
+        const uint8_t count = revealed < kStartupDisplayWidth
+            ? revealed : kStartupDisplayWidth;
+        for (uint8_t i = 0u; i < count; ++i) {
+            frame[i] = pgm_read_byte(&kStartupBanner[uint8_t(source + i)]);
+        }
+        adret::frontPanel.showFrequencySegmentFrame(frame);
+        if (revealed < bannerLength) {
+            delay(kStartupScrollStepMs);
+        }
+    }
+    delay(kStartupHoldMs);
+    adret::frontPanel.flushOutputs();
+    adret::frontPanel.refreshDisplays();
+}
+
 #if ADRET_DEBUG_SERIAL
 void printHexByte(uint8_t value)
 {
@@ -115,6 +163,7 @@ void setup()
     (void)instrumentBusReady;
 #endif
     adret::control::operatingController.begin(settings);
+    showStartupBanner();
     adret::serialRemoteController.begin();
 
     releasePendingPanelInputAtStartup();
