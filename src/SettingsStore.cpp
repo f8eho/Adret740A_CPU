@@ -3,6 +3,8 @@
 #include <EEPROM.h>
 #include <stddef.h>
 
+#include "Adret/EepromLayout.h"
+
 namespace adret {
 
 namespace {
@@ -89,8 +91,9 @@ struct __attribute__((packed)) MemoryRecord {
 static_assert(sizeof(PersistentRecordV3) <= kSettingsSlotSize,
               "EEPROM settings slot too small");
 static_assert(kMemoryBaseAddress +
-                  int(SettingsStore::kMemoryCount) * int(sizeof(MemoryRecord)) <= 4096,
-              "EEPROM memory bank exceeds ATmega2560 capacity");
+                  int(SettingsStore::kMemoryCount) * int(sizeof(MemoryRecord)) <=
+                  eeprom_layout::kCalibrationBaseAddress,
+              "EEPROM settings overlap the calibration banks");
 static_assert(sizeof(LegacyRecordV2) <= 40u,
               "Legacy EEPROM layout changed unexpectedly");
 

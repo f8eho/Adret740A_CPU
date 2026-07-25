@@ -1,6 +1,7 @@
 #include <Arduino.h>
 
 #include "Adret/Debug.h"
+#include "Adret/CalibrationStore.h"
 #include "Adret/FrontPanel.h"
 #include "Adret/FrontPanelBus.h"
 #include "Adret/FrontPanelIrq.h"
@@ -105,6 +106,7 @@ void setup()
 
     adret::control::Settings settings = adret::control::defaultSettings();
     const bool restored = adret::settingsStore.load(&settings);
+    adret::calibration::calibrationStore.begin();
 #if ADRET_DEBUG_SERIAL
     Serial.print(F("EEPROM restored="));
     Serial.println(restored ? 1 : 0);
@@ -132,7 +134,8 @@ void loop()
     adret::serialRemoteController.poll();
     processPanelEvents();
     adret::control::operatingController.tick(millis());
-    if (adret::powerFailMonitor.consumePending()) {
+    if (adret::powerFailMonitor.consumePending() &&
+        !adret::serialRemoteController.calibrationActive()) {
         const bool saved = adret::settingsStore.saveNow(
             adret::control::operatingController.settings());
 #if ADRET_DEBUG_SERIAL

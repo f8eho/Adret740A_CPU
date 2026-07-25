@@ -143,41 +143,42 @@ Avec ces valeurs, le modèle reproduit `1 050 / 1 050` adresses et
 l'ancienne CPU, mais ne doivent pas être utilisées comme calibration du nouvel
 appareil : elles ne couvrent qu'une fréquence et huit états d'atténuation.
 
-## Calibration en deux étapes, sans mémoire externe
+## Calibration Flash + overlay EEPROM
 
-La Flash réserve dès maintenant une table de 2 048 corrections `int8_t` en
-`PROGMEM`. Une unité vaut 0,1 dB. Son initialisation entièrement à zéro donne
-le comportement nominal et occupe réellement 2 Kio dans le binaire grâce à
-un symbole d'ancrage de l'éditeur de liens.
+La Flash contient une table de 2 048 corrections `int8_t` en `PROGMEM`. Une
+unité vaut 0,1 dB. Son initialisation entièrement à zéro donne le comportement
+nominal et occupe réellement 2 Kio dans le binaire grâce à un symbole d'ancrage
+de l'éditeur de liens.
 
 ### Étape 1 : déterminer les corrections
 
-Un mode de firmware dédié devra :
+Le mode série `CAL` et l'assistant Python manuel permettent maintenant de :
 
-1. stabiliser l'appareil puis sélectionner un point fréquence/niveau ;
-2. afficher sur Serial0 la valeur demandée, la gamme RF et le pas mécanique ;
-3. recevoir le niveau mesuré avec un wattmètre ou analyseur étalonné ;
-4. calculer `mesuré - demandé`, répéter la mesure si elle est incohérente ;
-5. émettre une ligne CSV contenant l'index, les conditions et la correction.
+1. sélectionner automatiquement un point fréquence/niveau ;
+2. afficher la bande RF et le pas mécanique ;
+3. recevoir le niveau relevé manuellement sur l'instrument de mesure ;
+4. ajouter le résidu `mesuré - demandé` à la correction déjà active ;
+5. appliquer immédiatement le résultat et demander une mesure de contrôle ;
+6. conserver un journal JSON permettant la reprise et la génération C++.
 
-Le PC rassemble les lignes et fabrique l'initialiseur C. Il n'est donc pas
-nécessaire d'utiliser une EEPROM externe, ni même de stocker les 2 Kio dans
-l'EEPROM interne pendant la mesure. Les points doivent être pris séparément
-pour chaque chemin RF et chaque état de relais ; aucune interpolation ne doit
-traverser un changement de gamme ou de cellule mécanique.
+Deux banques EEPROM compactes de 840 corrections permettent une validation
+transactionnelle. `CAL ABORT`, `Adr RTL` ou un redémarrage rejettent la banque
+de travail et conservent la dernière calibration validée. La configuration RF
+présente au début est restaurée lors de `CAL ABORT` et de `CAL END`.
 
 ### Étape 2 : figer la calibration
 
-Le fichier généré remplace l'initialiseur nul de
-`adretCalibrationCorrectionTable`, puis le firmware est recompilé et chargé.
-Le code d'exploitation lit alors la correction en Flash et la transmet à
-`makeAmplitudeProgram()`. Le format détaillé des index sera figé après
-l'analyse des modulations et le choix de la grille de fréquences, sans changer
-la réserve de 2 048 octets.
+Le journal peut être fusionné dans `src/CalibrationTable.inc`, puis le firmware
+est recompilé et chargé. Le CRC de la nouvelle table invalide automatiquement
+l'ancien overlay afin d'empêcher une double application. Un dump brut d'une
+2816 originale peut également être contrôlé et converti dans ce fichier.
+
+La procédure détaillée et les commandes sont dans
+[`CALIBRATION_AMPLITUDE.md`](CALIBRATION_AMPLITUDE.md).
 
 ## Limites restantes
 
-- la grille de calibration et sa règle d'interpolation restent à définir ;
-- la table actuelle vaut entièrement zéro ;
+- la table Flash livrée par défaut vaut entièrement zéro ;
+- la procédure complète de 840 points reste à exécuter et valider au banc ;
 - les avertissements AM sous 1,5 MHz et à partir de +7 dBm restent à confirmer
   au banc.

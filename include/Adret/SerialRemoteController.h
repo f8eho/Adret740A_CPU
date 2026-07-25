@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "Adret/CalibrationStore.h"
 #include "Adret/FrontPanel.h"
 #include "Adret/SerialCommandParser.h"
 
@@ -17,9 +18,15 @@ public:
     void poll();
     bool handlePanelKey(front_panel::Key key);
     bool localControlsEnabled() const;
+    bool calibrationActive() const;
 
 private:
     void processRecord(const serial_protocol::FrameResult& frame);
+    bool processCalibrationRecord(const serial_protocol::FrameResult& frame);
+    void abortCalibration(bool reportToSerial);
+    void printCalibrationPoint(const char* prefix,
+                               const calibration::CalibrationPoint& point,
+                               int16_t extraTenthsDb = 0);
     void commit(const serial_protocol::Transaction& transaction);
     void clearStaged();
     void sendOk();
@@ -41,6 +48,8 @@ private:
     bool serviceRequest_ = false;
     bool errorLatched_ = false;
     serial_protocol::ErrorCode lastError_ = serial_protocol::ErrorCode::E00;
+    control::OutputConfiguration calibrationInitialOutput_ = {};
+    bool calibrationActive_ = false;
 };
 
 extern SerialRemoteController serialRemoteController;

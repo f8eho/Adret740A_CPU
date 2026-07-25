@@ -67,11 +67,11 @@ ce qui restaure les relais et l'atténuation fine.
 
 ## Calibration
 
-Le compositeur accepte déjà une correction signée en dixièmes de dB. Tant que
-la procédure de calibration n'a pas généré sa table, le contrôleur lit
-l'élément zéro de la table `PROGMEM`, lui-même nul. Le niveau nominal est donc
-émis sans correction. La sélection de l'index selon fréquence/gamme reste à
-définir pendant la phase de calibration.
+Le compositeur accepte une correction signée en dixièmes de dB. Le contrôleur
+sélectionne maintenant l'index original selon la fréquence et le palier
+mécanique, puis additionne la table Flash et l'overlay EEPROM transactionnel.
+La table Flash livrée par défaut reste nulle. Voir
+[`CALIBRATION_AMPLITUDE.md`](CALIBRATION_AMPLITUDE.md).
 
 ## Validation sans matériel
 

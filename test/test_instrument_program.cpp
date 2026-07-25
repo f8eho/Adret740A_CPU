@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "Adret/CalibrationEprom.h"
 #include "Adret/InstrumentProgram.h"
 
 namespace {
@@ -124,6 +125,68 @@ void testStandardFrequencyEndpoints()
     expectWrite(program, 9u, 3u, 0x9Eu);
 }
 
+void testCalibrationGrid()
+{
+    using namespace adret::calibration;
+    uint8_t row = 0u;
+    assert(frequencyRow(100000u, &row) && row == 0u);
+    assert(frequencyRow(999999u, &row) && row == 8u);
+    assert(frequencyRow(1000000u, &row) && row == 9u);
+    assert(frequencyRow(9999999u, &row) && row == 17u);
+    assert(frequencyRow(10000000u, &row) && row == 18u);
+    assert(frequencyRow(59999999u, &row) && row == 18u);
+    assert(frequencyRow(60000000u, &row) && row == 19u);
+    assert(frequencyRow(559999999u, &row) && row == 28u);
+    assert(frequencyRow(560000000u, &row) && row == 29u);
+    assert(!frequencyRow(99999u, &row));
+    assert(!frequencyRow(560000001u, &row));
+
+    uint8_t step = 0u;
+    assert(attenuatorStep(130, &step) && step == 0u);
+    assert(attenuatorStep(70, &step) && step == 0u);
+    assert(attenuatorStep(69, &step) && step == 0u);
+    assert(attenuatorStep(20, &step) && step == 0u);
+    assert(attenuatorStep(19, &step) && step == 1u);
+    assert(attenuatorStep(-30, &step) && step == 1u);
+    assert(attenuatorStep(-31, &step) && step == 2u);
+    assert(attenuatorStep(-1299, &step) && step == 27u);
+
+    uint16_t tableIndex = 0u;
+    uint16_t overlayIndex = 0u;
+    assert(correctionIndex(100000u, -1299, &tableIndex, &overlayIndex,
+                           &row, &step));
+    assert(row == 0u && step == 27u);
+    assert(tableIndex == 27u && overlayIndex == 27u);
+    assert(correctionIndex(560000000u, 100, &tableIndex, &overlayIndex,
+                           &row, &step));
+    assert(row == 29u && step == 0u);
+    assert(tableIndex == 29u * 32u);
+    assert(overlayIndex == 29u * 28u);
+    assert(baseTableCrc16() == 0xC584u);
+
+    for (uint8_t expectedRow = 0u; expectedRow < 30u; ++expectedRow) {
+        const uint32_t frequency = expectedRow < 9u
+            ? uint32_t(expectedRow + 1u) * 100000u + 50000u
+            : expectedRow < 18u
+                ? uint32_t(expectedRow - 8u) * 1000000u + 500000u
+                : expectedRow < 29u
+                    ? 10000000u + uint32_t(expectedRow - 18u) * 50000000u +
+                          25000000u
+                    : 560000000u;
+        for (uint8_t expectedStep = 0u; expectedStep < 28u; ++expectedStep) {
+            const int16_t amplitude = expectedStep == 0u
+                ? 100
+                : expectedStep == 27u
+                    ? -1290
+                    : int16_t(45 - int16_t(expectedStep) * 50);
+            assert(correctionIndex(frequency, amplitude, &tableIndex,
+                                   &overlayIndex, &row, &step));
+            assert(row == expectedRow);
+            assert(step == expectedStep);
+        }
+    }
+}
+
 }  // namespace
 
 int main()
@@ -133,6 +196,7 @@ int main()
     testFmAndPmFields();
     testFmDemonstratedEndpoint();
     testStandardFrequencyEndpoints();
+    testCalibrationGrid();
     puts("InstrumentProgram host vectors: OK");
     return 0;
 }

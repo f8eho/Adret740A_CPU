@@ -4,6 +4,7 @@
 #include <math.h>
 
 #include "Adret/CalibrationEprom.h"
+#include "Adret/CalibrationStore.h"
 #include "Adret/Debug.h"
 #include "Adret/InstrumentBus.h"
 #include "Adret/InstrumentProgram.h"
@@ -1455,9 +1456,11 @@ void OperatingController::reportInstrumentTransaction(
     }
 
     instrument_bus::InstrumentProgram program = {};
-    // The correction table is deliberately zero-filled. Index selection will
-    // be supplied by the calibration phase; index zero is therefore neutral.
-    const int8_t correctionTenthsDb = calibration::readCorrection(0u);
+    int8_t correctionTenthsDb = 0;
+    (void)calibration::calibrationStore.effectiveCorrection(
+        configuration.frequencyHz,
+        configuration.amplitudeTenthsDbm,
+        &correctionTenthsDb);
     const instrument_bus::InstrumentProgramResult result =
         instrument_bus::makeInstrumentProgram(
             instrumentConfiguration(configuration),

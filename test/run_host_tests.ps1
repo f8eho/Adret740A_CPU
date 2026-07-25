@@ -4,6 +4,7 @@ $compiler = (Get-Command g++ -ErrorAction Stop).Source
 $output = Join-Path $PSScriptRoot '..\.pio\instrument_program_tests.exe'
 $sources = @(
     (Join-Path $PSScriptRoot 'test_instrument_program.cpp'),
+    (Join-Path $PSScriptRoot '..\src\CalibrationEprom.cpp'),
     (Join-Path $PSScriptRoot '..\src\InstrumentAmplitude.cpp'),
     (Join-Path $PSScriptRoot '..\src\InstrumentFrequencyPlan.cpp'),
     (Join-Path $PSScriptRoot '..\src\InstrumentModulation.cpp'),
@@ -39,4 +40,9 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 & $serialOutput
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+& python -B (Join-Path $PSScriptRoot 'test_adret_calibration.py')
 exit $LASTEXITCODE

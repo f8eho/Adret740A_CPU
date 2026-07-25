@@ -44,6 +44,8 @@ commandes historiques du bus GPIB transposées sur Serial0.
   versionnés avec CRC.
 - `src/PowerFailMonitor.cpp` traite l'interruption PA active sur D3 / INT5.
 - `src/CalibrationEprom.cpp` reserve le dump 2716 en Flash.
+- `src/CalibrationStore.cpp` superpose une calibration EEPROM transactionnelle
+  à la table Flash et permet l'abandon sans altérer la dernière banque validée.
 - `src/main.cpp` orchestre le panneau, la télécommande et la persistance.
 
 ## Couche panneau avant
@@ -89,6 +91,17 @@ Depuis un terminal ou Codex, si `pio` n'est pas dans le PATH :
 ```powershell
 & "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run
 ```
+
+La calibration manuelle, l'import d'une 2816 d'origine et la fusion finale
+dans la Flash sont regroupés dans une application à menus. Sous Windows,
+double-cliquer sur `scripts\lancer_calibration.cmd`, ou lancer :
+
+```powershell
+python .\scripts\adret_calibration.py
+```
+
+La procédure détaillée est décrite dans
+[`docs/CALIBRATION_AMPLITUDE.md`](docs/CALIBRATION_AMPLITUDE.md).
 
 Les tests hôte du parseur et du cadrage série se lancent avec :
 

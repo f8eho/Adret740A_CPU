@@ -1,7 +1,10 @@
 #include "Adret/SerialRemoteController.h"
 
 #include <Arduino.h>
+#include <string.h>
 
+#include "Adret/CalibrationEprom.h"
+#include "Adret/CalibrationStore.h"
 #include "Adret/Debug.h"
 #include "Adret/InstrumentBus.h"
 #include "Adret/SettingsStore.h"
@@ -52,6 +55,130 @@ bool isExactQuery(const serial_protocol::FrameResult& frame,
     return position == frame.length;
 }
 
+void skipSpaces(const char* text, uint8_t length, uint8_t* position)
+{
+    while (*position < length &&
+           (text[*position] == ' ' || text[*position] == '\t')) {
+        ++*position;
+    }
+}
+
+bool matchWord(const char* text,
+               uint8_t length,
+               uint8_t* position,
+               const char* word)
+{
+    skipSpaces(text, length, position);
+    const uint8_t start = *position;
+    for (uint8_t i = 0u; word[i] != '\0'; ++i) {
+        if (*position >= length ||
+            asciiUpper(text[*position]) != word[i]) {
+            *position = start;
+            return false;
+        }
+        ++*position;
+    }
+    if (*position < length && text[*position] != ' ' &&
+        text[*position] != '\t') {
+        *position = start;
+        return false;
+    }
+    return true;
+}
+
+bool atEnd(const char* text, uint8_t length, uint8_t position)
+{
+    skipSpaces(text, length, &position);
+    return position == length;
+}
+
+bool parseUnsigned(const char* text,
+                   uint8_t length,
+                   uint8_t* position,
+                   uint16_t maximum,
+                   uint16_t* result)
+{
+    skipSpaces(text, length, position);
+    uint32_t value = 0u;
+    bool haveDigit = false;
+    while (*position < length && text[*position] >= '0' &&
+           text[*position] <= '9') {
+        haveDigit = true;
+        value = value * 10u + uint32_t(text[*position] - '0');
+        ++*position;
+        if (value > maximum) {
+            return false;
+        }
+    }
+    if (!haveDigit) {
+        return false;
+    }
+    *result = uint16_t(value);
+    return true;
+}
+
+bool parseTenths(const char* text,
+                 uint8_t length,
+                 uint8_t* position,
+                 int16_t minimum,
+                 int16_t maximum,
+                 int16_t* result)
+{
+    skipSpaces(text, length, position);
+    bool negative = false;
+    if (*position < length &&
+        (text[*position] == '+' || text[*position] == '-')) {
+        negative = text[*position] == '-';
+        ++*position;
+    }
+    uint32_t whole = 0u;
+    bool haveDigit = false;
+    while (*position < length && text[*position] >= '0' &&
+           text[*position] <= '9') {
+        haveDigit = true;
+        whole = whole * 10u + uint32_t(text[*position] - '0');
+        ++*position;
+        if (whole > 3276u) {
+            return false;
+        }
+    }
+    if (!haveDigit) {
+        return false;
+    }
+    uint8_t fractional = 0u;
+    if (*position < length &&
+        (text[*position] == '.' || text[*position] == ',')) {
+        ++*position;
+        if (*position >= length || text[*position] < '0' ||
+            text[*position] > '9') {
+            return false;
+        }
+        fractional = uint8_t(text[*position] - '0');
+        ++*position;
+        if (*position < length && text[*position] >= '0' &&
+            text[*position] <= '9') {
+            return false;
+        }
+    }
+    const int32_t magnitude = int32_t(whole * 10u + fractional);
+    const int32_t signedValue = negative ? -magnitude : magnitude;
+    if (signedValue < minimum || signedValue > maximum) {
+        return false;
+    }
+    *result = int16_t(signedValue);
+    return true;
+}
+
+void printTenthsDb(int16_t value)
+{
+    const int32_t extended = value;
+    const uint32_t magnitude = uint32_t(extended < 0 ? -extended : extended);
+    Serial.print(extended < 0 ? '-' : '+');
+    Serial.print(magnitude / 10u);
+    Serial.print('.');
+    Serial.print(magnitude % 10u);
+}
+
 }  // namespace
 
 SerialRemoteController serialRemoteController;
@@ -66,6 +193,7 @@ void SerialRemoteController::begin()
     serviceRequest_ = false;
     errorLatched_ = false;
     lastError_ = serial_protocol::ErrorCode::E00;
+    calibrationActive_ = false;
     setRemoteIndicator();
 #endif
 }
@@ -89,6 +217,9 @@ bool SerialRemoteController::handlePanelKey(front_panel::Key key)
 {
 #if ADRET_REMOTE_SERIAL
     if (key == front_panel::Key::AddressRtl) {
+        if (calibrationActive_) {
+            abortCalibration(true);
+        }
         if (remoteState_.remoteEnabled && !remoteState_.localLockout) {
             remoteState_.remoteEnabled = false;
             clearStaged();
@@ -101,6 +232,11 @@ bool SerialRemoteController::handlePanelKey(front_panel::Key key)
     (void)key;
     return false;
 #endif
+}
+
+bool SerialRemoteController::calibrationActive() const
+{
+    return calibrationActive_;
 }
 
 bool SerialRemoteController::localControlsEnabled() const
@@ -127,6 +263,10 @@ void SerialRemoteController::processRecord(
             clearStaged();
             commit(transaction);
         }
+        return;
+    }
+
+    if (processCalibrationRecord(frame)) {
         return;
     }
 
@@ -177,6 +317,10 @@ void SerialRemoteController::commit(
         return;
     }
 
+    if (calibrationActive_ && !transaction.remoteState.remoteEnabled) {
+        abortCalibration(true);
+    }
+
     const bool enteringRemote = !remoteState_.remoteEnabled &&
                                 transaction.remoteState.remoteEnabled;
     if (enteringRemote) {
@@ -202,6 +346,291 @@ void SerialRemoteController::commit(
         control::operatingController.clearRemoteError();
     }
     sendOk();
+}
+
+bool SerialRemoteController::processCalibrationRecord(
+    const serial_protocol::FrameResult& frame)
+{
+#if ADRET_REMOTE_SERIAL
+    uint8_t position = 0u;
+    if (!matchWord(frame.text, frame.length, &position, "CAL")) {
+        return false;
+    }
+    clearStaged();
+
+    if (atEnd(frame.text, frame.length, position)) {
+        Serial.print(F("CAL ERROR COMMAND\r\n"));
+        return true;
+    }
+    if (matchWord(frame.text, frame.length, &position, "BEGIN") &&
+        atEnd(frame.text, frame.length, position)) {
+        if (!remoteState_.remoteEnabled) {
+            Serial.print(F("CAL ERROR REMOTE_REQUIRED\r\n"));
+        } else if (calibrationActive_) {
+            Serial.print(F("CAL ERROR ALREADY_ACTIVE\r\n"));
+        } else {
+            calibrationInitialOutput_ =
+                control::operatingController.settings().output;
+            if (!calibration::calibrationStore.startSession()) {
+                Serial.print(F("CAL ERROR EEPROM\r\n"));
+            } else {
+                calibrationActive_ = true;
+                Serial.print(F("CAL OK BEGIN BASE_CRC="));
+                Serial.print(calibration::calibrationStore.baseCrc(), HEX);
+                Serial.print(F(" GENERATION="));
+                Serial.print(calibration::calibrationStore.generation());
+                Serial.print(F("\r\n"));
+            }
+        }
+        return true;
+    }
+    if (matchWord(frame.text, frame.length, &position, "ABORT") &&
+        atEnd(frame.text, frame.length, position)) {
+        if (!calibrationActive_) {
+            Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
+        } else {
+            abortCalibration(true);
+        }
+        return true;
+    }
+    if (matchWord(frame.text, frame.length, &position, "END") &&
+        atEnd(frame.text, frame.length, position)) {
+        if (!calibrationActive_) {
+            Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
+        } else if (!calibration::calibrationStore.commitSession()) {
+            Serial.print(F("CAL ERROR EEPROM\r\n"));
+        } else {
+            calibrationActive_ = false;
+            control::operatingController.applyRemoteConfiguration(
+                calibrationInitialOutput_);
+            Serial.print(F("CAL OK END GENERATION="));
+            Serial.print(calibration::calibrationStore.generation());
+            Serial.print(F(" RESTORED=1\r\n"));
+        }
+        return true;
+    }
+
+    const bool statusCommand =
+        matchWord(frame.text, frame.length, &position, "STATUS");
+    if (statusCommand && atEnd(frame.text, frame.length, position)) {
+        const control::OutputConfiguration& output =
+            control::operatingController.settings().output;
+        calibration::CalibrationPoint point = {};
+        if (!calibration::calibrationStore.point(
+                output.frequencyHz, output.amplitudeTenthsDbm, &point)) {
+            Serial.print(F("CAL ERROR POINT\r\n"));
+        } else {
+            Serial.print(F("CAL STATUS ACTIVE="));
+            Serial.print(calibrationActive_ ? 1 : 0);
+            Serial.print(F(" BASE_CRC="));
+            Serial.print(calibration::calibrationStore.baseCrc(), HEX);
+            Serial.print(F(" GENERATION="));
+            Serial.print(calibration::calibrationStore.generation());
+            Serial.print(F(" FREQ="));
+            Serial.print(output.frequencyHz);
+            Serial.print(F(" SET="));
+            printTenthsDb(output.amplitudeTenthsDbm);
+            Serial.print(F(" RF="));
+            Serial.print(output.rfOff ? 0 : 1);
+            Serial.print(' ');
+            printCalibrationPoint("POINT", point);
+        }
+        return true;
+    }
+
+    if (matchWord(frame.text, frame.length, &position, "MEAS")) {
+        int16_t measured = 0;
+        const control::OutputConfiguration& output =
+            control::operatingController.settings().output;
+        if (!calibrationActive_) {
+            Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
+        } else if (output.rfOff) {
+            Serial.print(F("CAL ERROR RF_OFF\r\n"));
+        } else if (!parseTenths(frame.text, frame.length, &position,
+                                -1500, 300, &measured) ||
+                   !atEnd(frame.text, frame.length, position)) {
+            Serial.print(F("CAL ERROR VALUE\r\n"));
+        } else {
+            const int16_t residual =
+                int16_t(measured - output.amplitudeTenthsDbm);
+            calibration::CalibrationPoint point = {};
+            if (!calibration::calibrationStore.addWorkingCorrection(
+                    output.frequencyHz, output.amplitudeTenthsDbm,
+                    residual, &point)) {
+                Serial.print(F("CAL ERROR CORRECTION_RANGE\r\n"));
+            } else {
+                control::operatingController.applyRemoteConfiguration(output);
+                Serial.print(F("CAL APPLIED MEASURED="));
+                printTenthsDb(measured);
+                Serial.print(F(" RESIDUAL="));
+                printTenthsDb(residual);
+                Serial.print(' ');
+                printCalibrationPoint("POINT", point);
+            }
+        }
+        return true;
+    }
+
+    if (matchWord(frame.text, frame.length, &position, "ADJ")) {
+        int16_t adjustment = 0;
+        const control::OutputConfiguration& output =
+            control::operatingController.settings().output;
+        if (!calibrationActive_) {
+            Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
+        } else if (!parseTenths(frame.text, frame.length, &position,
+                                -1270, 1270, &adjustment) ||
+                   !atEnd(frame.text, frame.length, position)) {
+            Serial.print(F("CAL ERROR VALUE\r\n"));
+        } else {
+            calibration::CalibrationPoint point = {};
+            if (!calibration::calibrationStore.addWorkingCorrection(
+                    output.frequencyHz, output.amplitudeTenthsDbm,
+                    adjustment, &point)) {
+                Serial.print(F("CAL ERROR CORRECTION_RANGE\r\n"));
+            } else {
+                control::operatingController.applyRemoteConfiguration(output);
+                Serial.print(F("CAL APPLIED ADJUSTMENT="));
+                printTenthsDb(adjustment);
+                Serial.print(' ');
+                printCalibrationPoint("POINT", point);
+            }
+        }
+        return true;
+    }
+
+    if (matchWord(frame.text, frame.length, &position, "CLEAR") &&
+        atEnd(frame.text, frame.length, position)) {
+        const control::OutputConfiguration& output =
+            control::operatingController.settings().output;
+        uint16_t tableIndex = 0u;
+        uint16_t overlayIndex = 0u;
+        uint8_t row = 0u;
+        uint8_t step = 0u;
+        calibration::CalibrationPoint point = {};
+        if (!calibrationActive_) {
+            Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
+        } else if (!calibration::correctionIndex(
+                       output.frequencyHz, output.amplitudeTenthsDbm,
+                       &tableIndex, &overlayIndex, &row, &step) ||
+                   !calibration::calibrationStore.setWorkingOverlay(
+                       row, step, 0, &point)) {
+            Serial.print(F("CAL ERROR POINT\r\n"));
+        } else {
+            control::operatingController.applyRemoteConfiguration(output);
+            Serial.print(F("CAL CLEARED "));
+            printCalibrationPoint("POINT", point);
+        }
+        return true;
+    }
+
+    if (matchWord(frame.text, frame.length, &position, "SET")) {
+        uint16_t row = 0u;
+        uint16_t step = 0u;
+        int16_t overlay = 0;
+        calibration::CalibrationPoint point = {};
+        if (!calibrationActive_) {
+            Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
+        } else if (!parseUnsigned(frame.text, frame.length, &position,
+                                  calibration::kStandardFrequencyRowCount - 1u,
+                                  &row) ||
+                   !parseUnsigned(frame.text, frame.length, &position,
+                                  calibration::kAttenuatorStepCount - 1u,
+                                  &step) ||
+                   !parseTenths(frame.text, frame.length, &position,
+                                -128, 127, &overlay) ||
+                   !atEnd(frame.text, frame.length, position) ||
+                   !calibration::calibrationStore.setWorkingOverlay(
+                       uint8_t(row), uint8_t(step), int8_t(overlay), &point)) {
+            Serial.print(F("CAL ERROR VALUE\r\n"));
+        } else {
+            Serial.print(F("CAL SET "));
+            printCalibrationPoint("POINT", point);
+        }
+        return true;
+    }
+
+    if (matchWord(frame.text, frame.length, &position, "DUMP") &&
+        atEnd(frame.text, frame.length, position)) {
+        Serial.print(F("CAL DUMP BEGIN BASE_CRC="));
+        Serial.print(calibration::calibrationStore.baseCrc(), HEX);
+        Serial.print(F(" GENERATION="));
+        Serial.print(calibration::calibrationStore.generation());
+        Serial.print(F("\r\n"));
+        for (uint8_t row = 0u;
+             row < calibration::kStandardFrequencyRowCount; ++row) {
+            for (uint8_t step = 0u;
+                 step < calibration::kAttenuatorStepCount; ++step) {
+                const uint16_t index =
+                    uint16_t(row) * calibration::kAttenuatorStepCount + step;
+                Serial.print(F("CAL DATA ROW="));
+                Serial.print(row);
+                Serial.print(F(" STEP="));
+                Serial.print(step);
+                Serial.print(F(" OVERLAY="));
+                printTenthsDb(
+                    calibration::calibrationStore.overlayByCompactIndex(index));
+                Serial.print(F("\r\n"));
+            }
+        }
+        Serial.print(F("CAL DUMP END\r\n"));
+        return true;
+    }
+
+    Serial.print(F("CAL ERROR COMMAND\r\n"));
+    return true;
+#else
+    (void)frame;
+    return false;
+#endif
+}
+
+void SerialRemoteController::abortCalibration(bool reportToSerial)
+{
+    if (!calibrationActive_) {
+        return;
+    }
+    calibration::calibrationStore.abortSession();
+    calibrationActive_ = false;
+    control::operatingController.applyRemoteConfiguration(
+        calibrationInitialOutput_);
+#if ADRET_REMOTE_SERIAL
+    if (reportToSerial) {
+        Serial.print(F("CAL ABORTED RESTORED=1\r\n"));
+    }
+#else
+    (void)reportToSerial;
+#endif
+}
+
+void SerialRemoteController::printCalibrationPoint(
+    const char* prefix,
+    const calibration::CalibrationPoint& point,
+    int16_t extraTenthsDb)
+{
+#if ADRET_REMOTE_SERIAL
+    Serial.print(prefix);
+    Serial.print(F(" ROW="));
+    Serial.print(point.row);
+    Serial.print(F(" STEP="));
+    Serial.print(point.step);
+    Serial.print(F(" INDEX="));
+    Serial.print(point.tableIndex);
+    Serial.print(F(" BASE="));
+    printTenthsDb(point.baseTenthsDb);
+    Serial.print(F(" OVERLAY="));
+    printTenthsDb(point.overlayTenthsDb);
+    Serial.print(F(" TOTAL="));
+    printTenthsDb(point.effectiveTenthsDb);
+    if (extraTenthsDb != 0) {
+        Serial.print(F(" EXTRA="));
+        printTenthsDb(extraTenthsDb);
+    }
+    Serial.print(F("\r\n"));
+#else
+    (void)prefix;
+    (void)point;
+    (void)extraTenthsDb;
+#endif
 }
 
 void SerialRemoteController::clearStaged()
