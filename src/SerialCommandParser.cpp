@@ -70,6 +70,29 @@ bool matchMnemonic(Cursor* cursor, const char* mnemonic)
     return true;
 }
 
+bool exactQueryMatches(const FrameResult& frame,
+                       const char* mnemonic,
+                       uint8_t mnemonicLength)
+{
+    if (frame.marker != ExecutionMarker::QuestionMark) {
+        return false;
+    }
+    uint8_t position = 0u;
+    while (position < frame.length && asciiSpace(frame.text[position])) {
+        ++position;
+    }
+    for (uint8_t i = 0u; i < mnemonicLength; ++i) {
+        if (position >= frame.length ||
+            asciiUpper(frame.text[position++]) != mnemonic[i]) {
+            return false;
+        }
+    }
+    while (position < frame.length && asciiSpace(frame.text[position])) {
+        ++position;
+    }
+    return position == frame.length;
+}
+
 bool parseDecimal(Cursor* cursor, DecimalNumber* result)
 {
     skipSpaces(cursor);
@@ -389,6 +412,20 @@ bool requireRemote(const Transaction& transaction)
 }
 
 }  // namespace
+
+ReadOnlyQuery readOnlyQuery(const FrameResult& frame)
+{
+    if (exactQueryMatches(frame, "STB", 3u)) {
+        return ReadOnlyQuery::Status;
+    }
+    if (exactQueryMatches(frame, "IB", 2u)) {
+        return ReadOnlyQuery::InstrumentBus;
+    }
+    if (exactQueryMatches(frame, "BUILD", 5u)) {
+        return ReadOnlyQuery::Build;
+    }
+    return ReadOnlyQuery::None;
+}
 
 void MessageFramer::reset()
 {

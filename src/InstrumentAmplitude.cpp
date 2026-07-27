@@ -8,7 +8,6 @@ namespace {
 
 constexpr int16_t kHighLevelStartTenthsDbm = 70;
 constexpr int16_t kNormalReferenceTenthsDb = 138;
-constexpr int16_t kHighReferenceTenthsDb = 188;
 constexpr int16_t kMechanicalStepTenthsDb = 50;
 constexpr uint8_t kAttenuatorStepCount = 28u;
 
@@ -91,11 +90,8 @@ bool makeAmplitudeProgram(int16_t requestedTenthsDbm,
         return false;
     }
 
-    const int16_t referenceTenthsDb = highLevelRange
-        ? kHighReferenceTenthsDb
-        : kNormalReferenceTenthsDb;
     const int16_t nominalFineTenthsDb = int16_t(
-        referenceTenthsDb - requestedTenthsDbm -
+        kNormalReferenceTenthsDb - requestedTenthsDbm -
         int16_t(attenuatorStep) * kMechanicalStepTenthsDb);
     const int16_t correctedFineTenthsDb = int16_t(
         nominalFineTenthsDb + int16_t(calibrationTenthsDb));

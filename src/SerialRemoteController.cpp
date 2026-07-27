@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <string.h>
 
+#include "Adret/BuildInfo.h"
 #include "Adret/CalibrationEprom.h"
 #include "Adret/CalibrationStore.h"
 #include "Adret/Debug.h"
@@ -28,31 +29,6 @@ void formatErrorCode(serial_protocol::ErrorCode error, char* text)
 char asciiUpper(char value)
 {
     return value >= 'a' && value <= 'z' ? char(value - ('a' - 'A')) : value;
-}
-
-bool isExactQuery(const serial_protocol::FrameResult& frame,
-                  const char* mnemonic,
-                  uint8_t mnemonicLength)
-{
-    if (frame.marker != serial_protocol::ExecutionMarker::QuestionMark) {
-        return false;
-    }
-    uint8_t position = 0u;
-    while (position < frame.length &&
-           (frame.text[position] == ' ' || frame.text[position] == '\t')) {
-        ++position;
-    }
-    for (uint8_t i = 0u; i < mnemonicLength; ++i) {
-        if (position >= frame.length ||
-            asciiUpper(frame.text[position++]) != mnemonic[i]) {
-            return false;
-        }
-    }
-    while (position < frame.length &&
-           (frame.text[position] == ' ' || frame.text[position] == '\t')) {
-        ++position;
-    }
-    return position == frame.length;
 }
 
 void skipSpaces(const char* text, uint8_t length, uint8_t* position)
@@ -272,13 +248,18 @@ void SerialRemoteController::processRecord(
 
     // Read-only queries observe actual state and never consume a deferred
     // transaction.
-    if (isExactQuery(frame, "STB", 3u)) {
-        sendStatus();
-        return;
-    }
-    if (isExactQuery(frame, "IB", 2u)) {
-        sendInstrumentBusStatus();
-        return;
+    switch (serial_protocol::readOnlyQuery(frame)) {
+        case serial_protocol::ReadOnlyQuery::Status:
+            sendStatus();
+            return;
+        case serial_protocol::ReadOnlyQuery::InstrumentBus:
+            sendInstrumentBusStatus();
+            return;
+        case serial_protocol::ReadOnlyQuery::Build:
+            sendBuildInfo();
+            return;
+        case serial_protocol::ReadOnlyQuery::None:
+            break;
     }
 
     const serial_protocol::ParseContext context = {
@@ -709,6 +690,15 @@ void SerialRemoteController::sendInstrumentBusStatus()
     Serial.print(F(" ADDRESS="));
     Serial.print(instrumentBus.addressImage());
     Serial.print(F("\r\n"));
+#endif
+}
+
+void SerialRemoteController::sendBuildInfo()
+{
+#if ADRET_REMOTE_SERIAL
+    Serial.print(F("BUILD NUMBER="));
+    Serial.print(build_info::kBuildNumber);
+    Serial.print(F(" COMPILED=" __DATE__ " " __TIME__ "\r\n"));
 #endif
 }
 

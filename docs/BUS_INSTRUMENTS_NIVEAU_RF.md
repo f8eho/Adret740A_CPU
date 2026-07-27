@@ -89,19 +89,25 @@ dans `BUS_INSTRUMENTS_MODULATIONS.md`.
 
 ## Calcul nominal
 
-Pour un niveau demandé `L` en dixièmes de dBm, hors plage haute :
+Pour un niveau demandé `L` en dixièmes de dBm :
 
 ```text
 s = max(0, ceil((20 - L) / 50))
 fine_nominale = 138 - L - 50 * s
 ```
 
-À partir de `+7,0 dBm`, la CPU originale utilise la plage haute :
+À partir de `+7,0 dBm`, `s` reste naturellement nul et le même calcul est
+conservé :
 
 ```text
 s = 0
-fine_nominale = 188 - L
+fine_nominale = 138 - L
 ```
+
+Une première transcription utilisait `188 - L` dans cette plage. Le banc a
+montré qu'elle provoquait un saut d'atténuation de 4,9 dB au passage de
+`+6,9` à `+7,0 dBm` (`adresse 8 = 89` puis `D8`). La formule continue donne
+désormais `adresse 8 = 89` puis `88`, et la transition RF est continue.
 
 La valeur envoyée à l'adresse 8 est ensuite :
 

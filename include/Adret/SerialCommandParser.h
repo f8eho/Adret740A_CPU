@@ -37,12 +37,21 @@ enum class FrameEvent : uint8_t {
     Overflow,
 };
 
+enum class ReadOnlyQuery : uint8_t {
+    None,
+    Status,
+    InstrumentBus,
+    Build,
+};
+
 struct FrameResult {
     FrameEvent event;
     ExecutionMarker marker;
     const char* text;
     uint8_t length;
 };
+
+ReadOnlyQuery readOnlyQuery(const FrameResult& frame);
 
 class MessageFramer final {
 public:

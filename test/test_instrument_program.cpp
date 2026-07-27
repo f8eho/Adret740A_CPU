@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "Adret/CalibrationEprom.h"
+#include "Adret/InstrumentAmplitude.h"
 #include "Adret/InstrumentProgram.h"
 
 namespace {
@@ -125,6 +126,47 @@ void testStandardFrequencyEndpoints()
     expectWrite(program, 9u, 3u, 0x9Eu);
 }
 
+void testOriginalPlus5DbControlPolarity()
+{
+    constexpr uint8_t kNoRelays = 0x3Fu;
+    constexpr uint8_t kHeterodyneAddress5 = 0x23u;
+    constexpr uint8_t kDivideBy2Address5 = 0x05u;
+
+    assert(makeAmplitudeControlAddress6(
+               kNoRelays, kHeterodyneAddress5, false, false) == 0x3Fu);
+    assert(makeAmplitudeControlAddress6(
+               kNoRelays, kHeterodyneAddress5, true, false) == 0xBFu);
+    assert(makeAmplitudeControlAddress6(
+               kNoRelays, kHeterodyneAddress5, true, true) == 0xBFu);
+    assert(makeAmplitudeControlAddress6(
+               kNoRelays, kDivideBy2Address5, false, false) == 0x3Fu);
+    assert(makeAmplitudeControlAddress6(
+               kNoRelays, kDivideBy2Address5, true, false) == 0x3Fu);
+}
+
+void testHighLevelFineControlRemainsContinuous()
+{
+    constexpr uint8_t kHeterodyneAddress5 = 0x23u;
+    AmplitudeProgram program = {};
+
+    assert(makeAmplitudeProgram(
+        69, 0, 0x3Fu, kHeterodyneAddress5, &program));
+    assert(program.nominalFineTenthsDb == 69);
+    assert(program.address8 == 0x89u);
+    assert(program.address6AfterAddress8 == 0x3Fu);
+
+    assert(makeAmplitudeProgram(
+        70, 0, 0xBFu, kHeterodyneAddress5, &program));
+    assert(program.nominalFineTenthsDb == 68);
+    assert(program.address8 == 0x88u);
+    assert(program.address6AfterAddress8 == 0xBFu);
+
+    assert(makeAmplitudeProgram(
+        130, 0, 0x3Fu, kHeterodyneAddress5, &program));
+    assert(program.nominalFineTenthsDb == 8);
+    assert(program.address8 == 0x08u);
+}
+
 void testCalibrationGrid()
 {
     using namespace adret::calibration;
@@ -196,6 +238,8 @@ int main()
     testFmAndPmFields();
     testFmDemonstratedEndpoint();
     testStandardFrequencyEndpoints();
+    testOriginalPlus5DbControlPolarity();
+    testHighLevelFineControlRemainsContinuous();
     testCalibrationGrid();
     puts("InstrumentProgram host vectors: OK");
     return 0;

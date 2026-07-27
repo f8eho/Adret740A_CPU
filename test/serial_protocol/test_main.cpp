@@ -17,6 +17,7 @@ using adret::serial_protocol::FrameResult;
 using adret::serial_protocol::MessageFramer;
 using adret::serial_protocol::ParseContext;
 using adret::serial_protocol::ParseResult;
+using adret::serial_protocol::ReadOnlyQuery;
 using adret::serial_protocol::RemoteState;
 using adret::serial_protocol::SequenceAction;
 using adret::serial_protocol::Transaction;
@@ -308,6 +309,34 @@ void testFraming()
     CHECK(strncmp(frame.text, "REN1", 4u) == 0);
 }
 
+void testReadOnlyQueries()
+{
+    const FrameResult status = {
+        FrameEvent::Execute, ExecutionMarker::QuestionMark, " STB ", 5u};
+    CHECK(adret::serial_protocol::readOnlyQuery(status) ==
+          ReadOnlyQuery::Status);
+
+    const FrameResult instrumentBus = {
+        FrameEvent::Execute, ExecutionMarker::QuestionMark, "ib", 2u};
+    CHECK(adret::serial_protocol::readOnlyQuery(instrumentBus) ==
+          ReadOnlyQuery::InstrumentBus);
+
+    const FrameResult build = {
+        FrameEvent::Execute, ExecutionMarker::QuestionMark, " build ", 7u};
+    CHECK(adret::serial_protocol::readOnlyQuery(build) ==
+          ReadOnlyQuery::Build);
+
+    const FrameResult wrongMarker = {
+        FrameEvent::Execute, ExecutionMarker::LineEnding, "BUILD", 5u};
+    CHECK(adret::serial_protocol::readOnlyQuery(wrongMarker) ==
+          ReadOnlyQuery::None);
+
+    const FrameResult suffix = {
+        FrameEvent::Execute, ExecutionMarker::QuestionMark, "BUILD 1", 7u};
+    CHECK(adret::serial_protocol::readOnlyQuery(suffix) ==
+          ReadOnlyQuery::None);
+}
+
 void testStatusBytes()
 {
     const RemoteState remote = {true, false};
@@ -332,6 +361,7 @@ int main()
     testMemoriesAndSequences(&memories);
     testStatusAndDeferredMerge(&memories);
     testFraming();
+    testReadOnlyQueries();
     testStatusBytes();
 
     if (failures != 0u) {

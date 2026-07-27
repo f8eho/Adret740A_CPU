@@ -194,6 +194,19 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   low: the RF state changed correctly but its indicator was reversed. The
   front-panel mapping now applies active-low encoding while preserving the
   semantic rule that the indicator is lit exactly when `rfOff` is true.
+- On 2026-07-26, logic captures and RF measurements isolated a 4.9-dB output
+  discontinuity at the `+6.9` to `+7.0 dBm` boundary. The high-level amplitude
+  program now retains the continuous 13.8-dB fine-control reference, changing
+  address 8 from `89` to `88` across that boundary instead of `89` to `D8`.
+  The corrected transition was confirmed on the assembled instrument. The
+  original polarity of the VHF `+5 dB` control was retained after a temporary
+  inversion showed no corresponding RF change. An approximately 4 to 5.5-dB
+  absolute level deficit remains across the frequency range; service-manual
+  checks currently point to the attenuator or output circuit breaker, pending
+  direct measurements with a suitable SMC-to-SMA test cable.
+- The serial `BUILD?` query was exercised on the instrument and returned build
+  `2026072604` with its compilation timestamp, allowing flashed bench versions
+  to be identified independently of the host source tree.
 - `IB?` was subsequently exercised successfully with PuTTY during the NACK
   test. Earlier automated attempts through the Mega USB serial bridge returned
   `E-00` for both `IB?` and `STB?`, indicating a host-side access/framing issue;
@@ -226,8 +239,9 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
    must be localized between the 5 V rail, RESET and the first CA2 activity.
 4. Validate the Serial0 protocol and `Adr RTL` local return on the instrument.
 5. Measure frequency accuracy and 10-Hz step regularity with a precision
-   counter, then execute and validate the manual amplitude-calibration workflow
-   using suitable RF equipment.
+   counter. Localize the remaining RF level loss between the VHF module,
+   attenuator and output circuit breaker, then execute and validate the manual
+   amplitude-calibration workflow using suitable RF equipment.
 6. Validate keypad entry, EXEC/MEM/SEQ indicators and Code B `P`, `E` and `-`
    messages on the real panel.
 7. Add AUX sequence stepping and replace the zero calibration initializer

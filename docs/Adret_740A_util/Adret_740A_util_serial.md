@@ -52,8 +52,9 @@ anciennes traces libres.
   la forme du chiffre ASCII `0`.
 - Plusieurs commandes de réglage peuvent être regroupées dans un même
   message, dans l'ordre où elles doivent être préparées.
-- `STB?` et `IB?` doivent être transmis seuls. Une transaction ne peut contenir qu'une
-  seule commande `M nn`, obligatoirement en dernière position ; les réglages
+- `STB?`, `IB?` et `BUILD?` doivent être transmis seuls. Une transaction ne
+  peut contenir qu'une seule commande `M nn`, obligatoirement en dernière
+  position ; les réglages
   placés avant `M` sont appliqués et mémorisés ensemble.
 - Un message contient au maximum 128 caractères, espaces compris et caractère
   d'exécution exclu.
@@ -110,9 +111,10 @@ Toutes les réponses se terminent par `CR LF` :
 | `ERR E-xx\r\n` | message rejeté avec le code indiqué |
 | `STB n\r\n` | résultat de `STB?`, avec `n` compris entre 0 et 255 |
 | `IB ...\r\n` | état détaillé du bus instruments demandé par `IB?` |
+| `BUILD NUMBER=n COMPILED=date heure\r\n` | identification du firmware demandée par `BUILD?` |
 
-Une commande de lecture telle que `STB?` ou `IB?` produit uniquement sa réponse de
-données ; elle n'est pas suivie d'un `OK`.
+Une commande de lecture telle que `STB?`, `IB?` ou `BUILD?` produit uniquement
+sa réponse de données ; elle n'est pas suivie d'un `OK`.
 
 Lorsqu'une erreur demande l'attention du contrôleur, le 740A émet d'abord le
 message asynchrone `SRQ n\r\n`, puis la réponse terminale `ERR E-xx\r\n` de la
@@ -138,6 +140,14 @@ sont acceptées dans tous les modes et sont insensibles à la casse.
 | `LLO 0` | libère le retour local manuel |
 | `STB?` | lit l'octet d'état et acquitte la demande `SRQ` |
 | `IB?` | lit l'état, les défauts et les compteurs du bus instruments |
+| `BUILD?` | lit le numéro et l'horodatage de compilation du firmware |
+
+Le numéro de build suit le format décimal `AAAAMMJJRR`, où `RR` est la
+révision du firmware pour la journée. Par exemple :
+
+```text
+BUILD NUMBER=2026072604 COMPILED=Jul 26 2026 16:42:10
+```
 
 Les commandes de réglage de l'instrument ne sont acceptées qu'en mode
 distant (`REMS` ou `RWLS`). Leur réception en mode local produit `E-00`.

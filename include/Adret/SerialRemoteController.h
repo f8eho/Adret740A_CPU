@@ -34,6 +34,7 @@ private:
                    int8_t memoryIndex = -1);
     void sendStatus();
     void sendInstrumentBusStatus();
+    void sendBuildInfo();
     uint8_t statusByte() const;
     void setRemoteIndicator();
 
