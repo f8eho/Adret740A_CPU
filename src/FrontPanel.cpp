@@ -504,6 +504,26 @@ void FrontPanel::setModulationValue(uint32_t value,
     flushOutputs();
 }
 
+void FrontPanel::setModulationText(const char* text)
+{
+    bool endReached = text == nullptr;
+    for (uint8_t i = 0u; i < kModulationTextWidth; ++i) {
+        if (!endReached && text[i] != '\0') {
+            displayBuffers_.modulation[i] = text[i];
+        } else {
+            endReached = true;
+            displayBuffers_.modulation[i] = ' ';
+        }
+    }
+    displayBuffers_.modulation[kModulationTextWidth] = '\0';
+    modulationUnit_ = ModulationUnitLed::None;
+    modulationIcmDecimalMask_ = 0u;
+    modulationBlankMask_ = 0u;
+    decimalPointFlags_ &= uint8_t(~kModulationDecimalPoint);
+    firstCharFlags_ &= uint8_t(~(kModulationOne | kModulationP));
+    flushOutputs();
+}
+
 void FrontPanel::setModulationDisplay(uint16_t digits,
                                       ModulationUnitLed unit,
                                       uint8_t icmDecimalMask,

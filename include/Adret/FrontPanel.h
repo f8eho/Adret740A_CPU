@@ -142,6 +142,7 @@ public:
     void setModulationValue(uint32_t value,
                             front_panel::ModulationUnitLed unit,
                             bool decimalPoint);
+    void setModulationText(const char* text);
     void setModulationDisplay(uint16_t digits,
                               front_panel::ModulationUnitLed unit,
                               uint8_t icmDecimalMask,

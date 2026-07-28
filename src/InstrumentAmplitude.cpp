@@ -74,6 +74,7 @@ bool makeAmplitudeProgram(int16_t requestedTenthsDbm,
                           int8_t calibrationTenthsDb,
                           uint8_t currentAddress6,
                           uint8_t address5,
+                          bool amplitudeModulationActive,
                           AmplitudeProgram* program)
 {
     if (program == nullptr ||
@@ -107,7 +108,10 @@ bool makeAmplitudeProgram(int16_t requestedTenthsDbm,
     const uint8_t address6Before = uint8_t(preservedControl | relayCode);
 
     const uint8_t address6After = makeAmplitudeControlAddress6(
-        address6Before, address5, highLevelRange, false);
+        address6Before,
+        address5,
+        highLevelRange,
+        amplitudeModulationActive);
 
     program->requestedTenthsDbm = requestedTenthsDbm;
     program->nominalFineTenthsDb = nominalFineTenthsDb;

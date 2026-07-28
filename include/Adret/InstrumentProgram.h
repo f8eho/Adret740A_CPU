@@ -11,6 +11,28 @@ namespace instrument_bus {
 constexpr uint8_t kInstrumentRegisterCount = 16u;
 constexpr uint8_t kMaximumConfigurationWrites = 21u;
 
+enum class InstrumentProgramSection : uint8_t {
+    Frequency = 1u << 0u,
+    Amplitude = 1u << 1u,
+    Modulation = 1u << 2u,
+    RfInhibit = 1u << 3u,
+};
+
+using InstrumentProgramSections = uint8_t;
+
+constexpr InstrumentProgramSections instrumentProgramSection(
+    InstrumentProgramSection section)
+{
+    return uint8_t(section);
+}
+
+constexpr InstrumentProgramSections kNoInstrumentProgramSections = 0u;
+constexpr InstrumentProgramSections kAllInstrumentProgramSections =
+    instrumentProgramSection(InstrumentProgramSection::Frequency) |
+    instrumentProgramSection(InstrumentProgramSection::Amplitude) |
+    instrumentProgramSection(InstrumentProgramSection::Modulation) |
+    instrumentProgramSection(InstrumentProgramSection::RfInhibit);
+
 enum class InstrumentProgramResult : uint8_t {
     Ok,
     InvalidArgument,
@@ -54,6 +76,28 @@ InstrumentProgramResult makeInstrumentProgram(
     const InstrumentConfiguration& configuration,
     int8_t calibrationTenthsDb,
     const uint8_t currentRegisters[kInstrumentRegisterCount],
+    InstrumentProgram* program);
+
+// Selects the functional blocks needed to move from the last successfully
+// applied configuration to the requested one. A null previous configuration
+// forces a complete transaction. Dependencies between the original routines
+// are included: frequency needs all three blocks, while amplitude finalizes
+// its own shared address-6 control bits just like the original CPU.
+InstrumentProgramSections requiredInstrumentProgramSections(
+    const InstrumentConfiguration* previousConfiguration,
+    int8_t previousCalibrationTenthsDb,
+    const InstrumentConfiguration& configuration,
+    int8_t calibrationTenthsDb);
+
+// Builds only the requested functional blocks, in their original order. The
+// caller must use requiredInstrumentProgramSections() or otherwise honor the
+// documented block dependencies. RfInhibit emits a word only when rfOff is
+// true. No hardware is touched by this function.
+InstrumentProgramResult makeInstrumentProgramForSections(
+    const InstrumentConfiguration& configuration,
+    int8_t calibrationTenthsDb,
+    const uint8_t currentRegisters[kInstrumentRegisterCount],
+    InstrumentProgramSections sections,
     InstrumentProgram* program);
 
 }  // namespace instrument_bus

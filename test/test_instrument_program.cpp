@@ -47,6 +47,30 @@ InstrumentProgram makeProgram(const InstrumentConfiguration& configuration)
     return program;
 }
 
+InstrumentProgram makeProgramForSections(
+    const InstrumentConfiguration& configuration,
+    const uint8_t registers[kInstrumentRegisterCount],
+    InstrumentProgramSections sections,
+    int8_t calibrationTenthsDb = 0)
+{
+    InstrumentProgram program = {};
+    assert(makeInstrumentProgramForSections(configuration,
+                                            calibrationTenthsDb,
+                                            registers,
+                                            sections,
+                                            &program) ==
+           InstrumentProgramResult::Ok);
+    return program;
+}
+
+void copyRegisters(const InstrumentProgram& program,
+                   uint8_t registers[kInstrumentRegisterCount])
+{
+    for (uint8_t address = 0u; address < kInstrumentRegisterCount; ++address) {
+        registers[address] = program.finalRegisters[address];
+    }
+}
+
 void test240MHzAmProgram()
 {
     const InstrumentProgram program = makeProgram(baseConfiguration());
@@ -74,6 +98,132 @@ void testRfOffClearsOnlyRelayBits()
     assert(program.writeCount == 21u);
     expectWrite(program, 20u, 6u, 0x00u);
     assert(program.finalRegisters[6] == 0x00u);
+}
+
+void testDifferentialSections()
+{
+    const InstrumentProgramSections frequency =
+        instrumentProgramSection(InstrumentProgramSection::Frequency);
+    const InstrumentProgramSections amplitude =
+        instrumentProgramSection(InstrumentProgramSection::Amplitude);
+    const InstrumentProgramSections modulation =
+        instrumentProgramSection(InstrumentProgramSection::Modulation);
+    const InstrumentProgramSections inhibit =
+        instrumentProgramSection(InstrumentProgramSection::RfInhibit);
+
+    assert(requiredInstrumentProgramSections(
+               nullptr, 0, baseConfiguration(), 0) ==
+           kAllInstrumentProgramSections);
+
+    uint8_t registers[kInstrumentRegisterCount] = {};
+    makeInitialInstrumentRegisters(registers);
+    InstrumentConfiguration applied = baseConfiguration();
+    InstrumentProgram program = makeProgramForSections(
+        applied, registers, kAllInstrumentProgramSections);
+    assert(program.writeCount == 20u);
+    copyRegisters(program, registers);
+
+    InstrumentProgramSections sections = requiredInstrumentProgramSections(
+        &applied, 0, applied, 0);
+    assert(sections == kNoInstrumentProgramSections);
+    program = makeProgramForSections(applied, registers, sections);
+    assert(program.writeCount == 0u);
+
+    InstrumentConfiguration requested = applied;
+    requested.amTenthsPercent = 500u;
+    sections = requiredInstrumentProgramSections(&applied, 0, requested, 0);
+    assert(sections == modulation);
+    program = makeProgramForSections(requested, registers, sections);
+    assert(program.writeCount == 7u);
+    copyRegisters(program, registers);
+    applied = requested;
+
+    requested.amplitudeTenthsDbm = -401;
+    sections = requiredInstrumentProgramSections(&applied, 0, requested, 0);
+    assert(sections == amplitude);
+    program = makeProgramForSections(requested, registers, sections);
+    assert(program.writeCount == 3u);
+    assert(program.writes[0].address == 6u);
+    assert(program.writes[1].address == 8u);
+    assert(program.writes[2].address == 6u);
+    copyRegisters(program, registers);
+    applied = requested;
+
+    requested.rfOff = true;
+    sections = requiredInstrumentProgramSections(&applied, 0, requested, 0);
+    assert(sections == inhibit);
+    program = makeProgramForSections(requested, registers, sections);
+    assert(program.writeCount == 1u);
+    expectWrite(program, 0u, 6u, uint8_t(registers[6] & 0xC0u));
+    copyRegisters(program, registers);
+    applied = requested;
+
+    requested.amTenthsPercent = 400u;
+    sections = requiredInstrumentProgramSections(&applied, 0, requested, 0);
+    assert(sections == InstrumentProgramSections(modulation | inhibit));
+    program = makeProgramForSections(requested, registers, sections);
+    assert(program.writeCount == 8u);
+    assert(program.writes[program.writeCount - 1u].address == 6u);
+    assert(program.finalRegisters[6] ==
+           uint8_t(program.writes[program.writeCount - 1u].value));
+    copyRegisters(program, registers);
+    applied = requested;
+
+    requested.rfOff = false;
+    sections = requiredInstrumentProgramSections(&applied, 0, requested, 0);
+    assert(sections == amplitude);
+    program = makeProgramForSections(requested, registers, sections);
+    assert(program.writeCount == 3u);
+    copyRegisters(program, registers);
+    applied = requested;
+
+    requested.frequencyHz = 241000000u;
+    sections = requiredInstrumentProgramSections(&applied, 0, requested, 0);
+    assert(sections ==
+           InstrumentProgramSections(frequency | amplitude | modulation));
+    program = makeProgramForSections(requested, registers, sections);
+    assert(program.writeCount == 20u);
+}
+
+void testInactiveModulationValueDoesNotWriteBus()
+{
+    InstrumentConfiguration applied = baseConfiguration();
+    InstrumentConfiguration requested = applied;
+    requested.fmDeviationHz += 100u;
+    assert(requiredInstrumentProgramSections(&applied, 0, requested, 0) ==
+           kNoInstrumentProgramSections);
+
+    requested = applied;
+    assert(requiredInstrumentProgramSections(&applied, 0, requested, 1) ==
+           instrumentProgramSection(InstrumentProgramSection::Amplitude));
+
+    requested = applied;
+    requested.amplitudeTenthsDbm -= 1;
+    requested.amTenthsPercent += 1u;
+    assert(requiredInstrumentProgramSections(&applied, 0, requested, 0) ==
+           InstrumentProgramSections(
+               instrumentProgramSection(InstrumentProgramSection::Amplitude) |
+               instrumentProgramSection(InstrumentProgramSection::Modulation)));
+}
+
+void testFullReplayFromPartialImage()
+{
+    InstrumentConfiguration configuration = baseConfiguration();
+    uint8_t registers[kInstrumentRegisterCount] = {};
+    makeInitialInstrumentRegisters(registers);
+    const InstrumentProgram initial = makeProgramForSections(
+        configuration, registers, kAllInstrumentProgramSections);
+
+    for (uint8_t i = 0u; i < 5u; ++i) {
+        registers[initial.writes[i].address] = initial.writes[i].value;
+    }
+    const InstrumentProgram replay = makeProgramForSections(
+        configuration, registers, kAllInstrumentProgramSections);
+    assert(replay.writeCount == 20u);
+    for (uint8_t address = 0u; address < kInstrumentRegisterCount; ++address) {
+        assert(replay.finalRegisters[address] ==
+               initial.finalRegisters[address]);
+    }
 }
 
 void testFmAndPmFields()
@@ -150,21 +300,26 @@ void testHighLevelFineControlRemainsContinuous()
     AmplitudeProgram program = {};
 
     assert(makeAmplitudeProgram(
-        69, 0, 0x3Fu, kHeterodyneAddress5, &program));
+        69, 0, 0x3Fu, kHeterodyneAddress5, false, &program));
     assert(program.nominalFineTenthsDb == 69);
     assert(program.address8 == 0x89u);
     assert(program.address6AfterAddress8 == 0x3Fu);
 
     assert(makeAmplitudeProgram(
-        70, 0, 0xBFu, kHeterodyneAddress5, &program));
+        70, 0, 0xBFu, kHeterodyneAddress5, false, &program));
     assert(program.nominalFineTenthsDb == 68);
     assert(program.address8 == 0x88u);
     assert(program.address6AfterAddress8 == 0xBFu);
 
     assert(makeAmplitudeProgram(
-        130, 0, 0x3Fu, kHeterodyneAddress5, &program));
+        130, 0, 0x3Fu, kHeterodyneAddress5, false, &program));
     assert(program.nominalFineTenthsDb == 8);
     assert(program.address8 == 0x08u);
+
+    assert(makeAmplitudeProgram(
+        69, 0, 0x3Fu, kHeterodyneAddress5, true, &program));
+    assert(program.address6BeforeAddress8 == 0x3Fu);
+    assert(program.address6AfterAddress8 == 0xBFu);
 }
 
 void testCalibrationGrid()
@@ -235,6 +390,9 @@ int main()
 {
     test240MHzAmProgram();
     testRfOffClearsOnlyRelayBits();
+    testDifferentialSections();
+    testInactiveModulationValueDoesNotWriteBus();
+    testFullReplayFromPartialImage();
     testFmAndPmFields();
     testFmDemonstratedEndpoint();
     testStandardFrequencyEndpoints();

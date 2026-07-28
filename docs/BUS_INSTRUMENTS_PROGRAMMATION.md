@@ -1,13 +1,17 @@
-# Composition et émission d'une configuration complète
+# Composition et émission différentielle d'une configuration
 
 ## État du raccordement
 
-Le contrôleur d'exploitation produit maintenant les mots du bus instruments
-à chaque configuration exécutée, mouvement de molette immédiatement actif ou
-basculement de `INHIB RF`. Si le MCP23017 n'est pas présent au démarrage, le
-contrôleur conserve son fonctionnement panneau/série. Chaque nouvelle
-configuration tente alors une unique récupération avant d'abandonner
-l'émission.
+Le contrôleur d'exploitation compare chaque configuration exécutée à la
+dernière configuration effectivement acceptée par le bus. Une demande
+identique ne produit aucune écriture. Les changements sont émis par blocs
+fonctionnels correspondant aux routines de l'EPROM originale : fréquence,
+niveau, modulation et inhibition RF.
+
+La première configuration reste complète. Si le MCP23017 n'est pas présent au
+démarrage, le contrôleur conserve son fonctionnement panneau/série. Chaque
+nouvelle configuration utile tente alors une unique récupération avant
+d'abandonner l'émission.
 
 L'environnement `instrument_bus_bench` reste indépendant : il ne produit que
 son motif fini de six écritures et n'envoie pas la configuration fonctionnelle.
@@ -17,14 +21,15 @@ son motif fini de six écritures et n'envoie pas la configuration fonctionnelle.
 Le contrôleur conserve une image de seize octets. Elle est mise à jour après
 chaque écriture I2C réussie, et non seulement à la fin de la séquence. Après
 une erreur en cours d'émission, l'image représente donc les mots effectivement
-acceptés avant le défaut. La configuration complète suivante peut repartir de
-cet état sans supposer que la transaction précédente était atomique.
+acceptés avant le défaut. La dernière configuration appliquée n'est en revanche
+validée qu'après le succès de toute la séquence demandée.
 
 Lorsqu'une émission partie d'un bus sain échoue, le contrôleur appelle une fois
-`recover()` puis rejoue immédiatement la transaction entière. Une configuration
-qui commence avec un bus indisponible consomme cette tentative avant sa première
-émission et ne relance donc pas une seconde fois en cas de nouvel échec. Les
-compteurs et le dernier défaut sont consultables avec la requête série `IB?`.
+`recover()`, reconstruit une configuration complète depuis l'image partielle,
+puis la rejoue immédiatement. Une configuration qui commence avec un bus
+indisponible consomme cette tentative avant sa première émission et ne relance
+donc pas une seconde fois en cas de nouvel échec. Les compteurs et le dernier
+défaut sont consultables avec la requête série `IB?`.
 
 L'image initiale vaut zéro, sauf l'adresse 15 initialisée à `0x1F`. Ses cinq
 bits bas sont préservés par l'EPROM originale et cette valeur reproduit les
@@ -45,6 +50,23 @@ La taille maximale est donc 21 écritures pour AM avec inhibition RF. Les
 champs partagés des adresses 5, 6, 12, 13 et 15 sont calculés avant l'émission
 afin que chaque module voie un état cohérent.
 
+## Sélection différentielle
+
+Le masque de blocs est déterminé sans allocation :
+
+- configuration et correction identiques : aucune écriture ;
+- modulation seule : bloc modulation de six ou sept mots ;
+- niveau ou correction seuls : bloc niveau `6, 8, 6` uniquement ; son dernier
+  mot recalcule directement D7 selon le niveau et l'état AM ;
+- fréquence, doubleur ou impulsions : configuration fonctionnelle complète ;
+- passage à `RF OFF` seul : un mot final à l'adresse 6 ;
+- retour RF actif : bloc niveau `6, 8, 6`.
+
+Lorsque la RF reste inhibée mais qu'un autre bloc doit être actualisé, le mot
+d'inhibition est toujours réémis en dernier. Les écritures internes d'un bloc
+ne sont jamais filtrées mot par mot : le passage transitoire D7 de l'adresse 11
+et les répétitions de l'adresse 6 conservent ainsi leur ordre historique.
+
 Sur un 740A sans doubleur, 560 MHz exactement reste sur le chemin direct O1.
 Si le doubleur optionnel est explicitement activé dans la configuration du
 compositeur, son plan commence lui aussi à 560 MHz. Le contrôleur actuel
@@ -62,8 +84,8 @@ bus[6] = bus[6] & 0xC0
 Les cinq captures de démarrage contiennent cette écriture `adresse 6 = 0x00`
 avant le réglage normal. `INHIB RF` est donc bien une configuration spéciale
 de l'atténuateur, et non une ligne de sortie supplémentaire de la nouvelle
-CPU. Lors du retour RF actif, le contrôleur réémet la configuration complète,
-ce qui restaure les relais et l'atténuation fine.
+CPU. Lors du retour RF actif, le contrôleur réémet le bloc niveau, ce qui
+restaure les relais, l'atténuation fine et les bits de contrôle de l'adresse 6.
 
 ## Calibration
 
@@ -79,6 +101,10 @@ La table Flash livrée par défaut reste nulle. Voir
 de `PROGMEM` et contrôle :
 
 - la séquence AM complète à 240 MHz ;
+- les masques et nombres d'écritures des mises à jour identique, modulation,
+  niveau, inhibition, réactivation RF et fréquence ;
+- la reconstruction complète depuis une image de registres partiellement
+  mise à jour après erreur ;
 - `RF OFF` et son dernier mot d'adresse 6 ;
 - les champs FM externe et PM externe ;
 - les limites 100 kHz et 560 MHz du modèle sans doubleur.
@@ -95,6 +121,12 @@ La suite modulation est :
 ```text
 06:2D 09:00 10:F6 12:61 13:2A 11:39 06:2D
 ```
+
+La capture de l'ancienne CPU
+`Dec_Mollette -70db à -35db pas de 0,1db.csv` contient 350 réglages et
+exactement 350 triplets `6, 8, 6`, sans aucune écriture de modulation, y
+compris lors des changements de relais de 5 dB. Ce comportement est repris par
+les mises à jour différentielles de niveau.
 
 ## Limites conservées
 

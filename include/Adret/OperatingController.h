@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "Adret/FrontPanel.h"
+#include "Adret/InstrumentProgram.h"
 
 namespace adret {
 namespace control {
@@ -195,6 +196,9 @@ private:
     uint32_t previousBlinkMs_ = 0;
     uint8_t instrumentRegisters_[16] = {};
     bool instrumentRegistersInitialized_ = false;
+    instrument_bus::InstrumentConfiguration appliedInstrumentConfiguration_ = {};
+    int8_t appliedInstrumentCorrectionTenthsDb_ = 0;
+    bool appliedInstrumentConfigurationValid_ = false;
 };
 
 extern OperatingController operatingController;

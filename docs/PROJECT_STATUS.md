@@ -35,10 +35,11 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   attempted per requested configuration, followed when applicable by one
   complete replay. `IB?` exposes readiness, current and sticky errors, write
   counts, recovery counts, timing and output images on Serial0.
-- Allocation-free complete instrument-program composer connected to executed
-  panel and remote configurations. It combines frequency, amplitude,
-  modulation and RF inhibition in at most 21 writes while retaining the
-  sixteen-register image across partial I2C failures.
+- Allocation-free differential instrument-program composer connected to
+  executed panel and remote configurations. It emits only the required
+  frequency, amplitude, modulation and RF-inhibition blocks, preserves each
+  original internal sequence, and forces a complete replay after uncertain
+  I2C state. The sixteen-register image survives partial failures.
 - Bench-validated LED scan through SN2, SN3, SN4, and SN17.
 - Bench-corrected independent SN3 indicators: active-low D1 drives `MEM` and
   active-low D0 drives `SEQ`.
@@ -132,9 +133,10 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   hardware is planned.
 - MUL10 and DIV10 select the decade and blink the affected digit three times.
 - The MCP23017 instrument-bus backend is initialized at startup. When present,
-  executed state changes now emit the complete functional transaction; when
-  absent, the front panel and remote protocol continue while each requested
-  configuration makes one bounded recovery attempt.
+  executed state changes emit only the affected functional blocks; an
+  identical request emits nothing and `RF OFF` alone emits one word. When the
+  bus state is uncertain, the next recovery uses a complete transaction.
+  Without the MCP23017, the panel and remote protocol remain available.
 - On 2026-07-21, the disconnected CMJU-2317 was validated directly on Mega
   D20/D21 at 100 kHz: it acknowledged address `0x20`, its reset register image
   was `IODIRA=FF`, `IODIRB=FF`, `IOCON=00`, `OLATA=00`, `OLATB=00`, and an
@@ -207,6 +209,22 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - The serial `BUILD?` query was exercised on the instrument and returned build
   `2026072604` with its compilation timestamp, allowing flashed bench versions
   to be identified independently of the host source tree.
+- Build `2026072702` renders the modulation field as `---` with no modulation
+  unit selected while the source is CW and no AM, FM or PM parameter is being
+  viewed. Selecting one of those three parameters displays its stored value;
+  selecting an active external, 1-kHz or 400-Hz source also restores the value
+  for the active modulation family. Panel validation of this display-only
+  change remains pending.
+- Build `2026072801` adds differential instrument-bus blocks and complete
+  recovery replay. Host tests and all three PlatformIO environments pass; the
+  normal firmware uses 1,244 bytes RAM and 44,054 bytes Flash. Logic-analyzer
+  and connected-instrument validation of the reduced traces remains pending.
+- Build `2026072802` makes differential level changes match the original CPU:
+  only the `6, 8, 6` block is emitted, and its final address-6 word incorporates
+  the active-AM/+5 dB decision directly. The 350-step original wheel capture
+  contains the same triplet exclusively. Host tests and all PlatformIO builds
+  pass; the normal firmware uses 1,244 bytes RAM and 44,072 bytes Flash.
+  Validation on the replacement CPU is pending.
 - `IB?` was subsequently exercised successfully with PuTTY during the NACK
   test. Earlier automated attempts through the Mega USB serial bridge returned
   `E-00` for both `IB?` and `STB?`, indicating a host-side access/framing issue;

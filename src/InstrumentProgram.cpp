@@ -65,6 +65,41 @@ bool makeSelectedModulation(const InstrumentConfiguration& configuration,
     return false;
 }
 
+bool frequencyInputsDiffer(const InstrumentConfiguration& previous,
+                           const InstrumentConfiguration& configuration)
+{
+    return previous.frequencyHz != configuration.frequencyHz ||
+           previous.doublerEnabled != configuration.doublerEnabled ||
+           previous.pulseEnabled != configuration.pulseEnabled ||
+           previous.pulseOptionInstalled != configuration.pulseOptionInstalled;
+}
+
+bool selectedModulationDiffers(const InstrumentConfiguration& previous,
+                               const InstrumentConfiguration& configuration)
+{
+    if (previous.modulationKind != configuration.modulationKind ||
+        previous.modulationSource != configuration.modulationSource) {
+        return true;
+    }
+
+    switch (configuration.modulationKind) {
+        case ModulationKind::Am:
+            return previous.amTenthsPercent != configuration.amTenthsPercent;
+        case ModulationKind::Fm:
+            return previous.fmDeviationHz != configuration.fmDeviationHz;
+        case ModulationKind::Pm:
+            return previous.pmHundredthsRadian !=
+                   configuration.pmHundredthsRadian;
+    }
+    return true;
+}
+
+bool includesSection(InstrumentProgramSections sections,
+                     InstrumentProgramSection section)
+{
+    return (sections & instrumentProgramSection(section)) != 0u;
+}
+
 }  // namespace
 
 void makeInitialInstrumentRegisters(
@@ -83,6 +118,63 @@ InstrumentProgramResult makeInstrumentProgram(
     const InstrumentConfiguration& configuration,
     int8_t calibrationTenthsDb,
     const uint8_t currentRegisters[kInstrumentRegisterCount],
+    InstrumentProgram* program)
+{
+    return makeInstrumentProgramForSections(configuration,
+                                            calibrationTenthsDb,
+                                            currentRegisters,
+                                            kAllInstrumentProgramSections,
+                                            program);
+}
+
+InstrumentProgramSections requiredInstrumentProgramSections(
+    const InstrumentConfiguration* previousConfiguration,
+    int8_t previousCalibrationTenthsDb,
+    const InstrumentConfiguration& configuration,
+    int8_t calibrationTenthsDb)
+{
+    if (previousConfiguration == nullptr) {
+        return kAllInstrumentProgramSections;
+    }
+
+    const InstrumentConfiguration& previous = *previousConfiguration;
+    InstrumentProgramSections sections = kNoInstrumentProgramSections;
+    if (frequencyInputsDiffer(previous, configuration)) {
+        sections = instrumentProgramSection(InstrumentProgramSection::Frequency) |
+                   instrumentProgramSection(InstrumentProgramSection::Amplitude) |
+                   instrumentProgramSection(InstrumentProgramSection::Modulation);
+    } else {
+        if (previous.amplitudeTenthsDbm != configuration.amplitudeTenthsDbm ||
+            previousCalibrationTenthsDb != calibrationTenthsDb) {
+            sections |=
+                instrumentProgramSection(InstrumentProgramSection::Amplitude);
+        }
+        if (selectedModulationDiffers(previous, configuration)) {
+            sections |=
+                instrumentProgramSection(InstrumentProgramSection::Modulation);
+        }
+    }
+
+    if (previous.rfOff != configuration.rfOff) {
+        if (configuration.rfOff) {
+            sections |=
+                instrumentProgramSection(InstrumentProgramSection::RfInhibit);
+        } else {
+            sections |=
+                instrumentProgramSection(InstrumentProgramSection::Amplitude);
+        }
+    }
+    if (configuration.rfOff && sections != kNoInstrumentProgramSections) {
+        sections |= instrumentProgramSection(InstrumentProgramSection::RfInhibit);
+    }
+    return sections;
+}
+
+InstrumentProgramResult makeInstrumentProgramForSections(
+    const InstrumentConfiguration& configuration,
+    int8_t calibrationTenthsDb,
+    const uint8_t currentRegisters[kInstrumentRegisterCount],
+    InstrumentProgramSections sections,
     InstrumentProgram* program)
 {
     if (currentRegisters == nullptr || program == nullptr) {
@@ -120,10 +212,14 @@ InstrumentProgramResult makeInstrumentProgram(
     }
 
     AmplitudeProgram amplitude = {};
+    const bool amplitudeModulationActive =
+        configuration.modulationKind == ModulationKind::Am &&
+        configuration.modulationSource != ModulationSource::Cw;
     if (!makeAmplitudeProgram(configuration.amplitudeTenthsDbm,
                               calibrationTenthsDb,
                               pulse.address6,
                               pulse.address5,
+                              amplitudeModulationActive,
                               &amplitude)) {
         return InstrumentProgramResult::InvalidAmplitude;
     }
@@ -142,37 +238,46 @@ InstrumentProgramResult makeInstrumentProgram(
     const uint8_t address13 = makeAddress13(frequency, address12);
     const uint8_t address15 = makeAddress15(currentRegisters[15], address12);
 
-    // Original RF reprogramming order, including transient D7 on address 11.
-    if (!appendWrite(program, 12u, address12) ||
-        !appendWrite(program, 15u, address15) ||
-        !appendWrite(program, 5u, pulse.address5) ||
-        !appendWrite(program, 11u,
-                     uint8_t(frequency.incrementDivisor | 0x80u)) ||
-        !appendWrite(program, 4u, frequency.address4) ||
-        !appendWrite(program, 13u, address13)) {
-        return InstrumentProgramResult::InvalidArgument;
+    if (includesSection(sections, InstrumentProgramSection::Frequency)) {
+        // Original RF reprogramming order, including transient D7 on address 11.
+        if (!appendWrite(program, 12u, address12) ||
+            !appendWrite(program, 15u, address15) ||
+            !appendWrite(program, 5u, pulse.address5) ||
+            !appendWrite(program, 11u,
+                         uint8_t(frequency.incrementDivisor | 0x80u)) ||
+            !appendWrite(program, 4u, frequency.address4) ||
+            !appendWrite(program, 13u, address13)) {
+            return InstrumentProgramResult::InvalidArgument;
+        }
+        for (uint8_t address = 0u; address < 4u; ++address) {
+            if (!appendWrite(program,
+                             address,
+                             smallSteps.dataByAddress[address])) {
+                return InstrumentProgramResult::InvalidArgument;
+            }
+        }
     }
-    for (uint8_t address = 0u; address < 4u; ++address) {
-        if (!appendWrite(program, address, smallSteps.dataByAddress[address])) {
+
+    if (includesSection(sections, InstrumentProgramSection::Amplitude)) {
+        if (!appendWrite(program, 6u, amplitude.address6BeforeAddress8) ||
+            !appendWrite(program, 8u, amplitude.address8) ||
+            !appendWrite(program, 6u, amplitude.address6AfterAddress8)) {
             return InstrumentProgramResult::InvalidArgument;
         }
     }
 
-    if (!appendWrite(program, 6u, amplitude.address6BeforeAddress8) ||
-        !appendWrite(program, 8u, amplitude.address8) ||
-        !appendWrite(program, 6u, amplitude.address6AfterAddress8)) {
-        return InstrumentProgramResult::InvalidArgument;
-    }
-
-    for (uint8_t i = 0u; i < modulation.writeCount; ++i) {
-        if (!appendWrite(program,
-                         modulation.writes[i].address,
-                         modulation.writes[i].value)) {
-            return InstrumentProgramResult::InvalidArgument;
+    if (includesSection(sections, InstrumentProgramSection::Modulation)) {
+        for (uint8_t i = 0u; i < modulation.writeCount; ++i) {
+            if (!appendWrite(program,
+                             modulation.writes[i].address,
+                             modulation.writes[i].value)) {
+                return InstrumentProgramResult::InvalidArgument;
+            }
         }
     }
 
-    if (configuration.rfOff) {
+    if (configuration.rfOff &&
+        includesSection(sections, InstrumentProgramSection::RfInhibit)) {
         const uint8_t inhibitedAddress6 = uint8_t(
             program->finalRegisters[6] & 0xC0u);
         if (!appendWrite(program, 6u, inhibitedAddress6)) {

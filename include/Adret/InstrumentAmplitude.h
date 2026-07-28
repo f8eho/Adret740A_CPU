@@ -35,11 +35,13 @@ uint8_t makeAmplitudeControlAddress6(uint8_t currentAddress6,
 
 // Reproduces the original 6,8,6 write sequence. currentAddress6 supplies the
 // Pulse state and the previous +5 dB state for the first write. The final D7
-// state depends on the level and on address-5 D1 (heterodyne path).
+// state depends on the level, active AM state and address-5 D1 (heterodyne
+// path), as in the original $CC7E finalizer.
 bool makeAmplitudeProgram(int16_t requestedTenthsDbm,
                           int8_t calibrationTenthsDb,
                           uint8_t currentAddress6,
                           uint8_t address5,
+                          bool amplitudeModulationActive,
                           AmplitudeProgram* program);
 
 // Converts the non-standard high nibble used by address 8 back to the

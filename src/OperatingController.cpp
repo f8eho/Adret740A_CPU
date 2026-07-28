@@ -381,6 +381,8 @@ bool settingsAreValid(const Settings& value)
 
 void OperatingController::begin(const Settings& settings)
 {
+    appliedInstrumentConfigurationValid_ = false;
+    appliedInstrumentCorrectionTenthsDb_ = 0;
     settings_ = settingsAreValid(settings) ? settings : defaultSettings();
     settings_.output.rfOff = true;
     pending_ = settings_.output;
@@ -1462,11 +1464,21 @@ void OperatingController::reportInstrumentTransaction(
         configuration.frequencyHz,
         configuration.amplitudeTenthsDbm,
         &correctionTenthsDb);
-    const instrument_bus::InstrumentProgramResult result =
-        instrument_bus::makeInstrumentProgram(
-            instrumentConfiguration(configuration),
+    const instrument_bus::InstrumentConfiguration requestedConfiguration =
+        instrumentConfiguration(configuration);
+    instrument_bus::InstrumentProgramSections sections =
+        instrument_bus::requiredInstrumentProgramSections(
+            appliedInstrumentConfigurationValid_
+                ? &appliedInstrumentConfiguration_ : nullptr,
+            appliedInstrumentCorrectionTenthsDb_,
+            requestedConfiguration,
+            correctionTenthsDb);
+    instrument_bus::InstrumentProgramResult result =
+        instrument_bus::makeInstrumentProgramForSections(
+            requestedConfiguration,
             correctionTenthsDb,
             instrumentRegisters_,
+            sections,
             &program);
     if (result != instrument_bus::InstrumentProgramResult::Ok) {
 #if ADRET_DEBUG_SERIAL
@@ -1478,8 +1490,20 @@ void OperatingController::reportInstrumentTransaction(
         return;
     }
 
+#if ADRET_DEBUG_SERIAL
+    Serial.print(F("INSTR BUS sections=0x"));
+    Serial.print(sections, HEX);
+    Serial.print(F(" writes="));
+    Serial.println(program.writeCount);
+#endif
+
+    if (program.writeCount == 0u) {
+        return;
+    }
+
     bool recoveryUsed = false;
     if (!instrument_bus::instrumentBus.ready()) {
+        appliedInstrumentConfigurationValid_ = false;
         recoveryUsed = true;
         if (!instrument_bus::instrumentBus.recover()) {
 #if ADRET_DEBUG_SERIAL
@@ -1488,6 +1512,22 @@ void OperatingController::reportInstrumentTransaction(
 #endif
             return;
         }
+        sections = instrument_bus::kAllInstrumentProgramSections;
+        result = instrument_bus::makeInstrumentProgramForSections(
+            requestedConfiguration,
+            correctionTenthsDb,
+            instrumentRegisters_,
+            sections,
+            &program);
+        if (result != instrument_bus::InstrumentProgramResult::Ok) {
+            return;
+        }
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("INSTR BUS recovered sections=0x"));
+        Serial.print(sections, HEX);
+        Serial.print(F(" writes="));
+        Serial.println(program.writeCount);
+#endif
     }
 
     for (;;) {
@@ -1508,13 +1548,17 @@ void OperatingController::reportInstrumentTransaction(
             instrumentRegisters_[write.address] = write.value;
         }
         if (complete) {
+            appliedInstrumentConfiguration_ = requestedConfiguration;
+            appliedInstrumentCorrectionTenthsDb_ = correctionTenthsDb;
+            appliedInstrumentConfigurationValid_ = true;
             return;
         }
 
-        // One recovery at most per requested configuration. When a transfer
-        // fails from an initially healthy bus, safely reinitialize the MCP and
-        // replay the complete program once. A later user transaction may make
-        // one fresh attempt, but this call can never loop indefinitely.
+        appliedInstrumentConfigurationValid_ = false;
+
+        // One recovery at most per requested configuration. Rebuild a complete
+        // program from the partially updated register image so a differential
+        // transaction can never leave the instrument in an uncertain state.
         if (recoveryUsed) {
             return;
         }
@@ -1526,6 +1570,22 @@ void OperatingController::reportInstrumentTransaction(
 #endif
             return;
         }
+        sections = instrument_bus::kAllInstrumentProgramSections;
+        result = instrument_bus::makeInstrumentProgramForSections(
+            requestedConfiguration,
+            correctionTenthsDb,
+            instrumentRegisters_,
+            sections,
+            &program);
+        if (result != instrument_bus::InstrumentProgramResult::Ok) {
+            return;
+        }
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("INSTR BUS replay sections=0x"));
+        Serial.print(sections, HEX);
+        Serial.print(F(" writes="));
+        Serial.println(program.writeCount);
+#endif
     }
 #endif
 }
@@ -1843,9 +1903,17 @@ void OperatingController::renderDisplays()
 void OperatingController::renderModulationDisplay(
     const OutputConfiguration& configuration)
 {
-    const Target target = settings_.target == Target::Fm ||
-                          settings_.target == Target::Pm ||
-                          settings_.target == Target::Am
+    const bool modulationTargetSelected =
+        settings_.target == Target::Fm ||
+        settings_.target == Target::Pm ||
+        settings_.target == Target::Am;
+    if (configuration.modulationSource == ModulationSource::Cw &&
+        !modulationTargetSelected) {
+        frontPanel.setModulationText("---");
+        return;
+    }
+
+    const Target target = modulationTargetSelected
         ? settings_.target
         : configuration.modulationMode == ModulationMode::Fm ? Target::Fm
             : configuration.modulationMode == ModulationMode::Pm ? Target::Pm
