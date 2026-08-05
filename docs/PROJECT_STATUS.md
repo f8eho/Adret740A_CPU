@@ -114,6 +114,13 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - The firmware uses Serial0 at 115200 baud for remote commands. It sets
   `ADRET_REMOTE_SERIAL=1` and `ADRET_DEBUG_SERIAL=0`; a compile-time guard
   prevents diagnostic traces from sharing the command channel.
+- On 2026-08-03, the approximately eight-second delay between switching
+  `STD BY` and the first startup-banner character was isolated from the front
+  panel. It occurs with the Mega USB cable connected to the PC and disappears
+  when that cable is disconnected. The panel startup acknowledgements run
+  only after the banner and add about 120 us, so they cannot cause this delay.
+  The observed behavior is attributed to the Mega bootloader/USB-UART startup
+  path before the application begins; no firmware change is required.
 - The temporary EXEC indicator sweep has been removed after bench validation.
   Raw SN3 D3..D2 codes are 0=blinking, 1=off, 2=fixed and 3=off; the normal
   firmware uses codes 0, 1 and 2.
@@ -252,9 +259,6 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 2. Measure PA high/low voltages and verify the power-fail hold-up time and
    completed EEPROM save during a real power-off cycle.
 3. Exercise cold-start CA1 recovery repeatedly.
-   The application adds only about 120 us of startup acknowledgement; the
-   cold-power delay observed at the bench does not occur on a warm reset and
-   must be localized between the 5 V rail, RESET and the first CA2 activity.
 4. Validate the Serial0 protocol and `Adr RTL` local return on the instrument.
 5. Measure frequency accuracy and 10-Hz step regularity with a precision
    counter. Localize the remaining RF level loss between the VHF module,

@@ -1,0 +1,1423 @@
+(kicad_symbol_lib
+  (version 20250114)
+  (generator "kicad_symbol_editor")
+  (generator_version "10.0")
+  (symbol "Front_Panel_2x13"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board no)
+    (property "Reference" "J"
+      (at 0 -38.1 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Value" "PANNEAU AVANT 2x13"
+      (at 0 38.1 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Footprint" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Datasheet" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Description" "Connecteur nappe 26 contacts du panneau avant Adret 740A"
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (symbol "Front_Panel_2x13_1_1"
+      (rectangle
+        (start -13.97 -34.29)
+        (end 13.97 34.29)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at 16.51 -31.75 180)
+        (length 2.54)
+        (name "MODE / PB3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "1" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -29.21 180)
+        (length 2.54)
+        (name "C / PB2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "2" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -26.67 180)
+        (length 2.54)
+        (name "B / PB1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "3" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -24.13 180)
+        (length 2.54)
+        (name "A / PB0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "4" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -21.59 180)
+        (length 2.54)
+        (name "INHIB" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "5" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -19.05 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "6" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -16.51 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "7" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -13.97 180)
+        (length 2.54)
+        (name "+5V" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "8" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -11.43 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "9" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -8.89 180)
+        (length 2.54)
+        (name "WP / CA2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "10" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -6.35 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "11" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -3.81 180)
+        (length 2.54)
+        (name "INT CLAV / CA1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "12" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 -1.27 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "13" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 1.27 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "14" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 3.81 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "15" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 6.35 180)
+        (length 2.54)
+        (name "GND" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "16" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 8.89 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "17" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 11.43 180)
+        (length 2.54)
+        (name "NC" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "18" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 13.97 180)
+        (length 2.54)
+        (name "PA0 / D0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "19" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 16.51 180)
+        (length 2.54)
+        (name "PA1 / D1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "20" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 19.05 180)
+        (length 2.54)
+        (name "PA2 / D2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "21" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 21.59 180)
+        (length 2.54)
+        (name "PA3 / D3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "22" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 24.13 180)
+        (length 2.54)
+        (name "PA4 / D4" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "23" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 26.67 180)
+        (length 2.54)
+        (name "PA5 / D5" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "24" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 29.21 180)
+        (length 2.54)
+        (name "PA6 / D6" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "25" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 16.51 31.75 180)
+        (length 2.54)
+        (name "PA7 / D7" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "26" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol "Arduino_Mega2560_Used"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board no)
+    (property "Reference" "A"
+      (at 0 -38.1 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Value" "Arduino Mega 2560"
+      (at 0 38.1 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Footprint" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Datasheet" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Description" "Module Arduino Mega 2560; seules les broches utilisees sont representees"
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (symbol "Arduino_Mega2560_Used_1_1"
+      (rectangle
+        (start -19.05 -34.29)
+        (end 19.05 34.29)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at -21.59 31.75 0)
+        (length 2.54)
+        (name "D28 / PA6" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "28" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 29.21 0)
+        (length 2.54)
+        (name "D29 / PA7" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "29" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 26.67 0)
+        (length 2.54)
+        (name "D26 / PA4" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "26" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 24.13 0)
+        (length 2.54)
+        (name "D27 / PA5" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "27" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 21.59 0)
+        (length 2.54)
+        (name "D24 / PA2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "24" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 19.05 0)
+        (length 2.54)
+        (name "D25 / PA3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "25" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 16.51 0)
+        (length 2.54)
+        (name "D22 / PA0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "22" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 13.97 0)
+        (length 2.54)
+        (name "D23 / PA1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "23" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 -3.81 0)
+        (length 2.54)
+        (name "D2 / PE4 / INT4" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "2" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 -8.89 0)
+        (length 2.54)
+        (name "D10 / PB4" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "10" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 -24.13 0)
+        (length 2.54)
+        (name "D53 / PB0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "53" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 -26.67 0)
+        (length 2.54)
+        (name "D52 / PB1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "52" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 -29.21 0)
+        (length 2.54)
+        (name "D51 / PB2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "51" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -21.59 -31.75 0)
+        (length 2.54)
+        (name "D50 / PB3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "50" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 21.59 15.24 180)
+        (length 2.54)
+        (name "+5V" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "5V" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 21.59 12.7 180)
+        (length 2.54)
+        (name "GND" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "GND" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 21.59 10.16 180)
+        (length 2.54)
+        (name "D21 / SCL" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "21" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 21.59 7.62 180)
+        (length 2.54)
+        (name "D20 / SDA" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "20" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 21.59 -10.16 180)
+        (length 2.54)
+        (name "D3 / PE5 / INT5" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "3" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol "ISO1540_Breakout"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board no)
+    (property "Reference" "A"
+      (at 0 -21.59 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Value" "Mini-plaquette ISO1540"
+      (at 0 21.59 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Footprint" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Datasheet" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Description" "Module isolateur I2C ISO1540, deux domaines 5 V"
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (symbol "ISO1540_Breakout_1_1"
+      (rectangle
+        (start -15.24 -17.78)
+        (end 15.24 17.78)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at -17.78 15.24 0)
+        (length 2.54)
+        (name "VCC cote CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "CPU_VCC" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -17.78 12.7 0)
+        (length 2.54)
+        (name "GND cote CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "CPU_GND" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -17.78 10.16 0)
+        (length 2.54)
+        (name "SCL cote CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "CPU_SCL" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -17.78 7.62 0)
+        (length 2.54)
+        (name "SDA cote CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "CPU_SDA" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 17.78 15.24 180)
+        (length 2.54)
+        (name "VCC cote instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "INST_VCC" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 17.78 12.7 180)
+        (length 2.54)
+        (name "GND cote instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "INST_GND" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 17.78 10.16 180)
+        (length 2.54)
+        (name "SCL cote instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "INST_SCL" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 17.78 7.62 180)
+        (length 2.54)
+        (name "SDA cote instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "INST_SDA" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol "MCP23017_Breakout"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board no)
+    (property "Reference" "A"
+      (at 0 -44.45 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Value" "Mini-plaquette MCP23017 (0x20)"
+      (at 0 44.45 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Footprint" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Datasheet" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Description" "Mini-plaquette MCP23017 avec headers VCC/GND/PB7..PB0 et VCC/GND/PA0..PA7"
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (symbol "MCP23017_Breakout_1_1"
+      (rectangle
+        (start -20.32 -40.64)
+        (end 20.32 40.64)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at -22.86 15.24 0)
+        (length 2.54)
+        (name "VCC header I2C" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "I2C_VCC" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 12.7 0)
+        (length 2.54)
+        (name "GND header I2C" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "I2C_GND" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 10.16 0)
+        (length 2.54)
+        (name "SCL" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "I2C_SCL" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 7.62 0)
+        (length 2.54)
+        (name "SDA" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "I2C_SDA" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 5.08 0)
+        (length 2.54)
+        (name "RST actif bas" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "RST" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 2.54 0)
+        (length 2.54)
+        (name "ITA" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "ITA" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 0 0)
+        (length 2.54)
+        (name "ITB" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "ITB" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 -12.7 0)
+        (length 2.54)
+        (name "VCC header PB" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB_VCC" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 -15.24 0)
+        (length 2.54)
+        (name "GND header PB" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB_GND" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 -17.78 0)
+        (length 2.54)
+        (name "VCC header PA" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA_VCC" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -22.86 -20.32 0)
+        (length 2.54)
+        (name "GND header PA" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA_GND" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 7.62 180)
+        (length 2.54)
+        (name "PA0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA0" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 10.16 180)
+        (length 2.54)
+        (name "PA1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA1" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 12.7 180)
+        (length 2.54)
+        (name "PA2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA2" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 15.24 180)
+        (length 2.54)
+        (name "PA3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA3" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 17.78 180)
+        (length 2.54)
+        (name "PA4" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA4" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 20.32 180)
+        (length 2.54)
+        (name "PA5" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA5" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 22.86 180)
+        (length 2.54)
+        (name "PA6" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA6" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 25.4 180)
+        (length 2.54)
+        (name "PA7" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PA7" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 27.94 180)
+        (length 2.54)
+        (name "PB0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB0" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 30.48 180)
+        (length 2.54)
+        (name "PB1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB1" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 33.02 180)
+        (length 2.54)
+        (name "PB2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB2" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 35.56 180)
+        (length 2.54)
+        (name "PB3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB3" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 38.1 180)
+        (length 2.54)
+        (name "PB4 / CHARGT" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB4" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 -12.7 180)
+        (length 2.54)
+        (name "PB5 reserve" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB5" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 -15.24 180)
+        (length 2.54)
+        (name "PB6 reserve" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB6" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 22.86 -17.78 180)
+        (length 2.54)
+        (name "PB7 reserve" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "PB7" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol "B1_Instrument_31"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board no)
+    (property "Reference" "J"
+      (at 0 -44.45 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Value" "B1 BUS INSTRUMENTS"
+      (at 0 44.45 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Footprint" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Datasheet" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Description" "Connecteur 31 contacts du fond de panier instruments Adret 740A"
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (symbol "B1_Instrument_31_1_1"
+      (rectangle
+        (start -17.78 -40.64)
+        (end 17.78 40.64)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at -20.32 -38.1 0)
+        (length 2.54)
+        (name "+5V DIG-P (original)" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "1" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -35.56 0)
+        (length 2.54)
+        (name "+5V CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "2" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -33.02 0)
+        (length 2.54)
+        (name "+5V CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "3" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -30.48 0)
+        (length 2.54)
+        (name "0V CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "4" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -27.94 0)
+        (length 2.54)
+        (name "0V CPU" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "5" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -25.4 0)
+        (length 2.54)
+        (name "INHIB (actif bas)" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "6" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -22.86 0)
+        (length 2.54)
+        (name "PA presence alim" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "7" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -20.32 0)
+        (length 2.54)
+        (name "PEDALE 1 (original)" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "8" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -17.78 0)
+        (length 2.54)
+        (name "PEDALE 2 (original)" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "9" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -15.24 0)
+        (length 2.54)
+        (name "NC original" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "10" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -12.7 0)
+        (length 2.54)
+        (name "NC original" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "11" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -10.16 0)
+        (length 2.54)
+        (name "NC original" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "12" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -7.62 0)
+        (length 2.54)
+        (name "+5V instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "13" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -5.08 0)
+        (length 2.54)
+        (name "0V instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "14" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 -2.54 0)
+        (length 2.54)
+        (name "10MHz original" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "15" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 0 0)
+        (length 2.54)
+        (name "0V instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "16" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 2.54 0)
+        (length 2.54)
+        (name "10MHz retour original" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "17" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 5.08 0)
+        (length 2.54)
+        (name "0V instruments" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "18" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 7.62 0)
+        (length 2.54)
+        (name "D0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "19" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 10.16 0)
+        (length 2.54)
+        (name "D1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "20" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 12.7 0)
+        (length 2.54)
+        (name "D2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "21" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 15.24 0)
+        (length 2.54)
+        (name "D3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "22" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 17.78 0)
+        (length 2.54)
+        (name "D4" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "23" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 20.32 0)
+        (length 2.54)
+        (name "D5" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "24" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 22.86 0)
+        (length 2.54)
+        (name "D6" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "25" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 25.4 0)
+        (length 2.54)
+        (name "D7" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "26" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 27.94 0)
+        (length 2.54)
+        (name "A0" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "27" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 30.48 0)
+        (length 2.54)
+        (name "A1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "28" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 33.02 0)
+        (length 2.54)
+        (name "A2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "29" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 35.56 0)
+        (length 2.54)
+        (name "A3" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "30" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at -20.32 38.1 0)
+        (length 2.54)
+        (name "CHARGT actif bas" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "31" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+    )
+    (embedded_fonts no)
+  )
+  (symbol "Resistor"
+    (pin_names (offset 1.016))
+    (exclude_from_sim no)
+    (in_bom yes)
+    (on_board no)
+    (property "Reference" "R"
+      (at 0 -11.43 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Value" "R"
+      (at 0 11.43 0)
+      (effects
+        (font (size 1 1))
+      )
+    )
+    (property "Footprint" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Datasheet" ""
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (property "Description" "Resistance externe montee sur la plaque de prototypage"
+      (at 0 0 0)
+      (effects
+        (font (size 1 1))
+        (hide yes)
+      )
+    )
+    (symbol "Resistor_1_1"
+      (rectangle
+        (start -3.81 -7.62)
+        (end 3.81 7.62)
+        (stroke (width 0.254) (type default))
+        (fill (type background))
+      )
+      (pin passive line
+        (at -6.35 0 0)
+        (length 2.54)
+        (name "1" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "1" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+      (pin passive line
+        (at 6.35 0 180)
+        (length 2.54)
+        (name "2" (effects
+    (font (size 0.9 0.9))
+  ))
+        (number "2" (effects
+    (font (size 0.9 0.9))
+  ))
+      )
+    )
+    (embedded_fonts no)
+  )
+)

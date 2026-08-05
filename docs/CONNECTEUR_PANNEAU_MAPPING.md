@@ -12,26 +12,34 @@ voyants et les trois groupes d'affichage.
 
 ## Tableau de câblage
 
-| Signal connecteur ADRET | Rôle | Sens côté Arduino | Port ATmega2560 | Nom logique Arduino | **N° imprimé sur le PCB** | Registre firmware |
-| --- | --- | --- | --- | --- | --- | --- |
-| `PA0` / donnée `D0` | Bit 0 du bus de données | Entrée/sortie | `PA1` | `D23` | **23** | `PORTA`, bit 1 |
-| `PA1` / donnée `D1` | Bit 1 du bus de données | Entrée/sortie | `PA0` | `D22` | **22** | `PORTA`, bit 0 |
-| `PA2` / donnée `D2` | Bit 2 du bus de données | Entrée/sortie | `PA3` | `D25` | **25** | `PORTA`, bit 3 |
-| `PA3` / donnée `D3` | Bit 3 du bus de données | Entrée/sortie | `PA2` | `D24` | **24** | `PORTA`, bit 2 |
-| `PA4` / donnée `D4` | Bit 4 du bus de données | Entrée/sortie | `PA5` | `D27` | **27** | `PORTA`, bit 5 |
-| `PA5` / donnée `D5` | Bit 5 du bus de données | Entrée/sortie | `PA4` | `D26` | **26** | `PORTA`, bit 4 |
-| `PA6` / donnée `D6` | Bit 6 du bus de données | Entrée/sortie | `PA7` | `D29` | **29** | `PORTA`, bit 7 |
-| `PA7` / donnée `D7` | Bit 7 du bus de données | Entrée/sortie | `PA6` | `D28` | **28** | `PORTA`, bit 6 |
-| `PB0` | Adresse de sélection, bit 0 | Sortie | `PB0` | `D53` | **53** | `PORTB`, bit 0 |
-| `PB1` | Adresse de sélection, bit 1 | Sortie | `PB1` | `D52` | **52** | `PORTB`, bit 1 |
-| `PB2` | Adresse de sélection, bit 2 | Sortie | `PB2` | `D51` | **51** | `PORTB`, bit 2 |
-| `PB3` | Mode des afficheurs ICM7218A | Sortie | `PB3` | `D50` | **50** | `PORTB`, bit 3 |
-| `CA2` | Validation du décodeur d'adresse 74LS138 | Sortie | `PB4` | `D10` | **10** | `PORTB`, bit 4 |
-| `CA1` | Interruption clavier et roue codeuse | Entrée | `PE4` / `INT4` | `D2` | **2** | `PINE`, bit 4 |
-| `INHIB` | Marche/arrêt général de l'alimentation ADRET | Sortie | **À attribuer** | **À attribuer** | **À attribuer** | Non implémenté |
+| Signal connecteur ADRET | Contact J1 | Rôle | Sens côté Arduino | Port ATmega2560 | Nom logique Arduino | **N° imprimé sur le PCB** | Registre firmware |
+| --- | ---: | --- | --- | --- | --- | --- | --- |
+| `PA0` / donnée `D0` | 19 | Bit 0 du bus de données | Entrée/sortie | `PA1` | `D23` | **23** | `PORTA`, bit 1 |
+| `PA1` / donnée `D1` | 20 | Bit 1 du bus de données | Entrée/sortie | `PA0` | `D22` | **22** | `PORTA`, bit 0 |
+| `PA2` / donnée `D2` | 21 | Bit 2 du bus de données | Entrée/sortie | `PA3` | `D25` | **25** | `PORTA`, bit 3 |
+| `PA3` / donnée `D3` | 22 | Bit 3 du bus de données | Entrée/sortie | `PA2` | `D24` | **24** | `PORTA`, bit 2 |
+| `PA4` / donnée `D4` | 23 | Bit 4 du bus de données | Entrée/sortie | `PA5` | `D27` | **27** | `PORTA`, bit 5 |
+| `PA5` / donnée `D5` | 24 | Bit 5 du bus de données | Entrée/sortie | `PA4` | `D26` | **26** | `PORTA`, bit 4 |
+| `PA6` / donnée `D6` | 25 | Bit 6 du bus de données | Entrée/sortie | `PA7` | `D29` | **29** | `PORTA`, bit 7 |
+| `PA7` / donnée `D7` | 26 | Bit 7 du bus de données | Entrée/sortie | `PA6` | `D28` | **28** | `PORTA`, bit 6 |
+| `PB0` / `A` | 4 | Adresse de sélection, bit 0 | Sortie | `PB0` | `D53` | **53** | `PORTB`, bit 0 |
+| `PB1` / `B` | 3 | Adresse de sélection, bit 1 | Sortie | `PB1` | `D52` | **52** | `PORTB`, bit 1 |
+| `PB2` / `C` | 2 | Adresse de sélection, bit 2 | Sortie | `PB2` | `D51` | **51** | `PORTB`, bit 2 |
+| `PB3` / `MODE` | 1 | Mode des afficheurs ICM7218A | Sortie | `PB3` | `D50` | **50** | `PORTB`, bit 3 |
+| `CA2` / `WP` | 10 | Validation du décodeur d'adresse 74LS138 | Sortie | `PB4` | `D10` | **10** | `PORTB`, bit 4 |
+| `CA1` / `INT CLAV` | 12 | Interruption clavier et roue codeuse | Entrée | `PE4` / `INT4` | `D2` | **2** | `PINE`, bit 4 |
+| `INHIB` | 5 | Marche/arrêt général de l'alimentation ADRET | Sans connexion Arduino | — | — | — | Liaison directe vers B1-6 |
+| `+5V_CPU` | 8 | Alimentation logique du panneau | Alimentation | — | `5V` | `5V` | — |
+| `GND_CPU` | 16 | Masse logique du panneau | Alimentation | — | `GND` | `GND` | — |
 
-La colonne **N° imprimé sur le PCB** est celle à utiliser directement pendant
-le câblage. Le relevé validé avec toutes les touches de la matrice impose les
+J1 est un connecteur 2 x 13. Vu comme sur le schéma CPU d'origine, sa
+numérotation commence en bas à droite par `MODE = J1-1`, puis alterne les
+contacts impairs à droite et pairs à gauche en remontant. Les contacts J1-6,
+J1-7, J1-9, J1-11, J1-13 à J1-15, J1-17 et J1-18 ne sont pas raccordés dans
+le prototype.
+
+La colonne **N° imprimé sur le PCB** est celle à utiliser directement côté
+Mega. Le relevé validé avec toutes les touches de la matrice impose les
 permutations `22/23`, `24/25`, `26/27` et `28/29`. `CA1` va au contact marqué
 **2** et `CA2` au contact marqué **10**.
 
@@ -79,31 +87,20 @@ résistance de rappel de 4,7 kΩ présente sur le panneau.
 
 ## Commande générale d'alimentation `INHIB`
 
-`INHIB` est une **ligne dédiée du connecteur entre le panneau avant et la carte
-CPU**. Elle commande la mise en marche et l'arrêt général de l'ADRET 740A après
-son raccordement au secteur :
+`INHIB` est une **ligne dédiée du connecteur entre le panneau avant et le bus
+B1**. Elle commande la mise en marche et l'arrêt général de l'ADRET 740A après
+son raccordement au secteur. Dans le prototype, J1-5 est reliée directement à
+B1-6 : cette ligne ne passe ni par une broche ni par le firmware de la Mega.
 
 | Niveau sur `INHIB` | État de l'alimentation générale |
 | --- | --- |
 | Masse / `0 V` | Alimentation en fonction, appareil en marche |
 | Niveau haut / `5 V` | Alimentation arrêtée, appareil à l'arrêt |
 
-La commande est donc **active à l'état bas**. Le bouton marche/arrêt du panneau
-avant agit sur cette fonction. Sur la carte CPU d'origine, l'interface GPIB
-pouvait également commander `INHIB`. Cette commande GPIB ne sera pas reprise
-sur la nouvelle carte CPU.
-
-La broche Arduino destinée à `INHIB` n'est pas encore définie dans
-`HardwareConfig.h`. Elle est donc volontairement marquée **À attribuer** dans
-le tableau, afin de ne pas créer un câblage erroné. Une fois choisie, cette
-sortie devra être initialisée dans un état maîtrisé dès le démarrage.
-
-Pour un comportement sûr en cas de reset, de débranchement ou pendant le
-bootloader, prévoir matériellement un état par défaut à `5 V` (alimentation
-arrêtée), par exemple avec une résistance de rappel adaptée. Il faut également
-vérifier sur le schéma si la ligne peut être pilotée directement en logique
-5 V ou si une sortie à collecteur ouvert/drain ouvert est nécessaire, notamment
-à cause du bouton du panneau câblé sur la même commande.
+La commande est donc **active à l'état bas**. Le commutateur marche/attente du
+panneau agit directement sur cette fonction. Sur la carte CPU d'origine,
+l'interface GPIB pouvait également commander `INHIB`; cette commande n'est pas
+reprise par la nouvelle CPU.
 
 ## Distinction avec `INHIB RF`
 
@@ -156,14 +153,11 @@ maintient CA2/Y5 actif pendant 10 µs. Cette séquence permet de libérer un
 
 ## Points à vérifier avant raccordement définitif
 
-- La numérotation physique des contacts du connecteur n'est pas indiquée ici :
-  elle doit être relevée sur le schéma ou sur le faisceau avant sertissage.
+- Vérifier l'orientation de J1 et le repère de J1-1 avant sertissage ; J1-1 est
+  le contact `MODE` situé en bas à droite dans la vue du schéma CPU.
 - Vérifier la continuité de chaque signal et la présence d'une masse commune.
-- Attribuer une broche Arduino dédiée à `INHIB`, puis reporter son numéro
-  sérigraphié dans le tableau et dans `HardwareConfig.h`.
-- Confirmer le circuit électrique de `INHIB` avant de le piloter : commande
-  directe ou collecteur ouvert, résistance de rappel et interaction avec le
-  bouton marche/arrêt du panneau.
+- Vérifier la continuité directe J1-5 vers B1-6 ; ne pas relier `INHIB` à une
+  sortie Arduino.
 - Surveiller la stabilité de `CA1` lors de démarrages à froid répétés.
 - Ne pas utiliser Arduino `D0` et `D1`, réservées à `Serial0`.
 - Tous les signaux sont supposés compatibles TTL 5 V ; ne pas raccorder une

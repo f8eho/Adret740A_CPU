@@ -11,6 +11,8 @@ Arduino Mega 2560 -> ISO1540 -> MCP23017 -> connecteur B1 -> bus instruments
 Il complète [`BUS_INSTRUMENTS_MCP23017.md`](BUS_INSTRUMENTS_MCP23017.md), qui
 décrit le protocole, l'initialisation et les temporisations. Le mapping logique
 est implémenté dans `include/Adret/HardwareConfig.h` et `src/InstrumentBus.cpp`.
+Le schéma de câblage natif KiCad 10 se trouve dans
+[`hardware/Adret740A_replacement_cpu`](../hardware/Adret740A_replacement_cpu/).
 
 Les numéros B1 proviennent des schémas CPU et châssis. Le brochage MCP23017
 ci-dessous s'applique aux boîtiers 28 broches SPDIP, SOIC et SSOP, vus de
@@ -23,13 +25,16 @@ Domaine CPU / Mega                         Domaine instruments / fond de panier
 
 Mega D20 SDA ---- ISO1540 SDA1 | SDA2 ---- MCP23017 SDA
 Mega D21 SCL ---- ISO1540 SCL1 | SCL2 ---- MCP23017 SCL
-Mega +5 V  ----- ISO1540 VCC1  | VCC2 ---- +5 V instruments
-Mega GND   ----- ISO1540 GND1  | GND2 ---- 0 V instruments
+Mega +5 V  ----- ISO1540 VCC1  | VCC2 ---- +5 V instruments (B1-13)
+Mega GND   ----- ISO1540 GND1  | GND2 ---- 0 V instruments (B1-14/16/18)
                                 isolation
 
 MCP GPA0..7 -------------------------------- B1 D0..D7
 MCP GPB0..3 -------------------------------- B1 A0..A3
 MCP GPB4 ----------------------------------- B1 Chargt
+
+Panneau J1-5 ------------------------------- B1-6 INHIB
+Mega D3 / INT5 ----------------------------- B1-7 PA
 ```
 
 Pour conserver une isolation galvanique, il ne doit exister aucune liaison
@@ -41,31 +46,32 @@ isolation.
 
 | Domaine | Alimentation | Masse de référence | Circuits concernés |
 | --- | --- | --- | --- |
-| CPU | `+5V_MEGA` | `GND_MEGA` | Mega et côté 1 de l'ISO1540 |
-| Instruments | `+5V_INST` | `0V_INST` | côté 2 de l'ISO1540, MCP23017 et bus B1 |
+| CPU | `+5V_CPU`, B1-2 et B1-3 | `GND_CPU`, B1-4 et B1-5 | Mega, panneau avant et côté 1 de l'ISO1540 |
+| Instruments | `+5V_INST`, B1-13 | `GND_INST`, B1-14, B1-16 et B1-18 | côté 2 de l'ISO1540, MCP23017 et bus instruments |
 
-Le schéma CPU nomme `+5VB1` l'alimentation instruments présente sur B1-13. Le
-schéma châssis identifie B1-5 comme `0V dig`. Ces deux points sont les candidats
-pour `+5V_INST` et `0V_INST`, à confirmer au multimètre sur le châssis avant
-raccordement. Le schéma châssis montre également le +5 V sur B1-14 ; ne pas
-relier simultanément B1-13 et B1-14 sans avoir confirmé leur continuité et leur
-fonction sur l'appareil.
-
-L'ISO1540 isole les signaux, pas l'alimentation. Si `+5VB1` n'est pas utilisé,
-une alimentation ou un convertisseur DC/DC isolé doit fournir `+5V_INST`, avec
-son retour relié à `0V_INST` pour référencer correctement les sorties du
-MCP23017 au fond de panier.
+Le câblage du prototype confirme deux domaines distincts. B1-2 et B1-3
+alimentent la Mega en `+5V_CPU`, avec B1-4 et B1-5 comme retours `GND_CPU`.
+B1-13 fournit `+5V_INST`; les trois contacts B1-14, B1-16 et B1-18 sont reliés
+au retour `GND_INST`. Ces trois retours doivent apparaître sur le schéma même
+s'ils appartiennent au même net.
 
 ### Vérification indispensable de l'isolation globale
 
 L'isolation ne dépend pas seulement de l'ISO1540. Il faut rechercher toutes les
-autres liaisons possibles entre `GND_MEGA` et `0V_INST` : alimentation du Mega,
-liaison au panneau avant, Serial0, USB, analyseur logique et oscilloscope. Si le
-Mega utilise déjà B1-5 comme masse, les deux domaines sont communs et
-l'ISO1540 n'assure plus d'isolation galvanique, même si la communication I2C
-reste possible. Dans ce cas, il faut soit accepter explicitement la masse
-commune, soit revoir l'alimentation et les autres interfaces pour rétablir deux
-domaines réellement isolés.
+autres liaisons possibles entre `GND_CPU` et `GND_INST` : alimentation du Mega,
+liaison au panneau avant, Serial0, USB, analyseur logique et oscilloscope.
+B1-4/B1-5 et B1-14/B1-16/B1-18 ne doivent jamais être pontés. Une telle liaison
+annulerait l'isolation galvanique même si la communication I2C continuait à
+fonctionner.
+
+## Signaux directs hors MCP23017
+
+Deux signaux de B1 ne passent pas par l'expandeur :
+
+| Signal | B1 | Raccordement | Remarque |
+| --- | ---: | --- | --- |
+| `INHIB` | 6 | J1-5 du panneau avant | liaison directe du commutateur marche/attente, sans broche Mega |
+| `PA` | 7 | Mega D3 / PE5 / INT5 | présence alimentation, entrée haute impédance sans pull-up interne |
 
 ## Arduino Mega 2560 vers ISO1540
 
@@ -80,17 +86,25 @@ Les broches Arduino D0 et D1 restent réservées à `Serial0` et ne participent
 pas au bus instruments. Le firmware utilise l'I2C matériel à 400 kHz et
 l'adresse MCP23017 `0x20`.
 
+### Mini-plaquette ISO1540 du prototype
+
+La plaquette violette photographiée expose un connecteur de quatre points de
+chaque côté, dans le même ordre fonctionnel : `VCC`, `SCL`, `SDA`, `GND`.
+Le schéma représente donc les deux headers complets et non le seul boîtier
+SOIC-8. Les résistances marquées `103` sont les tirages I2C de 10 kΩ intégrés,
+un jeu étant référencé à chaque domaine d'alimentation.
+
 ## Brochage complet de l'ISO1540
 
 Boîtier SOIC-8, vue de dessus :
 
 | Broche | Nom | Raccordement retenu |
 | ---: | --- | --- |
-| 1 | `VCC1` | `+5V_MEGA` |
+| 1 | `VCC1` | `+5V_CPU` |
 | 2 | `SDA1` | Mega D20 / SDA |
 | 3 | `SCL1` | Mega D21 / SCL |
-| 4 | `GND1` | `GND_MEGA` |
-| 5 | `GND2` | `0V_INST` |
+| 4 | `GND1` | `GND_CPU` |
+| 5 | `GND2` | `GND_INST` |
 | 6 | `SCL2` | MCP23017 broche 12 / SCL |
 | 7 | `SDA2` | MCP23017 broche 13 / SDA |
 | 8 | `VCC2` | `+5V_INST` |
@@ -115,27 +129,41 @@ maximale de 2 mm entre ces condensateurs et les broches d'alimentation.
 
 ## Raccordements fixes du MCP23017
 
+### Mini-plaquette MCP23017 du prototype
+
+La plaquette verte photographiée est représentée avec ses connecteurs réels :
+
+- header I2C : `VCC`, `GND`, `SCL`, `SDA`, `RST`, `ITA`, `ITB` ;
+- header port B : `VCC`, `GND`, `PB7` à `PB0` ;
+- header port A : `VCC`, `GND`, `PA0` à `PA7`.
+
+Les trois ponts d'adresse `A2`, `A1` et `A0` sont fermés vers `GND_INST`, soit
+l'adresse 7 bits `0x20`. Les alimentations et masses répétées sur les headers
+PA et PB restent représentées sur le schéma. `ITA`, `ITB` et `PB5` à `PB7`
+sont explicitement non raccordés. Les résistances marquées `472` forment les
+tirages SDA/SCL de 4,7 kΩ intégrés à la plaquette.
+
 Boîtiers 28 broches SPDIP, SOIC ou SSOP, vue de dessus :
 
 | Broche | Nom | Raccordement | Remarque |
 | ---: | --- | --- | --- |
 | 9 | `VDD` | `+5V_INST` | découplage 100 nF vers VSS |
-| 10 | `VSS` | `0V_INST` | référence du bus instruments |
+| 10 | `VSS` | `GND_INST` | référence du bus instruments |
 | 11 | `NC` | non connectée | ne pas utiliser |
 | 12 | `SCL` | ISO1540 broche 6 / SCL2 | I2C 400 kHz |
 | 13 | `SDA` | ISO1540 broche 7 / SDA2 | I2C bidirectionnel |
 | 14 | `NC` | non connectée | ne pas utiliser |
-| 15 | `A0` | `0V_INST` | adresse I2C `0x20` |
-| 16 | `A1` | `0V_INST` | adresse I2C `0x20` |
-| 17 | `A2` | `0V_INST` | adresse I2C `0x20` |
+| 15 | `A0` | `GND_INST` | adresse I2C `0x20` |
+| 16 | `A1` | `GND_INST` | adresse I2C `0x20` |
+| 17 | `A2` | `GND_INST` | adresse I2C `0x20` |
 | 18 | `RESET` | tirage vers `+5V_INST` | actif bas, prévoir un point de test |
 | 19 | `INTB` | non connectée | inutilisée par le firmware |
 | 20 | `INTA` | non connectée | inutilisée par le firmware |
 
 Les broches A0, A1, A2 et RESET doivent être polarisées extérieurement ; elles
-ne doivent pas rester flottantes. Un tirage de 10 kΩ sur RESET convient comme
-point de départ. Placer le 100 nF de découplage du MCP23017 au plus près des
-broches 9 et 10.
+ne doivent pas rester flottantes. Le prototype utilise un tirage externe de
+10 kΩ entre RESET et `+5V_INST`. Placer le 100 nF de découplage du MCP23017 au
+plus près des broches 9 et 10.
 
 ## MCP23017 vers connecteur B1
 
@@ -172,6 +200,12 @@ Les broches restantes sont :
 Extrait du schéma de la carte CPU :
 
 ```text
+B1-2  +5V_CPU       B1-3  +5V_CPU
+B1-4  GND_CPU       B1-5  GND_CPU
+B1-6  INHIB         B1-7  PA
+B1-13 +5V_INST
+B1-14 GND_INST      B1-16 GND_INST      B1-18 GND_INST
+
 B1-19 D0    B1-20 D1    B1-21 D2    B1-22 D3
 B1-23 D4    B1-24 D5    B1-25 D6    B1-26 D7
 B1-27 A0    B1-28 A1    B1-29 A2    B1-30 A3
@@ -185,9 +219,8 @@ l'orientation, le repère de B1-1 et la vue utilisée par le schéma.
 ## État de démarrage
 
 Au reset, les GPIO du MCP23017 sont initialement en entrée. Le montage doit
-maintenir `Chargt` inactif haut pendant cette période. Prévoir un tirage externe
-de 4,7 à 10 kΩ entre B1-31/GPB4 et `+5V_INST`, sauf si un tirage équivalent du
-fond de panier est déjà confirmé.
+maintenir `Chargt` inactif haut pendant cette période. Le prototype utilise un
+tirage externe de 4,7 kΩ entre B1-31/GPB4 et `+5V_INST`.
 
 Le firmware précharge ensuite :
 
@@ -213,8 +246,8 @@ Prévoir au minimum des points accessibles pour :
 
 Avant de connecter B1, contrôler séparément :
 
-1. les deux alimentations et, si l'isolation galvanique est retenue, l'absence
-   de continuité entre GND1 et GND2 ;
+1. les deux alimentations et l'absence de continuité entre B1-4/B1-5
+   (`GND_CPU`) et B1-14/B1-16/B1-18 (`GND_INST`) ;
 2. l'adresse I2C `0x20` ;
 3. l'absence de front descendant parasite sur `Chargt` au démarrage et au
    reset ;

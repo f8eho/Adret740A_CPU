@@ -412,6 +412,7 @@ essais sans coupure.
 | Touches doublées ou positions inconnues | rebonds/transitions de scan | rejet des inconnues et filtre 30 ms |
 | Clavier perdu après permutation D6/D7 | ligne sens prise pour comptage | interprétation AVR bits 7/6 corrigée |
 | Clavier/molette parfois figés après une touche | CA1 peut rester basse après l'acquittement | diagnostic et quatre acquittements SN5 supplémentaires bornés |
+| Environ 8 s avant la bannière après `STD BY` | câble USB relié au PC, attente du bootloader Mega/UART0 avant le firmware | aucun défaut panneau ; délai absent câble USB débranché |
 
 ## 11. État validé et travaux restants
 
@@ -423,7 +424,8 @@ essais sans coupure.
 - matrice et libellés du clavier ;
 - trames Code B SN10/SN11 et ordre des groupes numériques ;
 - polarité active bas des points décimaux ICM ;
-- amélioration du clavier par lecture SN5 de 10 µs et acquittements au boot.
+- amélioration du clavier par lecture SN5 de 10 µs et acquittements au boot ;
+- délai avant bannière attribué au bootloader/USB de la Mega et non à CA1.
 
 ### À valider ou compléter
 

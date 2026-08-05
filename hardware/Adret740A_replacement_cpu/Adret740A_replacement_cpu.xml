@@ -1,0 +1,719 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>D:\Documents\Projets\prog\Adret740A\hardware\Adret740A_replacement_cpu\Adret740A_replacement_cpu.kicad_sch</source>
+    <date>2026-08-03T20:33:16</date>
+    <tool>Eeschema 10.0.4</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>CPU de remplacement Adret 740A</title>
+        <company>Projet Adret 740A</company>
+        <rev>1.0</rev>
+        <date>2026-08-03</date>
+        <source>Adret740A_replacement_cpu.kicad_sch</source>
+        <comment number="1" value="Schema de cablage du prototype Arduino Mega / ISO1540 / MCP23017"/>
+        <comment number="2" value="Les domaines CPU et instruments restent galvaniquement isoles"/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="A1">
+      <value>Arduino Mega 2560</value>
+      <description>Module Arduino Mega 2560; seules les broches utilisees sont representees</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Module Arduino Mega 2560; seules les broches utilisees sont representees</field>
+      </fields>
+      <libsource lib="Adret740A" part="Arduino_Mega2560_Used" description="Module Arduino Mega 2560; seules les broches utilisees sont representees"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>22b75375-2fb7-58f9-8cd2-8c5d4b564b3c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="28"/>
+            <pin num="29"/>
+            <pin num="26"/>
+            <pin num="27"/>
+            <pin num="24"/>
+            <pin num="25"/>
+            <pin num="22"/>
+            <pin num="23"/>
+            <pin num="2"/>
+            <pin num="10"/>
+            <pin num="53"/>
+            <pin num="52"/>
+            <pin num="51"/>
+            <pin num="50"/>
+            <pin num="5V"/>
+            <pin num="GND"/>
+            <pin num="21"/>
+            <pin num="20"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="A2">
+      <value>Mini-plaquette ISO1540</value>
+      <description>Module isolateur I2C ISO1540, deux domaines 5 V</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Module isolateur I2C ISO1540, deux domaines 5 V</field>
+      </fields>
+      <libsource lib="Adret740A" part="ISO1540_Breakout" description="Module isolateur I2C ISO1540, deux domaines 5 V"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>1b27aed4-1f2d-558d-85d4-f19439fb491a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="CPU_VCC"/>
+            <pin num="CPU_GND"/>
+            <pin num="CPU_SCL"/>
+            <pin num="CPU_SDA"/>
+            <pin num="INST_VCC"/>
+            <pin num="INST_GND"/>
+            <pin num="INST_SCL"/>
+            <pin num="INST_SDA"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="A3">
+      <value>Mini-plaquette MCP23017 (0x20)</value>
+      <description>Mini-plaquette MCP23017 avec headers VCC/GND/PB7..PB0 et VCC/GND/PA0..PA7</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Mini-plaquette MCP23017 avec headers VCC/GND/PB7..PB0 et VCC/GND/PA0..PA7</field>
+      </fields>
+      <libsource lib="Adret740A" part="MCP23017_Breakout" description="Mini-plaquette MCP23017 avec headers VCC/GND/PB7..PB0 et VCC/GND/PA0..PA7"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>c7cd5d9e-e0d3-5838-8930-fa136aabe367</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="I2C_VCC"/>
+            <pin num="I2C_GND"/>
+            <pin num="I2C_SCL"/>
+            <pin num="I2C_SDA"/>
+            <pin num="RST"/>
+            <pin num="ITA"/>
+            <pin num="ITB"/>
+            <pin num="PB_VCC"/>
+            <pin num="PB_GND"/>
+            <pin num="PA_VCC"/>
+            <pin num="PA_GND"/>
+            <pin num="PB4"/>
+            <pin num="PB3"/>
+            <pin num="PB2"/>
+            <pin num="PB1"/>
+            <pin num="PB0"/>
+            <pin num="PA7"/>
+            <pin num="PA6"/>
+            <pin num="PA5"/>
+            <pin num="PA4"/>
+            <pin num="PA3"/>
+            <pin num="PA2"/>
+            <pin num="PA1"/>
+            <pin num="PA0"/>
+            <pin num="PB5"/>
+            <pin num="PB6"/>
+            <pin num="PB7"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J1">
+      <value>PANNEAU AVANT 2x13</value>
+      <description>Connecteur nappe 26 contacts du panneau avant Adret 740A</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Connecteur nappe 26 contacts du panneau avant Adret 740A</field>
+      </fields>
+      <libsource lib="Adret740A" part="Front_Panel_2x13" description="Connecteur nappe 26 contacts du panneau avant Adret 740A"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>8889d67e-80e2-50ae-9fad-860d29a56871</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="26"/>
+            <pin num="25"/>
+            <pin num="24"/>
+            <pin num="23"/>
+            <pin num="22"/>
+            <pin num="21"/>
+            <pin num="20"/>
+            <pin num="19"/>
+            <pin num="18"/>
+            <pin num="17"/>
+            <pin num="16"/>
+            <pin num="15"/>
+            <pin num="14"/>
+            <pin num="13"/>
+            <pin num="12"/>
+            <pin num="11"/>
+            <pin num="10"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="J2">
+      <value>B1 BUS INSTRUMENTS</value>
+      <description>Connecteur 31 contacts du fond de panier instruments Adret 740A</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Connecteur 31 contacts du fond de panier instruments Adret 740A</field>
+      </fields>
+      <libsource lib="Adret740A" part="B1_Instrument_31" description="Connecteur 31 contacts du fond de panier instruments Adret 740A"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>66d1b4b4-68a2-55dc-948b-52d61b123619</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="31"/>
+            <pin num="30"/>
+            <pin num="29"/>
+            <pin num="28"/>
+            <pin num="27"/>
+            <pin num="26"/>
+            <pin num="25"/>
+            <pin num="24"/>
+            <pin num="23"/>
+            <pin num="22"/>
+            <pin num="21"/>
+            <pin num="20"/>
+            <pin num="19"/>
+            <pin num="18"/>
+            <pin num="17"/>
+            <pin num="16"/>
+            <pin num="15"/>
+            <pin num="14"/>
+            <pin num="13"/>
+            <pin num="12"/>
+            <pin num="11"/>
+            <pin num="10"/>
+            <pin num="9"/>
+            <pin num="8"/>
+            <pin num="7"/>
+            <pin num="6"/>
+            <pin num="5"/>
+            <pin num="4"/>
+            <pin num="3"/>
+            <pin num="2"/>
+            <pin num="1"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R1">
+      <value>4.7k CHARGT pull-up</value>
+      <description>Resistance externe montee sur la plaque de prototypage</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resistance externe montee sur la plaque de prototypage</field>
+      </fields>
+      <libsource lib="Adret740A" part="Resistor" description="Resistance externe montee sur la plaque de prototypage"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3a474b10-3d6f-5f60-9625-101da886ac1e</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="R2">
+      <value>10k RESET pull-up</value>
+      <description>Resistance externe montee sur la plaque de prototypage</description>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resistance externe montee sur la plaque de prototypage</field>
+      </fields>
+      <libsource lib="Adret740A" part="Resistor" description="Resistance externe montee sur la plaque de prototypage"/>
+      <property name="Sheetname" value="Adret740A_replacement_cpu"/>
+      <property name="Sheetfile" value="Adret740A_replacement_cpu.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>48b39f7e-c231-527b-aa9d-e5f99a200be8</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="Adret740A" part="Arduino_Mega2560_Used">
+      <description>Module Arduino Mega 2560; seules les broches utilisees sont representees</description>
+      <fields>
+        <field name="Reference">A</field>
+        <field name="Value">Arduino Mega 2560</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Module Arduino Mega 2560; seules les broches utilisees sont representees</field>
+      </fields>
+      <pins>
+        <pin num="2" name="D2_/_PE4_/_INT4" type="passive"/>
+        <pin num="3" name="D3_/_PE5_/_INT5" type="passive"/>
+        <pin num="5V" name="+5V" type="passive"/>
+        <pin num="10" name="D10_/_PB4" type="passive"/>
+        <pin num="20" name="D20_/_SDA" type="passive"/>
+        <pin num="21" name="D21_/_SCL" type="passive"/>
+        <pin num="22" name="D22_/_PA0" type="passive"/>
+        <pin num="23" name="D23_/_PA1" type="passive"/>
+        <pin num="24" name="D24_/_PA2" type="passive"/>
+        <pin num="25" name="D25_/_PA3" type="passive"/>
+        <pin num="26" name="D26_/_PA4" type="passive"/>
+        <pin num="27" name="D27_/_PA5" type="passive"/>
+        <pin num="28" name="D28_/_PA6" type="passive"/>
+        <pin num="29" name="D29_/_PA7" type="passive"/>
+        <pin num="50" name="D50_/_PB3" type="passive"/>
+        <pin num="51" name="D51_/_PB2" type="passive"/>
+        <pin num="52" name="D52_/_PB1" type="passive"/>
+        <pin num="53" name="D53_/_PB0" type="passive"/>
+        <pin num="GND" name="GND" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Adret740A" part="B1_Instrument_31">
+      <description>Connecteur 31 contacts du fond de panier instruments Adret 740A</description>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">B1 BUS INSTRUMENTS</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Connecteur 31 contacts du fond de panier instruments Adret 740A</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+5V_DIG-P_(original)" type="passive"/>
+        <pin num="2" name="+5V_CPU" type="passive"/>
+        <pin num="3" name="+5V_CPU" type="passive"/>
+        <pin num="4" name="0V_CPU" type="passive"/>
+        <pin num="5" name="0V_CPU" type="passive"/>
+        <pin num="6" name="INHIB_(actif_bas)" type="passive"/>
+        <pin num="7" name="PA_presence_alim" type="passive"/>
+        <pin num="8" name="PEDALE_1_(original)" type="passive"/>
+        <pin num="9" name="PEDALE_2_(original)" type="passive"/>
+        <pin num="10" name="NC_original" type="passive"/>
+        <pin num="11" name="NC_original" type="passive"/>
+        <pin num="12" name="NC_original" type="passive"/>
+        <pin num="13" name="+5V_instruments" type="passive"/>
+        <pin num="14" name="0V_instruments" type="passive"/>
+        <pin num="15" name="10MHz_original" type="passive"/>
+        <pin num="16" name="0V_instruments" type="passive"/>
+        <pin num="17" name="10MHz_retour_original" type="passive"/>
+        <pin num="18" name="0V_instruments" type="passive"/>
+        <pin num="19" name="D0" type="passive"/>
+        <pin num="20" name="D1" type="passive"/>
+        <pin num="21" name="D2" type="passive"/>
+        <pin num="22" name="D3" type="passive"/>
+        <pin num="23" name="D4" type="passive"/>
+        <pin num="24" name="D5" type="passive"/>
+        <pin num="25" name="D6" type="passive"/>
+        <pin num="26" name="D7" type="passive"/>
+        <pin num="27" name="A0" type="passive"/>
+        <pin num="28" name="A1" type="passive"/>
+        <pin num="29" name="A2" type="passive"/>
+        <pin num="30" name="A3" type="passive"/>
+        <pin num="31" name="CHARGT_actif_bas" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Adret740A" part="Front_Panel_2x13">
+      <description>Connecteur nappe 26 contacts du panneau avant Adret 740A</description>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">PANNEAU AVANT 2x13</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Connecteur nappe 26 contacts du panneau avant Adret 740A</field>
+      </fields>
+      <pins>
+        <pin num="1" name="MODE_/_PB3" type="passive"/>
+        <pin num="2" name="C_/_PB2" type="passive"/>
+        <pin num="3" name="B_/_PB1" type="passive"/>
+        <pin num="4" name="A_/_PB0" type="passive"/>
+        <pin num="5" name="INHIB" type="passive"/>
+        <pin num="6" name="NC" type="passive"/>
+        <pin num="7" name="NC" type="passive"/>
+        <pin num="8" name="+5V" type="passive"/>
+        <pin num="9" name="NC" type="passive"/>
+        <pin num="10" name="WP_/_CA2" type="passive"/>
+        <pin num="11" name="NC" type="passive"/>
+        <pin num="12" name="INT_CLAV_/_CA1" type="passive"/>
+        <pin num="13" name="NC" type="passive"/>
+        <pin num="14" name="NC" type="passive"/>
+        <pin num="15" name="NC" type="passive"/>
+        <pin num="16" name="GND" type="passive"/>
+        <pin num="17" name="NC" type="passive"/>
+        <pin num="18" name="NC" type="passive"/>
+        <pin num="19" name="PA0_/_D0" type="passive"/>
+        <pin num="20" name="PA1_/_D1" type="passive"/>
+        <pin num="21" name="PA2_/_D2" type="passive"/>
+        <pin num="22" name="PA3_/_D3" type="passive"/>
+        <pin num="23" name="PA4_/_D4" type="passive"/>
+        <pin num="24" name="PA5_/_D5" type="passive"/>
+        <pin num="25" name="PA6_/_D6" type="passive"/>
+        <pin num="26" name="PA7_/_D7" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Adret740A" part="ISO1540_Breakout">
+      <description>Module isolateur I2C ISO1540, deux domaines 5 V</description>
+      <fields>
+        <field name="Reference">A</field>
+        <field name="Value">Mini-plaquette ISO1540</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Module isolateur I2C ISO1540, deux domaines 5 V</field>
+      </fields>
+      <pins>
+        <pin num="CPU_GND" name="GND_cote_CPU" type="passive"/>
+        <pin num="CPU_SCL" name="SCL_cote_CPU" type="passive"/>
+        <pin num="CPU_SDA" name="SDA_cote_CPU" type="passive"/>
+        <pin num="CPU_VCC" name="VCC_cote_CPU" type="passive"/>
+        <pin num="INST_GND" name="GND_cote_instruments" type="passive"/>
+        <pin num="INST_SCL" name="SCL_cote_instruments" type="passive"/>
+        <pin num="INST_SDA" name="SDA_cote_instruments" type="passive"/>
+        <pin num="INST_VCC" name="VCC_cote_instruments" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Adret740A" part="MCP23017_Breakout">
+      <description>Mini-plaquette MCP23017 avec headers VCC/GND/PB7..PB0 et VCC/GND/PA0..PA7</description>
+      <fields>
+        <field name="Reference">A</field>
+        <field name="Value">Mini-plaquette MCP23017 (0x20)</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Mini-plaquette MCP23017 avec headers VCC/GND/PB7..PB0 et VCC/GND/PA0..PA7</field>
+      </fields>
+      <pins>
+        <pin num="I2C_GND" name="GND_header_I2C" type="passive"/>
+        <pin num="I2C_SCL" name="SCL" type="passive"/>
+        <pin num="I2C_SDA" name="SDA" type="passive"/>
+        <pin num="I2C_VCC" name="VCC_header_I2C" type="passive"/>
+        <pin num="ITA" name="ITA" type="passive"/>
+        <pin num="ITB" name="ITB" type="passive"/>
+        <pin num="PA0" name="PA0" type="passive"/>
+        <pin num="PA1" name="PA1" type="passive"/>
+        <pin num="PA2" name="PA2" type="passive"/>
+        <pin num="PA3" name="PA3" type="passive"/>
+        <pin num="PA4" name="PA4" type="passive"/>
+        <pin num="PA5" name="PA5" type="passive"/>
+        <pin num="PA6" name="PA6" type="passive"/>
+        <pin num="PA7" name="PA7" type="passive"/>
+        <pin num="PA_GND" name="GND_header_PA" type="passive"/>
+        <pin num="PA_VCC" name="VCC_header_PA" type="passive"/>
+        <pin num="PB0" name="PB0" type="passive"/>
+        <pin num="PB1" name="PB1" type="passive"/>
+        <pin num="PB2" name="PB2" type="passive"/>
+        <pin num="PB3" name="PB3" type="passive"/>
+        <pin num="PB4" name="PB4_/_CHARGT" type="passive"/>
+        <pin num="PB5" name="PB5_reserve" type="passive"/>
+        <pin num="PB6" name="PB6_reserve" type="passive"/>
+        <pin num="PB7" name="PB7_reserve" type="passive"/>
+        <pin num="PB_GND" name="GND_header_PB" type="passive"/>
+        <pin num="PB_VCC" name="VCC_header_PB" type="passive"/>
+        <pin num="RST" name="RST_actif_bas" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="Adret740A" part="Resistor">
+      <description>Resistance externe montee sur la plaque de prototypage</description>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Resistance externe montee sur la plaque de prototypage</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="Adret740A">
+      <uri>${KIPRJMOD}/Adret740A.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="/+5V_CPU" class="Default">
+      <node ref="A1" pin="5V" pinfunction="+5V_5V" pintype="passive"/>
+      <node ref="A2" pin="CPU_VCC" pinfunction="VCC_cote_CPU_CPU_VCC" pintype="passive"/>
+      <node ref="J1" pin="8" pinfunction="+5V_8" pintype="passive"/>
+      <node ref="J2" pin="2" pinfunction="+5V_CPU_2" pintype="passive"/>
+      <node ref="J2" pin="3" pinfunction="+5V_CPU_3" pintype="passive"/>
+    </net>
+    <net code="2" name="/+5V_INST" class="Default">
+      <node ref="A2" pin="INST_VCC" pinfunction="VCC_cote_instruments_INST_VCC" pintype="passive"/>
+      <node ref="A3" pin="I2C_VCC" pinfunction="VCC_header_I2C_I2C_VCC" pintype="passive"/>
+      <node ref="A3" pin="PA_VCC" pinfunction="VCC_header_PA_PA_VCC" pintype="passive"/>
+      <node ref="A3" pin="PB_VCC" pinfunction="VCC_header_PB_PB_VCC" pintype="passive"/>
+      <node ref="J2" pin="13" pinfunction="+5V_instruments_13" pintype="passive"/>
+      <node ref="R1" pin="1" pinfunction="1_1" pintype="passive"/>
+      <node ref="R2" pin="1" pinfunction="1_1" pintype="passive"/>
+    </net>
+    <net code="3" name="/CHARGT" class="Default">
+      <node ref="A3" pin="PB4" pinfunction="PB4_/_CHARGT_PB4" pintype="passive"/>
+      <node ref="J2" pin="31" pinfunction="CHARGT_actif_bas_31" pintype="passive"/>
+      <node ref="R1" pin="2" pinfunction="2_2" pintype="passive"/>
+    </net>
+    <net code="4" name="/FP_A" class="Default">
+      <node ref="A1" pin="53" pinfunction="D53_/_PB0_53" pintype="passive"/>
+      <node ref="J1" pin="4" pinfunction="A_/_PB0_4" pintype="passive"/>
+    </net>
+    <net code="5" name="/FP_B" class="Default">
+      <node ref="A1" pin="52" pinfunction="D52_/_PB1_52" pintype="passive"/>
+      <node ref="J1" pin="3" pinfunction="B_/_PB1_3" pintype="passive"/>
+    </net>
+    <net code="6" name="/FP_C" class="Default">
+      <node ref="A1" pin="51" pinfunction="D51_/_PB2_51" pintype="passive"/>
+      <node ref="J1" pin="2" pinfunction="C_/_PB2_2" pintype="passive"/>
+    </net>
+    <net code="7" name="/FP_CA1" class="Default">
+      <node ref="A1" pin="2" pinfunction="D2_/_PE4_/_INT4_2" pintype="passive"/>
+      <node ref="J1" pin="12" pinfunction="INT_CLAV_/_CA1_12" pintype="passive"/>
+    </net>
+    <net code="8" name="/FP_CA2" class="Default">
+      <node ref="A1" pin="10" pinfunction="D10_/_PB4_10" pintype="passive"/>
+      <node ref="J1" pin="10" pinfunction="WP_/_CA2_10" pintype="passive"/>
+    </net>
+    <net code="9" name="/FP_D0" class="Default">
+      <node ref="A1" pin="23" pinfunction="D23_/_PA1_23" pintype="passive"/>
+      <node ref="J1" pin="19" pinfunction="PA0_/_D0_19" pintype="passive"/>
+    </net>
+    <net code="10" name="/FP_D1" class="Default">
+      <node ref="A1" pin="22" pinfunction="D22_/_PA0_22" pintype="passive"/>
+      <node ref="J1" pin="20" pinfunction="PA1_/_D1_20" pintype="passive"/>
+    </net>
+    <net code="11" name="/FP_D2" class="Default">
+      <node ref="A1" pin="25" pinfunction="D25_/_PA3_25" pintype="passive"/>
+      <node ref="J1" pin="21" pinfunction="PA2_/_D2_21" pintype="passive"/>
+    </net>
+    <net code="12" name="/FP_D3" class="Default">
+      <node ref="A1" pin="24" pinfunction="D24_/_PA2_24" pintype="passive"/>
+      <node ref="J1" pin="22" pinfunction="PA3_/_D3_22" pintype="passive"/>
+    </net>
+    <net code="13" name="/FP_D4" class="Default">
+      <node ref="A1" pin="27" pinfunction="D27_/_PA5_27" pintype="passive"/>
+      <node ref="J1" pin="23" pinfunction="PA4_/_D4_23" pintype="passive"/>
+    </net>
+    <net code="14" name="/FP_D5" class="Default">
+      <node ref="A1" pin="26" pinfunction="D26_/_PA4_26" pintype="passive"/>
+      <node ref="J1" pin="24" pinfunction="PA5_/_D5_24" pintype="passive"/>
+    </net>
+    <net code="15" name="/FP_D6" class="Default">
+      <node ref="A1" pin="29" pinfunction="D29_/_PA7_29" pintype="passive"/>
+      <node ref="J1" pin="25" pinfunction="PA6_/_D6_25" pintype="passive"/>
+    </net>
+    <net code="16" name="/FP_D7" class="Default">
+      <node ref="A1" pin="28" pinfunction="D28_/_PA6_28" pintype="passive"/>
+      <node ref="J1" pin="26" pinfunction="PA7_/_D7_26" pintype="passive"/>
+    </net>
+    <net code="17" name="/FP_MODE" class="Default">
+      <node ref="A1" pin="50" pinfunction="D50_/_PB3_50" pintype="passive"/>
+      <node ref="J1" pin="1" pinfunction="MODE_/_PB3_1" pintype="passive"/>
+    </net>
+    <net code="18" name="/GND_CPU" class="Default">
+      <node ref="A1" pin="GND" pinfunction="GND_GND" pintype="passive"/>
+      <node ref="A2" pin="CPU_GND" pinfunction="GND_cote_CPU_CPU_GND" pintype="passive"/>
+      <node ref="J1" pin="16" pinfunction="GND_16" pintype="passive"/>
+      <node ref="J2" pin="4" pinfunction="0V_CPU_4" pintype="passive"/>
+      <node ref="J2" pin="5" pinfunction="0V_CPU_5" pintype="passive"/>
+    </net>
+    <net code="19" name="/GND_INST" class="Default">
+      <node ref="A2" pin="INST_GND" pinfunction="GND_cote_instruments_INST_GND" pintype="passive"/>
+      <node ref="A3" pin="I2C_GND" pinfunction="GND_header_I2C_I2C_GND" pintype="passive"/>
+      <node ref="A3" pin="PA_GND" pinfunction="GND_header_PA_PA_GND" pintype="passive"/>
+      <node ref="A3" pin="PB_GND" pinfunction="GND_header_PB_PB_GND" pintype="passive"/>
+      <node ref="J2" pin="14" pinfunction="0V_instruments_14" pintype="passive"/>
+      <node ref="J2" pin="16" pinfunction="0V_instruments_16" pintype="passive"/>
+      <node ref="J2" pin="18" pinfunction="0V_instruments_18" pintype="passive"/>
+    </net>
+    <net code="20" name="/I2C_SCL_CPU" class="Default">
+      <node ref="A1" pin="21" pinfunction="D21_/_SCL_21" pintype="passive"/>
+      <node ref="A2" pin="CPU_SCL" pinfunction="SCL_cote_CPU_CPU_SCL" pintype="passive"/>
+    </net>
+    <net code="21" name="/I2C_SCL_INST" class="Default">
+      <node ref="A2" pin="INST_SCL" pinfunction="SCL_cote_instruments_INST_SCL" pintype="passive"/>
+      <node ref="A3" pin="I2C_SCL" pinfunction="SCL_I2C_SCL" pintype="passive"/>
+    </net>
+    <net code="22" name="/I2C_SDA_CPU" class="Default">
+      <node ref="A1" pin="20" pinfunction="D20_/_SDA_20" pintype="passive"/>
+      <node ref="A2" pin="CPU_SDA" pinfunction="SDA_cote_CPU_CPU_SDA" pintype="passive"/>
+    </net>
+    <net code="23" name="/I2C_SDA_INST" class="Default">
+      <node ref="A2" pin="INST_SDA" pinfunction="SDA_cote_instruments_INST_SDA" pintype="passive"/>
+      <node ref="A3" pin="I2C_SDA" pinfunction="SDA_I2C_SDA" pintype="passive"/>
+    </net>
+    <net code="24" name="/IB_A0" class="Default">
+      <node ref="A3" pin="PB0" pinfunction="PB0_PB0" pintype="passive"/>
+      <node ref="J2" pin="27" pinfunction="A0_27" pintype="passive"/>
+    </net>
+    <net code="25" name="/IB_A1" class="Default">
+      <node ref="A3" pin="PB1" pinfunction="PB1_PB1" pintype="passive"/>
+      <node ref="J2" pin="28" pinfunction="A1_28" pintype="passive"/>
+    </net>
+    <net code="26" name="/IB_A2" class="Default">
+      <node ref="A3" pin="PB2" pinfunction="PB2_PB2" pintype="passive"/>
+      <node ref="J2" pin="29" pinfunction="A2_29" pintype="passive"/>
+    </net>
+    <net code="27" name="/IB_A3" class="Default">
+      <node ref="A3" pin="PB3" pinfunction="PB3_PB3" pintype="passive"/>
+      <node ref="J2" pin="30" pinfunction="A3_30" pintype="passive"/>
+    </net>
+    <net code="28" name="/IB_D0" class="Default">
+      <node ref="A3" pin="PA0" pinfunction="PA0_PA0" pintype="passive"/>
+      <node ref="J2" pin="19" pinfunction="D0_19" pintype="passive"/>
+    </net>
+    <net code="29" name="/IB_D1" class="Default">
+      <node ref="A3" pin="PA1" pinfunction="PA1_PA1" pintype="passive"/>
+      <node ref="J2" pin="20" pinfunction="D1_20" pintype="passive"/>
+    </net>
+    <net code="30" name="/IB_D2" class="Default">
+      <node ref="A3" pin="PA2" pinfunction="PA2_PA2" pintype="passive"/>
+      <node ref="J2" pin="21" pinfunction="D2_21" pintype="passive"/>
+    </net>
+    <net code="31" name="/IB_D3" class="Default">
+      <node ref="A3" pin="PA3" pinfunction="PA3_PA3" pintype="passive"/>
+      <node ref="J2" pin="22" pinfunction="D3_22" pintype="passive"/>
+    </net>
+    <net code="32" name="/IB_D4" class="Default">
+      <node ref="A3" pin="PA4" pinfunction="PA4_PA4" pintype="passive"/>
+      <node ref="J2" pin="23" pinfunction="D4_23" pintype="passive"/>
+    </net>
+    <net code="33" name="/IB_D5" class="Default">
+      <node ref="A3" pin="PA5" pinfunction="PA5_PA5" pintype="passive"/>
+      <node ref="J2" pin="24" pinfunction="D5_24" pintype="passive"/>
+    </net>
+    <net code="34" name="/IB_D6" class="Default">
+      <node ref="A3" pin="PA6" pinfunction="PA6_PA6" pintype="passive"/>
+      <node ref="J2" pin="25" pinfunction="D6_25" pintype="passive"/>
+    </net>
+    <net code="35" name="/IB_D7" class="Default">
+      <node ref="A3" pin="PA7" pinfunction="PA7_PA7" pintype="passive"/>
+      <node ref="J2" pin="26" pinfunction="D7_26" pintype="passive"/>
+    </net>
+    <net code="36" name="/INHIB_POWER" class="Default">
+      <node ref="J1" pin="5" pinfunction="INHIB_5" pintype="passive"/>
+      <node ref="J2" pin="6" pinfunction="INHIB_(actif_bas)_6" pintype="passive"/>
+    </net>
+    <net code="37" name="/MCP_RESET" class="Default">
+      <node ref="A3" pin="RST" pinfunction="RST_actif_bas_RST" pintype="passive"/>
+      <node ref="R2" pin="2" pinfunction="2_2" pintype="passive"/>
+    </net>
+    <net code="38" name="/POWER_SENSE" class="Default">
+      <node ref="A1" pin="3" pinfunction="D3_/_PE5_/_INT5_3" pintype="passive"/>
+      <node ref="J2" pin="7" pinfunction="PA_presence_alim_7" pintype="passive"/>
+    </net>
+    <net code="39" name="unconnected-(A3-PB5_reserve-PadPB5)" class="Default">
+      <node ref="A3" pin="PB5" pinfunction="PB5_reserve_PB5" pintype="passive+no_connect"/>
+    </net>
+    <net code="40" name="unconnected-(A3-PB6_reserve-PadPB6)" class="Default">
+      <node ref="A3" pin="PB6" pinfunction="PB6_reserve_PB6" pintype="passive+no_connect"/>
+    </net>
+    <net code="41" name="unconnected-(A3-PB7_reserve-PadPB7)" class="Default">
+      <node ref="A3" pin="PB7" pinfunction="PB7_reserve_PB7" pintype="passive+no_connect"/>
+    </net>
+    <net code="42" name="unconnected-(A3-PadITA)" class="Default">
+      <node ref="A3" pin="ITA" pinfunction="ITA_ITA" pintype="passive+no_connect"/>
+    </net>
+    <net code="43" name="unconnected-(A3-PadITB)" class="Default">
+      <node ref="A3" pin="ITB" pinfunction="ITB_ITB" pintype="passive+no_connect"/>
+    </net>
+    <net code="44" name="unconnected-(J1-NC-Pad6)" class="Default">
+      <node ref="J1" pin="6" pinfunction="NC_6" pintype="passive+no_connect"/>
+    </net>
+    <net code="45" name="unconnected-(J1-NC-Pad7)" class="Default">
+      <node ref="J1" pin="7" pinfunction="NC_7" pintype="passive+no_connect"/>
+    </net>
+    <net code="46" name="unconnected-(J1-NC-Pad9)" class="Default">
+      <node ref="J1" pin="9" pinfunction="NC_9" pintype="passive+no_connect"/>
+    </net>
+    <net code="47" name="unconnected-(J1-NC-Pad11)" class="Default">
+      <node ref="J1" pin="11" pinfunction="NC_11" pintype="passive+no_connect"/>
+    </net>
+    <net code="48" name="unconnected-(J1-NC-Pad13)" class="Default">
+      <node ref="J1" pin="13" pinfunction="NC_13" pintype="passive+no_connect"/>
+    </net>
+    <net code="49" name="unconnected-(J1-NC-Pad14)" class="Default">
+      <node ref="J1" pin="14" pinfunction="NC_14" pintype="passive+no_connect"/>
+    </net>
+    <net code="50" name="unconnected-(J1-NC-Pad15)" class="Default">
+      <node ref="J1" pin="15" pinfunction="NC_15" pintype="passive+no_connect"/>
+    </net>
+    <net code="51" name="unconnected-(J1-NC-Pad17)" class="Default">
+      <node ref="J1" pin="17" pinfunction="NC_17" pintype="passive+no_connect"/>
+    </net>
+    <net code="52" name="unconnected-(J1-NC-Pad18)" class="Default">
+      <node ref="J1" pin="18" pinfunction="NC_18" pintype="passive+no_connect"/>
+    </net>
+    <net code="53" name="unconnected-(J2-+5V_DIG-P_(original)-Pad1)" class="Default">
+      <node ref="J2" pin="1" pinfunction="+5V_DIG-P_(original)_1" pintype="passive+no_connect"/>
+    </net>
+    <net code="54" name="unconnected-(J2-10MHz_original-Pad15)" class="Default">
+      <node ref="J2" pin="15" pinfunction="10MHz_original_15" pintype="passive+no_connect"/>
+    </net>
+    <net code="55" name="unconnected-(J2-10MHz_retour_original-Pad17)" class="Default">
+      <node ref="J2" pin="17" pinfunction="10MHz_retour_original_17" pintype="passive+no_connect"/>
+    </net>
+    <net code="56" name="unconnected-(J2-NC_original-Pad10)" class="Default">
+      <node ref="J2" pin="10" pinfunction="NC_original_10" pintype="passive+no_connect"/>
+    </net>
+    <net code="57" name="unconnected-(J2-NC_original-Pad11)" class="Default">
+      <node ref="J2" pin="11" pinfunction="NC_original_11" pintype="passive+no_connect"/>
+    </net>
+    <net code="58" name="unconnected-(J2-NC_original-Pad12)" class="Default">
+      <node ref="J2" pin="12" pinfunction="NC_original_12" pintype="passive+no_connect"/>
+    </net>
+    <net code="59" name="unconnected-(J2-PEDALE_1_(original)-Pad8)" class="Default">
+      <node ref="J2" pin="8" pinfunction="PEDALE_1_(original)_8" pintype="passive+no_connect"/>
+    </net>
+    <net code="60" name="unconnected-(J2-PEDALE_2_(original)-Pad9)" class="Default">
+      <node ref="J2" pin="9" pinfunction="PEDALE_2_(original)_9" pintype="passive+no_connect"/>
+    </net>
+  </nets>
+</export>

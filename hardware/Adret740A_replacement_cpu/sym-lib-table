@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "Adret740A")(type "KiCad")(uri "${KIPRJMOD}/Adret740A.kicad_sym")(options "")(descr "Modules du prototype Adret 740A"))
+)
