@@ -26,6 +26,7 @@ constexpr uint16_t kBlinkPhaseMs = 150u;
 constexpr uint8_t kBlinkPhaseCount = 6u;
 constexpr uint32_t kOverlayDurationMs = 2000u;
 constexpr uint32_t kSequenceEntryTimeoutMs = 2000u;
+constexpr int16_t kDbuvOffsetTenths = 1070;
 
 constexpr uint32_t kFrequencySteps[] = {
     10u, 100u, 1000u, 10000u, 100000u, 1000000u, 10000000u, 100000000u,
@@ -283,6 +284,35 @@ int8_t digitForKey(Key key)
     return -1;
 }
 
+constexpr AmplitudeDisplayUnit amplitudeDisplayUnitForKey(Key key)
+{
+    return key == Key::Mhz ? AmplitudeDisplayUnit::V
+        : key == Key::KHz ? AmplitudeDisplayUnit::MV
+        : key == Key::Hz ? AmplitudeDisplayUnit::UV
+        : AmplitudeDisplayUnit::DBm;
+}
+
+constexpr int16_t amplitudeTenthsDbuv(int16_t tenthsDbm)
+{
+    return int16_t(tenthsDbm + kDbuvOffsetTenths);
+}
+
+constexpr int16_t amplitudeTenthsDbmFromDbuv(int16_t tenthsDbuv)
+{
+    return int16_t(tenthsDbuv - kDbuvOffsetTenths);
+}
+
+constexpr bool specialCodeIsSupported(uint8_t code)
+{
+    return code == 40u || code == 44u;
+}
+
+constexpr AmplitudeDisplayUnit amplitudeDisplayUnitForSpecialCode(uint8_t code)
+{
+    return code == 44u ? AmplitudeDisplayUnit::DBuV
+                       : AmplitudeDisplayUnit::DBm;
+}
+
 bool timeReached(uint32_t now, uint32_t deadline)
 {
     return int32_t(now - deadline) >= 0;
@@ -317,6 +347,32 @@ static_assert(frequencyLeadingBlankMask(100000u) == 0x03C0u &&
 static_assert(effectiveFmStep(19999u, 0u) == 10u &&
               effectiveFmStep(20000u, 0u) == 100u,
               "Unexpected FM fine-range threshold");
+static_assert(amplitudeDisplayUnitForKey(Key::Mhz) == AmplitudeDisplayUnit::V &&
+              amplitudeDisplayUnitForKey(Key::KHz) == AmplitudeDisplayUnit::MV &&
+              amplitudeDisplayUnitForKey(Key::Hz) == AmplitudeDisplayUnit::UV &&
+              amplitudeDisplayUnitForKey(Key::DBm) == AmplitudeDisplayUnit::DBm &&
+              amplitudeDisplayUnitForKey(Key::OneDBm) == AmplitudeDisplayUnit::DBm,
+              "Unexpected direct amplitude display-unit mapping");
+static_assert(uint8_t(AmplitudeDisplayUnit::DBm) == 0u &&
+              uint8_t(AmplitudeDisplayUnit::V) == 1u &&
+              uint8_t(AmplitudeDisplayUnit::MV) == 2u &&
+              uint8_t(AmplitudeDisplayUnit::UV) == 3u &&
+              uint8_t(AmplitudeDisplayUnit::DBuV) == 4u,
+              "Persistent amplitude display-unit values changed");
+static_assert(amplitudeTenthsDbuv(-1299) == -229 &&
+              amplitudeTenthsDbuv(-870) == 200 &&
+              amplitudeTenthsDbuv(130) == 1200 &&
+              amplitudeTenthsDbmFromDbuv(-229) == -1299 &&
+              amplitudeTenthsDbmFromDbuv(200) == -870 &&
+              amplitudeTenthsDbmFromDbuv(1200) == 130,
+              "Unexpected 50-ohm dBuV conversion");
+static_assert(specialCodeIsSupported(40u) && specialCodeIsSupported(44u) &&
+              !specialCodeIsSupported(98u) &&
+              amplitudeDisplayUnitForSpecialCode(40u) ==
+                  AmplitudeDisplayUnit::DBm &&
+              amplitudeDisplayUnitForSpecialCode(44u) ==
+                  AmplitudeDisplayUnit::DBuV,
+              "Unexpected SPL amplitude-unit command mapping");
 static_assert(kFmMaximumHz ==
                   instrument_bus::kFmMaximumExactlyEncodedHz,
               "Controller FM limit must remain physically encodable");
@@ -357,7 +413,8 @@ bool outputConfigurationIsValid(const OutputConfiguration& value)
            value.amTenthsPercent <= kAmMaximumTenthsPercent &&
            uint8_t(value.modulationMode) <= uint8_t(ModulationMode::Am) &&
            uint8_t(value.modulationSource) <= uint8_t(ModulationSource::External) &&
-           uint8_t(value.amplitudeDisplayUnit) <= uint8_t(AmplitudeDisplayUnit::UV);
+           uint8_t(value.amplitudeDisplayUnit) <=
+               uint8_t(AmplitudeDisplayUnit::DBuV);
 }
 
 bool outputConfigurationIsValidForCapabilities(
@@ -526,8 +583,8 @@ void OperatingController::handleKey(Key key)
     }
 
     if ((entryMode_ == EntryMode::Memory || entryMode_ == EntryMode::Recall ||
-         entryMode_ == EntryMode::Sequence) && key != Key::Clear &&
-        key != Key::Sequence) {
+         entryMode_ == EntryMode::Sequence || entryMode_ == EntryMode::Special) &&
+        key != Key::Clear && key != Key::Sequence && key != Key::Spl) {
         entryMode_ = EntryMode::None;
         frontPanel.turnOff(PanelIndicator::Memory);
         frontPanel.setIndicator(PanelIndicator::Sequence, sequenceActive_);
@@ -556,6 +613,7 @@ void OperatingController::handleKey(Key key)
     case Key::XToY: handleXToY(); break;
     case Key::Memory: beginCommand(EntryMode::Memory); break;
     case Key::Recall: beginCommand(EntryMode::Recall); break;
+    case Key::Spl: beginCommand(EntryMode::Special); break;
     case Key::Sequence:
         beginCommand(EntryMode::Sequence);
         if (sequenceDefined_) {
@@ -609,7 +667,7 @@ void OperatingController::handleKey(Key key)
 void OperatingController::handleDigit(uint8_t digit)
 {
     if (entryMode_ == EntryMode::Memory || entryMode_ == EntryMode::Recall ||
-        entryMode_ == EntryMode::Sequence) {
+        entryMode_ == EntryMode::Sequence || entryMode_ == EntryMode::Special) {
         const uint8_t required = entryMode_ == EntryMode::Sequence ? 4u : 2u;
         if (entryDigitCount_ >= required) {
             failEntry(nullptr);
@@ -624,8 +682,10 @@ void OperatingController::handleDigit(uint8_t digit)
                 finishMemoryCommand();
             } else if (entryMode_ == EntryMode::Recall) {
                 finishRecallCommand();
-            } else {
+            } else if (entryMode_ == EntryMode::Sequence) {
                 finishSequenceCommand();
+            } else {
+                finishSpecialCommand();
             }
         }
         return;
@@ -719,6 +779,15 @@ void OperatingController::handleLeft()
 
 void OperatingController::handleUnit(Key key)
 {
+    if (entryMode_ == EntryMode::None) {
+        editableOutput().amplitudeDisplayUnit = amplitudeDisplayUnitForKey(key);
+        renderAll();
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("DISPLAY amplitude_unit="));
+        Serial.println(keyShortLabel(key));
+#endif
+        return;
+    }
     if (entryMode_ != EntryMode::Numeric || entryDigitCount_ == 0u) {
         failEntry(nullptr);
         return;
@@ -1002,6 +1071,8 @@ void OperatingController::beginCommand(EntryMode mode)
     entryDigitCount_ = 0u;
     entryDecimalIndex_ = -1;
     entryDigits_[0] = '\0';
+    frontPanel.turnOff(PanelIndicator::Memory);
+    frontPanel.setIndicator(PanelIndicator::Sequence, sequenceActive_);
     if (mode == EntryMode::Memory || mode == EntryMode::Recall) {
         frontPanel.turnOn(PanelIndicator::Memory);
     }
@@ -1098,6 +1169,26 @@ void OperatingController::finishSequenceCommand()
     Serial.print(start);
     Serial.print(F(" end="));
     Serial.println(end);
+#endif
+}
+
+void OperatingController::finishSpecialCommand()
+{
+    const uint8_t code = uint8_t((entryDigits_[0] - '0') * 10 +
+                                 (entryDigits_[1] - '0'));
+    const bool savedEntryLocked = entryLocked_;
+    entryMode_ = EntryMode::None;
+    if (!specialCodeIsSupported(code)) {
+        failEntry(nullptr);
+        entryLocked_ = savedEntryLocked;
+        return;
+    }
+    editableOutput().amplitudeDisplayUnit =
+        amplitudeDisplayUnitForSpecialCode(code);
+    renderAll();
+#if ADRET_DEBUG_SERIAL
+    Serial.print(F("SPL code="));
+    Serial.println(code);
 #endif
 }
 
@@ -1245,8 +1336,13 @@ bool OperatingController::commitNumericEntry(Key unitKey, const char** errorCode
                 *errorCode = nullptr;
                 return false;
             }
-            const int32_t signedValue = unitKey == Key::DBm
+            const int32_t signedDisplayValue = unitKey == Key::DBm
                 ? -int32_t(value) : int32_t(value);
+            const bool dbuvMode =
+                pending_.amplitudeDisplayUnit == AmplitudeDisplayUnit::DBuV;
+            const int32_t signedValue = dbuvMode
+                ? signedDisplayValue - kDbuvOffsetTenths
+                : signedDisplayValue;
             completedEntryValue_ = value;
             completedEntryIncrementCompatible_ = true;
             if (signedValue > kAmplitudeMaximumTenthsDbm) {
@@ -1258,7 +1354,8 @@ bool OperatingController::commitNumericEntry(Key unitKey, const char** errorCode
                 return false;
             }
             pending_.amplitudeTenthsDbm = int16_t(signedValue);
-            pending_.amplitudeDisplayUnit = AmplitudeDisplayUnit::DBm;
+            pending_.amplitudeDisplayUnit = dbuvMode
+                ? AmplitudeDisplayUnit::DBuV : AmplitudeDisplayUnit::DBm;
         } else {
             const float denominator = float(powerOfTen(fractionalDigits));
             const float unitScale = unitKey == Key::Mhz ? 1.0f
@@ -1368,7 +1465,9 @@ void OperatingController::renderEntry()
     case Target::Amplitude: {
         const OutputConfiguration& configuration = displayedOutput();
         AmplitudeUnitLed unit = AmplitudeUnitLed::DBm;
-        if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::V) {
+        if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::DBuV) {
+            unit = AmplitudeUnitLed::DBuV;
+        } else if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::V) {
             unit = AmplitudeUnitLed::V;
         } else if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::MV) {
             unit = AmplitudeUnitLed::MV;
@@ -1865,6 +1964,7 @@ void OperatingController::renderIndicators()
     const OutputConfiguration& configuration = displayedOutput();
     switch (configuration.amplitudeDisplayUnit) {
     case AmplitudeDisplayUnit::DBm: frontPanel.turnOn(PanelIndicator::DBm); break;
+    case AmplitudeDisplayUnit::DBuV: frontPanel.turnOn(PanelIndicator::DBuV); break;
     case AmplitudeDisplayUnit::V: frontPanel.turnOn(PanelIndicator::Volt); break;
     case AmplitudeDisplayUnit::MV: frontPanel.turnOn(PanelIndicator::MilliVolt); break;
     case AmplitudeDisplayUnit::UV: frontPanel.turnOn(PanelIndicator::MicroVolt); break;
@@ -1916,6 +2016,14 @@ void OperatingController::renderDisplays()
             : uint16_t(configuration.amplitudeTenthsDbm);
         frontPanel.setAmplitudeDisplay(configuration.amplitudeTenthsDbm, 0x02u,
                                        magnitude >= 1000u);
+    } else if (configuration.amplitudeDisplayUnit == AmplitudeDisplayUnit::DBuV) {
+        const int16_t tenthsDbuv =
+            amplitudeTenthsDbuv(configuration.amplitudeTenthsDbm);
+        const uint16_t magnitude = tenthsDbuv < 0
+            ? uint16_t(-int32_t(tenthsDbuv)) : uint16_t(tenthsDbuv);
+        frontPanel.setAmplitudeDisplay(tenthsDbuv, 0x02u,
+                                       magnitude >= 1000u);
+        frontPanel.turnOn(PanelIndicator::DBuV);
     } else {
         const float volts = powf(10.0f,
             (float(configuration.amplitudeTenthsDbm) / 10.0f - 13.0103f) / 20.0f);

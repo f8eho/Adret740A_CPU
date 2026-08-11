@@ -78,6 +78,14 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   EXEC transactions and active/prepared configuration views. RF keyboard
   entry and display expose the hertz digit; that digit is forced to zero when
   the value is prepared because the generator applies 10 Hz steps.
+- Direct `MHz/V`, `kHz/mV`, `Hz/µV` and `+/-dBm` keys switch the displayed
+  amplitude unit outside numeric entry without changing the selected target,
+  pending state, RF output or instrument-bus program. The preference remains
+  attached to each active, prepared or memorized configuration.
+- Historical `SPL 44` selects signed dBµV amplitude display and entry on
+  50 ohms; `SPL 40` restores dBm. The exact 0.1-dB internal conversion covers
+  -22.9 through +120.0 dBµV without changing the EEPROM record layout.
+  Unsupported special codes are rejected atomically.
 - Forty independently CRC-protected EEPROM memories, v2 settings migration,
   recall and keyboard-driven memory sequences.
 - Allocation-free per-parameter keyboard increments, with deferred RF
@@ -95,7 +103,7 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
   the historical `?` terminator and `CR/LF` line endings.
 - Host parser/framing, instrument-program, calibration-tool and atomic EEPROM
   migration vectors pass. The single PlatformIO firmware succeeds with 1,250
-  bytes RAM / 8,192 bytes and 45,698 bytes Flash / 253,952 bytes, including
+  bytes RAM / 8,192 bytes and 45,980 bytes Flash / 253,952 bytes, including
   the deliberately retained 2,048-byte zero calibration table.
 
 ## Remaining Hardware Validation
@@ -304,6 +312,6 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
    BASE/X2 calibration profiles, spectral purity and the absence of RF
    transients. Until then, keep the complete X2 path marked off-hardware only;
    see [`DETECTION_DOUBLEUR.md`](DETECTION_DOUBLEUR.md).
-9. Complete and bench-validate local amplitude entry and display in
-   `V`/`mV`/`µV`, then implement the original `SPL 44` `dBµV` display/input
-   mode in addition to `dBm` (with conversion to the internal 0.1-dBm value).
+9. Bench-validate local amplitude entry and direct display switching in
+   `V`/`mV`/`µV`/`dBµV`, including the original `SPL 44`/`SPL 40` mode and its
+   conversion to the internal 0.1-dBm value.

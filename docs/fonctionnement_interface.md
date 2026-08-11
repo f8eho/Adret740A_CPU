@@ -174,9 +174,25 @@ paramètre sélectionné :
 
 Une unité est obligatoire. Son omission ou une unité incohérente allume le
 voyant d'erreur et restaure la valeur antérieure. Le mode spécial `SPL 44`
-permet la saisie d'un niveau en dBµV ; `SPL 40` rétablit le fonctionnement
-normal. Les autres usages de `SPL`, notamment la modulation d'impulsion, ne
-sont pas détaillés ici.
+sélectionne immédiatement l'affichage et la saisie en dBµV sur 50 Ω ; `SPL 40`
+rétablit le dBm. Dans ce mode, les touches physiques `+dBm` et `-dBm`
+terminent une saisie signée en dBµV. La conversion interne, arrondie à la
+résolution de 0,1 dB du générateur, est `dBµV = dBm + 107,0`. La plage
+correspondante est `−22,9` à `+120,0 dBµV`.
+
+Le mode appartient à la configuration affichée et est donc conservé dans les
+mémoires. Une sélection directe de `V`, `mV`, `µV` ou `±dBm` le remplace. Les
+codes `SPL` autres que `40` et `44`, notamment `SPL 98` et les fonctions de
+modulation d'impulsion, ne sont pas implémentés et produisent une erreur sans
+modifier la configuration.
+
+Hors saisie numérique, un appui direct sur `MHz/V`, `kHz/mV`, `Hz/µV`,
+`+dBm` ou `-dBm` change immédiatement l'unité de la zone amplitude sans
+modifier le niveau, la cible clavier/molette, l'état d'EXEC ou le bus
+instruments. Le choix appartient à la configuration affichée et est conservé
+avec elle dans les mémoires. Une préférence µV est rendue provisoirement en
+mV lorsque la valeur dépasse les quatre positions disponibles (`1999 µV`) ;
+elle redevient effective dès que le niveau rentre dans cette plage.
 
 Exemples confirmés par les figures du manuel :
 
@@ -328,12 +344,12 @@ la séquence. `CLEAR` efface sa définition.
 | Fonction | Comportement documenté | État du firmware |
 | --- | --- | --- |
 | Sélection RF, AMPL, FM, PM et AM | Choisit le paramètre affiché et sa future saisie | Implémenté pour la sélection et la molette |
-| Chiffres, point et unités | Préparent une valeur sans agir sur la sortie | Implémenté pour MHz/kHz/Hz, ±dBm, V/mV/µV, FM, PM et AM |
+| Chiffres, point et unités | Préparent une valeur sans agir sur la sortie ; hors saisie, les touches d'unité changent directement l'affichage d'amplitude | Implémenté pour MHz/kHz/Hz, ±dBm, V/mV/µV, FM, PM et AM ; validation des unités d'amplitude au banc restante |
 | `←`, `CLEAR`, `EXEC` et `X→Y` | Corrigent, annulent, exécutent ou consultent l'état actif | Implémenté ; comportement lumineux et temporel à valider au banc |
 | `MEM` et `RECALL` | Enregistrent et rappellent 40 configurations | Implémenté pour les positions 00 à 39 avec CRC EEPROM individuel |
 | `SEQ` | Définit et exploite une plage de mémoires | Implémenté au clavier ; entrée AUX non implémentée |
 | `INC`, `↑` et `↓` | Programment et appliquent un incrément, ou parcourent une séquence | Implémenté ; séquence active prioritaire, validation au banc restante |
-| `SPL` | Fonctions spéciales du clavier | Touche lue, actions non implémentées |
+| `SPL` | Fonctions spéciales du clavier | `SPL 44` active le dBµV et `SPL 40` rétablit le dBm ; autres codes non implémentés |
 | `Adr RTL` | Retour du mode distant au mode local | Implémenté en `REMS`, ignoré sous verrouillage `RWLS` et sans effet en local |
 
 Le contrôleur conserve séparément la configuration réellement exécutée et la

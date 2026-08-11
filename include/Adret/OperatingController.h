@@ -42,10 +42,11 @@ enum class ModulationSource : uint8_t {
 };
 
 enum class AmplitudeDisplayUnit : uint8_t {
-    DBm,
-    V,
-    MV,
-    UV,
+    DBm = 0,
+    V = 1,
+    MV = 2,
+    UV = 3,
+    DBuV = 4,
 };
 
 struct OutputConfiguration {
@@ -108,6 +109,7 @@ private:
         Memory,
         Recall,
         Sequence,
+        Special,
     };
 
     enum class Overlay : uint8_t {
@@ -131,6 +133,7 @@ private:
     void finishMemoryCommand();
     void finishRecallCommand();
     void finishSequenceCommand();
+    void finishSpecialCommand();
     void stepSequence(bool restart);
     void ensurePending();
     void cancelNumericEntry();
