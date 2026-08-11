@@ -44,5 +44,25 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+$calibrationStoreOutput = Join-Path $PSScriptRoot '..\.pio\calibration_store_tests.exe'
+$calibrationStoreSources = @(
+    (Join-Path $PSScriptRoot 'test_calibration_store.cpp'),
+    (Join-Path $PSScriptRoot '..\src\CalibrationEprom.cpp'),
+    (Join-Path $PSScriptRoot '..\src\CalibrationStore.cpp')
+)
+
+& $compiler '-std=c++17' '-Wall' '-Wextra' '-Werror' `
+    "-I$(Join-Path $PSScriptRoot 'host_stubs')" `
+    "-I$(Join-Path $PSScriptRoot '..\include')" `
+    @calibrationStoreSources '-o' $calibrationStoreOutput
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
+& $calibrationStoreOutput
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}
+
 & python -B (Join-Path $PSScriptRoot 'test_adret_calibration.py')
 exit $LASTEXITCODE

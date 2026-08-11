@@ -17,10 +17,12 @@ import time
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_SESSION = PROJECT_ROOT / "calibration_amplitude.json"
 DEFAULT_TABLE = PROJECT_ROOT / "src" / "CalibrationTable.inc"
+DEFAULT_PROFILE = PROJECT_ROOT / "src" / "CalibrationProfile.inc"
 DEFAULT_DUMP_DIRECTORY = PROJECT_ROOT / "docs" / "eeprom_740A"
 
 EEPROM_SIZE = 2048
-ROWS = 30
+BASE_ROWS = 30
+ROWS = 41
 STEPS = 28
 PHYSICAL_ROWS = 64
 ROW_STRIDE = 32
@@ -54,7 +56,11 @@ def representative_frequency(row: int) -> int:
         return (row - 8) * 1_000_000 + 500_000
     if row < 29:
         return 10_000_000 + (row - 18) * 50_000_000 + 25_000_000
-    return 560_000_000
+    if row == 29:
+        return 560_000_000
+    if row < 40:
+        return 610_000_000 + (row - 30) * 50_000_000 + 25_000_000
+    return 1_115_000_000
 
 
 def representative_amplitude(step: int) -> int:
@@ -149,6 +155,9 @@ class SerialLink:
                 result[f"{row}:{step}"] = parse_tenths(fields["OVERLAY"])
         raise TimeoutError("fin de CAL DUMP non reçue")
 
+    def options(self) -> dict[str, str]:
+        return values(self.command("OPT?", "OPT "))
+
 
 def save_session(path: Path, session: dict) -> None:
     session["updated_utc"] = utc_now()
@@ -214,6 +223,12 @@ def run_manual_calibration(
     active = False
     try:
         link.command("REN1", "OK")
+        option_values = link.options()
+        doubler_installed = option_values.get("DOUBLER") == "1"
+        if any(row >= BASE_ROWS for row in rows) and not doubler_installed:
+            raise RuntimeError(
+                "les lignes 30..40 nécessitent un appareil déclaré avec doubleur"
+            )
         begin = link.command("CAL BEGIN", "CAL OK BEGIN")
         active = True
         begin_values = values(begin)
@@ -225,6 +240,7 @@ def run_manual_calibration(
             raise RuntimeError("les corrections validées ont changé depuis cette session")
         session["base_crc"] = base_crc
         session["generation"] = generation
+        session["profile"] = "x2" if doubler_installed else "base"
 
         for point in session["points"].values():
             if "overlay_tenths_db" in point:
@@ -358,7 +374,7 @@ class DumpAnalysis:
     warnings: list[str]
 
 
-def analyze_2816(data: bytes) -> DumpAnalysis:
+def analyze_2816(data: bytes, profile: str | None = None) -> DumpAnalysis:
     if len(data) != EEPROM_SIZE:
         raise ValueError(f"taille invalide : {len(data)} octets au lieu de {EEPROM_SIZE}")
     warnings: list[str] = []
@@ -376,11 +392,20 @@ def analyze_2816(data: bytes) -> DumpAnalysis:
         warnings.append(
             f"{tail_anomalies} octet(s) non-FF dans les quatre colonnes normalement inutilisées"
         )
-    extension_non_ff = sum(value != 0xFF for value in data[ROWS * ROW_STRIDE :])
-    if extension_non_ff:
+    x2_non_ff = sum(
+        value != 0xFF
+        for value in data[BASE_ROWS * ROW_STRIDE : ROWS * ROW_STRIDE]
+    )
+    if x2_non_ff and profile is None:
         warnings.append(
-            f"{extension_non_ff} octet(s) non-FF dans les lignes 30..63 "
-            "(extension ou format différent du 740A standard)"
+            f"{x2_non_ff} octet(s) non-FF dans les lignes 30..40 "
+            "(profil X2 possible, à confirmer explicitement)"
+        )
+    unknown_non_ff = sum(value != 0xFF for value in data[ROWS * ROW_STRIDE :])
+    if unknown_non_ff:
+        warnings.append(
+            f"{unknown_non_ff} octet(s) non-FF dans les lignes 41..63 "
+            "(extension non prise en charge)"
         )
     active = [
         decode_2816_byte(data[row * ROW_STRIDE + step])
@@ -402,8 +427,8 @@ def analyze_2816(data: bytes) -> DumpAnalysis:
     )
 
 
-def render_2816_include(source: Path, data: bytes) -> str:
-    analysis = analyze_2816(data)
+def render_2816_include(source: Path, data: bytes, profile: str) -> str:
+    analysis = analyze_2816(data, profile)
     lines = [
         "// Generated from an original Adret 2816 EEPROM dump.",
         f"// Source: {source.name}",
@@ -421,10 +446,24 @@ def render_2816_include(source: Path, data: bytes) -> str:
     return "\n".join(lines) + "\n"
 
 
-def import_2816(dump_path: Path, output: Path | None, force: bool) -> int:
+def profile_include_text(profile: str) -> str:
+    value = "Doubler" if profile == "x2" else "Base"
+    return f"CalibrationProfile::{value}\n"
+
+
+def profile_path_for_table(table_path: Path) -> Path:
+    return table_path.with_name("CalibrationProfile.inc")
+
+
+def import_2816(
+    dump_path: Path,
+    output: Path | None,
+    force: bool,
+    profile: str | None = None,
+) -> int:
     try:
         data = dump_path.read_bytes()
-        analysis = analyze_2816(data)
+        analysis = analyze_2816(data, profile)
     except (OSError, ValueError) as error:
         print(f"ERREUR : {error}", file=sys.stderr)
         return 1
@@ -444,16 +483,41 @@ def import_2816(dump_path: Path, output: Path | None, force: bool) -> int:
 
     if output is None:
         return 0
+    if profile not in {"base", "x2"}:
+        print(
+            "ERREUR : choisir explicitement le profil --profile base ou --profile x2",
+            file=sys.stderr,
+        )
+        return 1
+    first_unknown_row = BASE_ROWS if profile == "base" else ROWS
+    unknown_non_ff = sum(
+        value != 0xFF for value in data[first_unknown_row * ROW_STRIDE :]
+    )
+    if unknown_non_ff:
+        print(
+            f"ERREUR : {unknown_non_ff} octet(s) non-FF dans les lignes "
+            f"{first_unknown_row}..63, incompatibles avec le profil {profile}",
+            file=sys.stderr,
+        )
+        return 1
     if output.exists() and not force:
         print(f"ERREUR : {output} existe déjà ; confirmer son remplacement", file=sys.stderr)
         return 1
     try:
         output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(render_2816_include(dump_path, data), encoding="utf-8", newline="\n")
+        output.write_text(
+            render_2816_include(dump_path, data, profile),
+            encoding="utf-8",
+            newline="\n",
+        )
+        profile_path_for_table(output).write_text(
+            profile_include_text(profile), encoding="utf-8", newline="\n"
+        )
     except OSError as error:
         print(f"ERREUR : {error}", file=sys.stderr)
         return 1
     print(f"Table écrite : {output}")
+    print(f"Profil       : {profile.upper()}")
     print("Recompiler puis flasher le firmware pour activer cette table de base.")
     return 0
 
@@ -485,6 +549,20 @@ def read_table(path: Path) -> list[int]:
     return tokens
 
 
+def read_table_profile(path: Path) -> str:
+    profile_path = profile_path_for_table(path)
+    if not profile_path.exists():
+        return "neutral"
+    text = profile_path.read_text(encoding="utf-8")
+    if "CalibrationProfile::Doubler" in text:
+        return "x2"
+    if "CalibrationProfile::Base" in text:
+        return "base"
+    if "CalibrationProfile::Neutral" in text:
+        return "neutral"
+    raise ValueError(f"{profile_path}: profil de calibration inconnu")
+
+
 def render_merged_include(session_path: Path, table: list[int]) -> str:
     lines = [
         "// Generated by adret_calibration.py.",
@@ -503,6 +581,15 @@ def merge_session(session_path: Path, base_path: Path, output: Path, force: bool
     try:
         session = json.loads(session_path.read_text(encoding="utf-8"))
         base = read_table(base_path)
+        session_profile = str(session.get("profile", "base")).lower()
+        if session_profile not in {"base", "x2"}:
+            raise ValueError("profil de session invalide")
+        table_profile = read_table_profile(base_path)
+        if table_profile not in {"neutral", session_profile}:
+            raise ValueError(
+                f"profil de table {table_profile} incompatible avec la session "
+                f"{session_profile}"
+            )
         if session.get("status") != "complete":
             raise ValueError("la session n'est pas validée par CAL END")
         expected_crc = str(session.get("base_crc", "")).upper().lstrip("0") or "0"
@@ -538,12 +625,16 @@ def merge_session(session_path: Path, base_path: Path, output: Path, force: bool
         output.write_text(
             render_merged_include(session_path, merged), encoding="utf-8", newline="\n"
         )
+        profile_path_for_table(output).write_text(
+            profile_include_text(session_profile), encoding="utf-8", newline="\n"
+        )
     except OSError as error:
         print(f"ERREUR : {error}", file=sys.stderr)
         return 1
     print(f"Table fusionnée : {output}")
     print(f"CRC base        : {actual_crc}")
     print(f"CRC fusionné    : {crc16(merged):X}")
+    print(f"Profil          : {session_profile.upper()}")
     print(
         "Après flashage, le changement de CRC désactivera automatiquement "
         "l'ancien overlay EEPROM."
@@ -633,11 +724,16 @@ def menu_import_2816() -> None:
     dump_path = ask_path("Dump binaire de la 2816", default_dump_path())
     result = import_2816(dump_path, None, False)
     if result == 0 and confirm("Générer la table Flash à partir de ce dump ?"):
+        profile = ask("Profil du générateur (base ou x2)", "base").lower()
+        if profile not in {"base", "x2"}:
+            print("Profil invalide ; import annulé.")
+            pause_menu()
+            return
         output = ask_path("Table Flash de destination", DEFAULT_TABLE)
         if output.exists() and not confirm(f"Remplacer {output} ?"):
             print("Import annulé ; aucune modification effectuée.")
         else:
-            import_2816(dump_path, output, True)
+            import_2816(dump_path, output, True, profile)
     pause_menu()
 
 
@@ -698,6 +794,7 @@ def build_parser() -> argparse.ArgumentParser:
     importer.add_argument("dump", type=Path)
     importer.add_argument("--output", type=Path)
     importer.add_argument("--force", action="store_true")
+    importer.add_argument("--profile", choices=("base", "x2"))
 
     merger = subparsers.add_parser("merge", help="fusionner une session")
     merger.add_argument("session", type=Path)
@@ -728,7 +825,7 @@ def main(argv: list[str] | None = None) -> int:
             args.port, args.baud, args.session, rows, steps, args.settle
         )
     if args.command == "import":
-        return import_2816(args.dump, args.output, args.force)
+        return import_2816(args.dump, args.output, args.force, args.profile)
     if args.command == "merge":
         return merge_session(args.session, args.base, args.output, args.force)
     parser.print_help()

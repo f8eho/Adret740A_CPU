@@ -7,6 +7,7 @@
 #include "Adret/FrontPanelIrq.h"
 #include "Adret/HardwareConfig.h"
 #include "Adret/InstrumentBus.h"
+#include "Adret/InstrumentCapabilities.h"
 #include "Adret/OperatingController.h"
 #include "Adret/PowerFailMonitor.h"
 #include "Adret/SettingsStore.h"
@@ -152,9 +153,11 @@ void setup()
     runInstrumentBusBenchPattern();
 #endif
 
+    const adret::InstrumentCapabilities capabilities =
+        adret::detectInstrumentCapabilities();
     adret::control::Settings settings = adret::control::defaultSettings();
     const bool restored = adret::settingsStore.load(&settings);
-    adret::calibration::calibrationStore.begin();
+    adret::calibration::calibrationStore.begin(capabilities);
 #if ADRET_DEBUG_SERIAL
     Serial.print(F("EEPROM restored="));
     Serial.println(restored ? 1 : 0);
@@ -162,9 +165,9 @@ void setup()
     (void)restored;
     (void)instrumentBusReady;
 #endif
-    adret::control::operatingController.begin(settings);
+    adret::control::operatingController.begin(settings, capabilities);
     showStartupBanner();
-    adret::serialRemoteController.begin();
+    adret::serialRemoteController.begin(capabilities);
 
     releasePendingPanelInputAtStartup();
     adret::frontPanelIrq.begin();
@@ -172,6 +175,9 @@ void setup()
 #if ADRET_DEBUG_SERIAL
     Serial.print(F("Instrument bus MCP23017="));
     Serial.println(instrumentBusReady ? F("ready") : F("unavailable"));
+    Serial.print(F("Frequency doubler="));
+    Serial.println(capabilities.doublerInstalled() ? F("installed")
+                                                   : F("absent"));
     Serial.print(F("PA monitoring="));
     Serial.println(adret::hw::kPowerSenseEnabled ? F("enabled") : F("disabled"));
     Serial.println(F("ADRET front panel control ready"));

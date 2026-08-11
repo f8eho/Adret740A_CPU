@@ -35,11 +35,20 @@ La table permanente conserve le format logique de la 2816 originale :
 - lignes 0 à 8 : bandes de 100 kHz entre 100 kHz et 1 MHz ;
 - lignes 9 à 17 : bandes de 1 MHz entre 1 et 10 MHz ;
 - lignes 18 à 28 : bandes de 50 MHz entre 10 et 560 MHz ;
-- ligne 29 : point isolé de 560 MHz.
+- ligne 29 : 560 à 609,999990 MHz en profil X2, mais uniquement le point
+  560 MHz en profil BASE ;
+- lignes 30 à 39 : bandes successives de 50 MHz entre 610 et 1 110 MHz ;
+- ligne 40 : 1 110 à moins de 1 120 MHz ;
+- lignes 41 à 63 : inconnues et refusées si elles ne sont pas neutres.
 
 Le firmware reproduit cette indexation sans interpolation. L'overlay EEPROM
-est compact : seules les 30 lignes et les 28 colonnes utilisables du 740A
-standard sont conservées, soit 840 valeurs.
+est compact : seules les 41 lignes reconnues et les 28 colonnes utilisables
+sont conservées, soit 1 148 valeurs.
+
+Chaque banque est liée au profil `BASE` ou `X2`. Les lignes 0 à 28 sont
+communes. La ligne 29 et les lignes supérieures ne sont appliquées que si le
+profil de la table permanente et celui déclaré par le cavalier concordent ;
+sinon elles restent neutres.
 
 ## Import d'une EEPROM 2816 existante
 
@@ -63,18 +72,31 @@ python .\scripts\adret_calibration.py import `
 
 python .\scripts\adret_calibration.py import `
     .\docs\eeprom_740A\740-2816.BIN `
-    --output .\src\CalibrationTable.inc --force
+    --output .\src\CalibrationTable.inc --profile base --force
 ```
 
 La première commande analyse sans écrire. La seconde remplace la table Flash
-à compiler. Les corrections provenant d'un autre générateur ne doivent servir
-qu'à l'étude du format.
+à compiler et écrit aussi `CalibrationProfile.inc`. Toute génération de table
+exige `--profile base` ou `--profile x2`. Le profil BASE exige des lignes
+30 à 63 effacées ; le profil X2 accepte les lignes 30 à 40 mais exige les
+lignes 41 à 63 effacées. Les corrections provenant d'un autre générateur ne
+doivent servir qu'à l'étude du format.
 
 ## Stockage transactionnel et abandon
 
-Deux banques EEPROM de 840 octets sont utilisées à partir de l'adresse 1280.
-Chaque banque possède une signature, une version, une génération, le CRC de la
-table Flash, un CRC de données et un état.
+Deux banques EEPROM de 1 148 valeurs sont utilisées à partir de l'adresse
+1280. Avec leur en-tête de 16 octets, elles se terminent à l'adresse 3607 et
+tiennent dans les 4 Kio de l'ATmega2560. Chaque banque possède une signature,
+une version, une génération, un profil, le CRC de la table Flash, un CRC de
+données et un état.
+
+Le format courant est la version 2. Une version 1 est migrée automatiquement :
+les lignes 0 à 28 sont toujours conservées, la ligne 29 ne l'est qu'en profil
+BASE, et les lignes 30 à 40 sont neutralisées. Un changement de cavalier
+conserve également les lignes communes 0 à 28 et neutralise 29 à 40. La
+migration utilise l'autre banque et, dans l'unique zone de recouvrement avec
+l'ancien format, un marqueur récupérable validé par un test de coupure après
+chaque écriture EEPROM.
 
 `CAL BEGIN` copie la dernière banque validée dans l'autre banque et marque
 cette copie « travail ». Pendant la session, les corrections dynamiques sont
@@ -147,6 +169,10 @@ python .\scripts\adret_calibration.py calibrate `
     --port COM3 --rows 18-28 --steps 0-4
 ```
 
+Les lignes 30 à 40 ne sont proposées que si `OPT?` annonce `DOUBLER=1`. La
+session JSON mémorise alors le profil `x2`; le firmware et l'outil refusent de
+la fusionner avec une table permanente BASE.
+
 Les trois anciens noms de scripts sont conservés comme raccourcis compatibles,
 mais toute la logique se trouve désormais dans `adret_calibration.py`.
 
@@ -181,7 +207,7 @@ CAL ABORT
 
 `CAL MEAS` reçoit le niveau mesuré, calcule le résidu et l'ajoute à l'overlay.
 `CAL ADJ` ajoute directement une correction manuelle. `CAL SET` est destiné à
-la reprise automatisée d'un journal. `CAL DUMP` retourne les 840 valeurs.
+la reprise automatisée d'un journal. `CAL DUMP` retourne les 1 148 valeurs.
 
 ## Fusion finale dans la Flash
 

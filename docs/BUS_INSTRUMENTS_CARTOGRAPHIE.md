@@ -48,9 +48,9 @@ complet indépendamment des autres.
 
 | Fonction | Domaine pris en charge | Réserve |
 | --- | --- | --- |
-| fréquence standard | 100 kHz à 560 MHz inclus, pas interne de 5 Hz | 560 MHz reste direct O1 sans doubleur |
-| doubleur optionnel | 560 MHz à moins de 1 120 MHz, pas de 10 Hz | option absente du châssis |
-| point A/adresses 0..3 | 90 à 129,999975 MHz, pas de 25 Hz | diviseurs « 20000 » impairs non capturés |
+| fréquence standard | 100 kHz à 560 MHz inclus, résolution de commande 10 Hz | 560 MHz reste direct O1 sans doubleur |
+| doubleur optionnel | 560 MHz à moins de 1 120 MHz, résolution de commande 10 Hz | logique validée hors matériel |
+| point A/adresses 0..3 | 90 à 129,999975 MHz, pas de 25 Hz | diviseurs impairs codés par adresse 0 D3 |
 | diviseur `N` | 28 à 67 | plage complète |
 | niveau | -129,9 à +13,0 dBm | calibration encore nulle |
 | AM | 0 à 99,9 %, pas de 0,1 % | restrictions de niveau à appliquer |

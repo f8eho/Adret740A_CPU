@@ -3,13 +3,13 @@
 #include <stdint.h>
 
 #include "Adret/FrontPanel.h"
+#include "Adret/InstrumentCapabilities.h"
 #include "Adret/InstrumentProgram.h"
 
 namespace adret {
 namespace control {
 
 constexpr uint32_t kFrequencyMinimumHz = 100000u;
-constexpr uint32_t kFrequencyMaximumHz = 560000000u;
 constexpr int16_t kAmplitudeMinimumTenthsDbm = -1299;
 constexpr int16_t kAmplitudeMaximumTenthsDbm = 130;
 // The original specification says 200 kHz, but the demonstrated four-digit
@@ -74,6 +74,9 @@ struct Settings {
 
 Settings defaultSettings();
 bool outputConfigurationIsValid(const OutputConfiguration& configuration);
+bool outputConfigurationIsValidForCapabilities(
+    const OutputConfiguration& configuration,
+    const InstrumentCapabilities& capabilities);
 bool settingsAreValid(const Settings& settings);
 
 class OperatingController final {
@@ -82,7 +85,8 @@ public:
     OperatingController(const OperatingController&) = delete;
     OperatingController& operator=(const OperatingController&) = delete;
 
-    void begin(const Settings& settings);
+    void begin(const Settings& settings,
+               const InstrumentCapabilities& capabilities);
     void handleKey(front_panel::Key key);
     void handleEncoder(const front_panel::EncoderEvent& event);
     void tick(uint32_t nowMs);
@@ -95,6 +99,7 @@ public:
     void clearRemoteError();
 
     const Settings& settings() const;
+    const InstrumentCapabilities& capabilities() const;
 
 private:
     enum class EntryMode : uint8_t {
@@ -150,6 +155,8 @@ private:
     void reportValue(Target target, bool instrumentEvent) const;
 
     uint32_t currentStep() const;
+    uint32_t maximumFrequencyHz() const;
+    uint32_t keyboardIncrementMaximum(Target target) const;
     uint8_t currentStepIndex() const;
     uint8_t currentStepMaximumIndex() const;
     uint8_t displayStepPosition() const;
@@ -159,6 +166,7 @@ private:
     const OutputConfiguration& displayedOutput() const;
 
     Settings settings_ = {};
+    InstrumentCapabilities capabilities_ = {};
     OutputConfiguration pending_ = {};
     OutputConfiguration entryBase_ = {};
     bool pendingActive_ = false;

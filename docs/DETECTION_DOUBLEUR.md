@@ -107,21 +107,37 @@ routine `$C2FC`. Une batterie vide ne suffit donc pas, à elle seule, à déclar
 le doubleur présent. Les dégâts électriques causés par une fuite de batterie
 restent en revanche une cause plausible.
 
-## Conséquence pour la CPU de remplacement
+## CPU de remplacement : déclaration par cavalier
 
-La nouvelle CPU ne doit pas essayer de déduire la présence du doubleur à
-partir du bus instruments. L'option devra être déclarée explicitement dans la
-configuration et rester absente par défaut.
+Le firmware utilise une image unique pour les deux configurations. Arduino
+Mega D4, soit `PG5` sur l'ATmega2560, est configurée en entrée avec pull-up et
+échantillonnée une seule fois, avant le chargement des réglages :
 
-L'encodeur de fréquence sait déjà produire les mots du chemin doubleur. La
-gestion complète à ajouter devra encore :
+| Cavalier D4 | Capacité figée jusqu'au prochain redémarrage |
+| --- | --- |
+| ouvert | doubleur absent, maximum 560 000 000 Hz |
+| relié à `GND_CPU` | doubleur installé, maximum 1 119 999 990 Hz |
 
-1. fournir un réglage persistant et explicite de présence du doubleur ;
-2. adapter la validation de plage entre 560 MHz et 1 120 MHz ;
-3. conserver 560 MHz sur le chemin direct lorsque l'option est désactivée ;
-4. exposer correctement la plage sur le panneau et dans les interfaces de
-   commande ;
-5. valider les commandes et la RF sur un châssis réellement équipé.
+Il ne faut jamais utiliser `GND_INST`, masse du domaine isolé du bus
+instruments. Le cavalier est une déclaration matérielle locale et fiable du
+profil choisi, mais il ne prouve pas électriquement que le module RF est
+effectivement enfiché. Aucun changement en fonctionnement n'est pris en
+compte : il faut redémarrer.
+
+La capacité immuable `InstrumentCapabilities::doublerInstalled` est transmise
+au contrôleur, à la liaison série et au stockage de calibration. En profil X2,
+le chemin direct reste sélectionné sous 560 MHz, puis le firmware utilise
+automatiquement X2/O2 de 560 à moins de 736 MHz et X2/O1 de 736 à moins de
+1 120 MHz. La résolution reste 10 Hz sur toute la plage.
+
+Une configuration active restaurée au-dessus de 560 MHz sans cavalier est
+ramenée à 560 MHz avec RF OFF. Les mémoires haute fréquence sont conservées en
+EEPROM : leur rappel retourne `E-21` sans modifier la sortie et une séquence
+s'arrête sur la mémoire incompatible.
+
+Cette logique est validée par tests hôte seulement. La présence du module, les
+seuils RF, le niveau et les transitoires devront être contrôlés sur un châssis
+réellement équipé.
 
 ## Références du projet
 

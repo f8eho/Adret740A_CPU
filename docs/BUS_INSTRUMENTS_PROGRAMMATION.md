@@ -68,9 +68,9 @@ ne sont jamais filtrées mot par mot : le passage transitoire D7 de l'adresse 11
 et les répétitions de l'adresse 6 conservent ainsi leur ordre historique.
 
 Sur un 740A sans doubleur, 560 MHz exactement reste sur le chemin direct O1.
-Si le doubleur optionnel est explicitement activé dans la configuration du
-compositeur, son plan commence lui aussi à 560 MHz. Le contrôleur actuel
-déclare les options doubleur et impulsions absentes.
+Lorsque le cavalier de capacité déclare le doubleur installé, le contrôleur
+sélectionne automatiquement le chemin direct sous 560 MHz, X2/O2 de 560 à
+moins de 736 MHz, puis X2/O1 de 736 à moins de 1 120 MHz.
 
 ## Inhibition RF
 
@@ -107,7 +107,9 @@ de `PROGMEM` et contrôle :
   mise à jour après erreur ;
 - `RF OFF` et son dernier mot d'adresse 6 ;
 - les champs FM externe et PM externe ;
-- les limites 100 kHz et 560 MHz du modèle sans doubleur.
+- les limites 100 kHz et 560 MHz du modèle sans doubleur ;
+- les seuils X2 560/736 MHz et la limite exclusive de 1 120 MHz ;
+- les diviseurs pairs et impairs nécessaires au pas de sortie de 10 Hz.
 
 Le vecteur de référence à 240 MHz, -35,1 dBm, AM 60 % à 1 kHz commence par :
 
@@ -133,7 +135,7 @@ les mises à jour différentielles de niveau.
 - le code exact de 200 kHz FM reste inconnu ; 199,9 kHz est la plus grande
   valeur effectivement encodée et testée par le modèle. Le contrôleur et la
   liaison série refusent donc provisoirement 200 kHz avec `E-71` ;
-- les diviseurs impairs de la carte « 20000 » restent refusés faute de trace ;
 - les corrections de calibration sont nulles ;
-- les options doubleur et impulsions sont encodables mais désactivées dans le
-  contrôleur de cet appareil.
+- le chemin doubleur est validé par vecteurs et désassemblage, mais pas encore
+  sur un appareil équipé ;
+- l'option impulsions reste déclarée séparément.

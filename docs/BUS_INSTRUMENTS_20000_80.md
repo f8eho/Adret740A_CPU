@@ -29,11 +29,12 @@ point A.
 
 ## Carte « 20000 » : adresses 0, 1 et 2
 
-Toutes les valeurs `M` observées sont paires. Pour le domaine démontré par les
-captures, on définit :
+Les captures disponibles ne contiennent que des valeurs `M` paires. Le code
+de la CPU d'origine permet toutefois de démontrer le codage des valeurs
+impaires. On définit :
 
 ```text
-C = M / 2 - 20 000
+C = plancher(M / 2) - 20 000
 ```
 
 `C` est compris entre 0000 et 9999. Ses quatre chiffres décimaux sont répartis
@@ -41,24 +42,24 @@ de façon inhabituelle sur le bus :
 
 | Adresse | D7..D4 | D3..D0 |
 | --- | --- | --- |
-| 0 | unités de `C` en BCD | `0000` |
+| 0 | unités de `C` en BCD | `0000` si M pair, `1000` si M impair |
 | 1 | centaines de `C` en BCD | dizaines de `C` en BCD |
 | 2 | `0000` | milliers de `C` en BCD |
 
 Les formules d'encodage sont donc :
 
 ```text
-bus[0] = (C % 10) << 4
+bus[0] = ((C % 10) << 4) | (M impair ? 0x08 : 0x00)
 bus[1] = ((C / 100 % 10) << 4) | (C / 10 % 10)
 bus[2] = C / 1000 % 10
 ```
 
 Le schéma de la carte confirme trois registres d'entrée, le décodeur d'adresse
-SN24 et les compteurs/comparateurs du diviseur 40 000 à 59 999. Les captures
-ne contiennent cependant aucun `M` impair. Elles prouvent donc entièrement la
-formule pour les fréquences accessibles dans ces balayages, mais pas le codage
-du pas de 25 Hz intercalé. Le firmware refuse provisoirement ce cas au lieu de
-lui attribuer un bit sans preuve.
+SN24 et les compteurs/comparateurs du diviseur 40 000 à 59 999. Dans la
+routine originale `$E75F`, l'octet de poids faible calculé est lu en `$EACC` :
+si son demi-octet bas BCD vaut `.5`, la CPU ajoute 3 avant d'écrire l'adresse
+0. Le marqueur envoyé est donc `0x8`. Ce chemin, absent des captures, est
+validé par le code EPROM et des vecteurs hôte aux deux bornes impaires.
 
 ## Carte « 80 » : adresse 3
 
@@ -151,9 +152,9 @@ bool makeSmallStepProgram(uint32_t pointAFrequencyHz,
                           SmallStepProgram* program);
 ```
 
-Elle calcule `Q`, `M` et les quatre octets. Elle contrôle la plage du point A,
-le pas de 25 Hz et rejette actuellement `M` impair. Quatre vecteurs issus des
-captures sont aussi vérifiés à la compilation par `static_assert`.
+Elle calcule `Q`, `M` et les quatre octets. Elle contrôle la plage du point A
+et le pas de 25 Hz. Quatre vecteurs issus des captures et deux vecteurs impairs
+issus de l'algorithme EPROM sont vérifiés à la compilation par `static_assert`.
 
 Cette fonction ne décide pas encore de la gamme RF et n'écrit pas le bus. Le
 futur calcul de gamme devra produire `A`, puis le pilote MCP23017 enverra les

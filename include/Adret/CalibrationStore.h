@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 
+#include "Adret/CalibrationEprom.h"
+#include "Adret/InstrumentCapabilities.h"
+
 namespace adret {
 namespace calibration {
 
@@ -21,7 +24,7 @@ public:
     CalibrationStore(const CalibrationStore&) = delete;
     CalibrationStore& operator=(const CalibrationStore&) = delete;
 
-    void begin();
+    void begin(const InstrumentCapabilities& capabilities);
     bool startSession();
     bool commitSession();
     void abortSession();
@@ -45,6 +48,7 @@ public:
 
     uint16_t baseCrc() const;
     uint16_t generation() const;
+    CalibrationProfile profile() const;
 
 private:
     int8_t overlayFromBank(uint8_t bank, uint16_t overlayIndex) const;
@@ -53,11 +57,16 @@ private:
                    uint8_t row,
                    uint8_t step,
                    CalibrationPoint* result) const;
+    bool migrateBank(uint8_t sourceBank,
+                     bool legacy,
+                     uint16_t sourceGeneration,
+                     uint16_t preservedEntries);
 
     uint16_t baseCrc_ = 0u;
     uint16_t generation_ = 0u;
     uint8_t committedBank_ = 0u;
     uint8_t workingBank_ = 0u;
+    CalibrationProfile profile_ = CalibrationProfile::Base;
     bool hasCommittedBank_ = false;
     bool sessionActive_ = false;
 };

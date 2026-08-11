@@ -42,6 +42,7 @@ enum class ReadOnlyQuery : uint8_t {
     Status,
     InstrumentBus,
     Build,
+    Options,
 };
 
 struct FrameResult {
@@ -106,6 +107,7 @@ using MemoryLoader = bool (*)(void* context,
 struct ParseContext {
     MemoryLoader loadMemory;
     void* memoryContext;
+    uint32_t maximumFrequencyHz;
 };
 
 struct ParseResult {

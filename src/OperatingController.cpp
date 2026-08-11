@@ -29,6 +29,7 @@ constexpr uint32_t kSequenceEntryTimeoutMs = 2000u;
 
 constexpr uint32_t kFrequencySteps[] = {
     10u, 100u, 1000u, 10000u, 100000u, 1000000u, 10000000u, 100000000u,
+    1000000000u,
 };
 constexpr uint16_t kAmplitudeSteps[] = {1u, 10u, 100u};
 constexpr uint32_t kFmSteps[] = {10u, 100u, 1000u, 10000u, 100000u};
@@ -78,7 +79,8 @@ instrument_bus::ModulationSource instrumentModulationSource(
 }
 
 instrument_bus::InstrumentConfiguration instrumentConfiguration(
-    const OutputConfiguration& configuration)
+    const OutputConfiguration& configuration,
+    bool doublerInstalled)
 {
     return {
         configuration.frequencyHz,
@@ -89,7 +91,7 @@ instrument_bus::InstrumentConfiguration instrumentConfiguration(
         instrumentModulationKind(configuration.modulationMode),
         instrumentModulationSource(configuration.modulationSource),
         configuration.rfOff,
-        false,
+        doublerInstalled,
         false,
         false,
     };
@@ -208,17 +210,6 @@ constexpr DisplaySpec pmDisplaySpec(uint16_t hundredthsRd)
                        hundredthsRd >= 1000u};
 }
 
-constexpr uint32_t keyboardIncrementMaximum(Target target)
-{
-    return target == Target::Frequency ? kFrequencyMaximumHz
-        : target == Target::Amplitude
-            ? uint32_t(kAmplitudeMaximumTenthsDbm -
-                       kAmplitudeMinimumTenthsDbm)
-        : target == Target::Fm ? kFmMaximumHz
-        : target == Target::Pm ? kPmMaximumHundredthsRd
-        : kAmMaximumTenthsPercent;
-}
-
 #if ADRET_DEBUG_SERIAL
 const __FlashStringHelper* targetName(Target target)
 {
@@ -297,7 +288,7 @@ bool timeReached(uint32_t now, uint32_t deadline)
     return int32_t(now - deadline) >= 0;
 }
 
-static_assert(itemCount(kFrequencySteps) == 8u &&
+static_assert(itemCount(kFrequencySteps) == 9u &&
               itemCount(kAmplitudeSteps) == 3u &&
               itemCount(kFmSteps) == 5u &&
               itemCount(kPmSteps) == 4u &&
@@ -311,7 +302,8 @@ static_assert(exactScaledValue(54321u, 2u, 1000000u) == 543210000u &&
               exactScaledValue(1u, 1u, 1u) == UINT32_MAX,
               "Unexpected exact unit conversion");
 static_assert(frequencySeparatorMask(999999u) == 0x0008u &&
-              frequencySeparatorMask(1000000u) == 0x0048u,
+              frequencySeparatorMask(1000000u) == 0x0048u &&
+              frequencySeparatorMask(1119999990u) == 0x0048u,
               "Unexpected frequency separator threshold");
 static_assert(quantizedFrequencyHz(123456u) == 123450u &&
               quantizedFrequencyHz(123450u) == 123450u,
@@ -319,7 +311,8 @@ static_assert(quantizedFrequencyHz(123456u) == 123450u &&
 static_assert(frequencyLeadingBlankMask(100000u) == 0x03C0u &&
               frequencyLeadingBlankMask(1000000u) == 0x0380u &&
               frequencyLeadingBlankMask(10000000u) == 0x0300u &&
-              frequencyLeadingBlankMask(560000000u) == 0x0200u,
+              frequencyLeadingBlankMask(560000000u) == 0x0200u &&
+              frequencyLeadingBlankMask(1119999990u) == 0x0000u,
               "Unexpected frequency leading-zero mask");
 static_assert(effectiveFmStep(19999u, 0u) == 10u &&
               effectiveFmStep(20000u, 0u) == 100u,
@@ -327,9 +320,8 @@ static_assert(effectiveFmStep(19999u, 0u) == 10u &&
 static_assert(kFmMaximumHz ==
                   instrument_bus::kFmMaximumExactlyEncodedHz,
               "Controller FM limit must remain physically encodable");
-static_assert(keyboardIncrementMaximum(Target::Frequency) == 560000000u &&
-              keyboardIncrementMaximum(Target::Amplitude) == 1429u,
-              "Unexpected keyboard increment limits");
+static_assert(kDoublerMaximumFrequencyHz == 1119999990u,
+              "Unexpected doubler controller limit");
 
 }  // namespace
 
@@ -356,7 +348,8 @@ Settings defaultSettings()
 bool outputConfigurationIsValid(const OutputConfiguration& value)
 {
     return value.frequencyHz >= kFrequencyMinimumHz &&
-           value.frequencyHz <= kFrequencyMaximumHz &&
+           value.frequencyHz <= kDoublerMaximumFrequencyHz &&
+           (value.frequencyHz % kFrequencyResolutionHz) == 0u &&
            value.fmHz <= kFmMaximumHz &&
            value.amplitudeTenthsDbm >= kAmplitudeMinimumTenthsDbm &&
            value.amplitudeTenthsDbm <= kAmplitudeMaximumTenthsDbm &&
@@ -365,6 +358,14 @@ bool outputConfigurationIsValid(const OutputConfiguration& value)
            uint8_t(value.modulationMode) <= uint8_t(ModulationMode::Am) &&
            uint8_t(value.modulationSource) <= uint8_t(ModulationSource::External) &&
            uint8_t(value.amplitudeDisplayUnit) <= uint8_t(AmplitudeDisplayUnit::UV);
+}
+
+bool outputConfigurationIsValidForCapabilities(
+    const OutputConfiguration& value,
+    const InstrumentCapabilities& capabilities)
+{
+    return outputConfigurationIsValid(value) &&
+           value.frequencyHz <= capabilities.maximumFrequencyHz();
 }
 
 bool settingsAreValid(const Settings& value)
@@ -379,11 +380,24 @@ bool settingsAreValid(const Settings& value)
            value.amStepIndex < itemCount(kAmSteps);
 }
 
-void OperatingController::begin(const Settings& settings)
+void OperatingController::begin(
+    const Settings& settings,
+    const InstrumentCapabilities& capabilities)
 {
     appliedInstrumentConfigurationValid_ = false;
     appliedInstrumentCorrectionTenthsDb_ = 0;
+    capabilities_ = capabilities;
     settings_ = settingsAreValid(settings) ? settings : defaultSettings();
+    if (settings_.output.frequencyHz > maximumFrequencyHz()) {
+        settings_.output.frequencyHz = maximumFrequencyHz();
+        settings_.output.rfOff = true;
+    }
+    const uint8_t maximumFrequencyStep = capabilities_.doublerInstalled()
+        ? uint8_t(itemCount(kFrequencySteps) - 1u)
+        : uint8_t(itemCount(kFrequencySteps) - 2u);
+    if (settings_.frequencyStepIndex > maximumFrequencyStep) {
+        settings_.frequencyStepIndex = maximumFrequencyStep;
+    }
     settings_.output.rfOff = true;
     pending_ = settings_.output;
     renderAll();
@@ -427,7 +441,8 @@ void OperatingController::enterRemoteControl()
 void OperatingController::applyRemoteConfiguration(
     const OutputConfiguration& configuration)
 {
-    if (!outputConfigurationIsValid(configuration)) {
+    if (!outputConfigurationIsValidForCapabilities(configuration,
+                                                    capabilities_)) {
         return;
     }
     settings_.output = configuration;
@@ -828,7 +843,7 @@ void OperatingController::handleIncrementStep(bool increase)
         const uint32_t previous = output.frequencyHz;
         output.frequencyHz = clampUnsignedStep(previous, direction, step,
                                                 kFrequencyMinimumHz,
-                                                kFrequencyMaximumHz);
+                                                maximumFrequencyHz());
         changed = previous != output.frequencyHz;
         if (pendingActive_) {
             pending_.frequencyHz = output.frequencyHz;
@@ -1022,8 +1037,9 @@ void OperatingController::finishRecallCommand()
                                   (entryDigits_[1] - '0'));
     entryMode_ = EntryMode::None;
     frontPanel.turnOff(PanelIndicator::Memory);
+    OutputConfiguration recalled = {};
     if (index >= SettingsStore::kMemoryCount ||
-        !settingsStore.loadMemory(index, &pending_)) {
+        !settingsStore.loadMemory(index, &recalled)) {
         char text[4] = {'E', entryDigits_[0], entryDigits_[1], '\0'};
         frontPanel.turnOn(PanelIndicator::Error);
         renderMessage(text, kOverlayDurationMs);
@@ -1033,6 +1049,16 @@ void OperatingController::finishRecallCommand()
 #endif
         return;
     }
+    if (!outputConfigurationIsValidForCapabilities(recalled, capabilities_)) {
+        frontPanel.turnOn(PanelIndicator::Error);
+        failEntry("E-21");
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("ERROR memory_frequency_unavailable="));
+        Serial.println(index);
+#endif
+        return;
+    }
+    pending_ = recalled;
     pendingActive_ = true;
     recalledPending_ = true;
     entryLocked_ = true;
@@ -1102,6 +1128,18 @@ void OperatingController::stepSequence(bool restart)
         renderMessage(text, kOverlayDurationMs);
 #if ADRET_DEBUG_SERIAL
         Serial.print(F("ERROR memory_empty="));
+        Serial.println(next);
+#endif
+        return;
+    }
+    if (!outputConfigurationIsValidForCapabilities(configuration,
+                                                   capabilities_)) {
+        sequenceActive_ = false;
+        sequenceCursorValid_ = false;
+        frontPanel.turnOn(PanelIndicator::Error);
+        renderMessage("E-21", kOverlayDurationMs);
+#if ADRET_DEBUG_SERIAL
+        Serial.print(F("ERROR sequence_frequency_unavailable="));
         Serial.println(next);
 #endif
         return;
@@ -1189,7 +1227,7 @@ bool OperatingController::commitNumericEntry(Key unitKey, const char** errorCode
         value = quantizedFrequencyHz(value);
         completedEntryValue_ = value;
         completedEntryIncrementCompatible_ = true;
-        if (value > kFrequencyMaximumHz) {
+        if (value > maximumFrequencyHz()) {
             *errorCode = "E-21";
             return false;
         }
@@ -1465,7 +1503,8 @@ void OperatingController::reportInstrumentTransaction(
         configuration.amplitudeTenthsDbm,
         &correctionTenthsDb);
     const instrument_bus::InstrumentConfiguration requestedConfiguration =
-        instrumentConfiguration(configuration);
+        instrumentConfiguration(configuration,
+                                capabilities_.doublerInstalled());
     instrument_bus::InstrumentProgramSections sections =
         instrument_bus::requiredInstrumentProgramSections(
             appliedInstrumentConfigurationValid_
@@ -1606,7 +1645,7 @@ void OperatingController::handleEncoder(const front_panel::EncoderEvent& event)
         const uint32_t previous = output.frequencyHz;
         output.frequencyHz = clampUnsignedStep(previous, event.step, currentStep(),
                                                 kFrequencyMinimumHz,
-                                                kFrequencyMaximumHz);
+                                                maximumFrequencyHz());
         changed = previous != output.frequencyHz;
         break;
     }
@@ -1687,6 +1726,11 @@ void OperatingController::tick(uint32_t nowMs)
 const Settings& OperatingController::settings() const
 {
     return settings_;
+}
+
+const InstrumentCapabilities& OperatingController::capabilities() const
+{
+    return capabilities_;
 }
 
 void OperatingController::selectTarget(Target target)
@@ -1996,6 +2040,22 @@ uint32_t OperatingController::currentStep() const
     return 1u;
 }
 
+uint32_t OperatingController::maximumFrequencyHz() const
+{
+    return capabilities_.maximumFrequencyHz();
+}
+
+uint32_t OperatingController::keyboardIncrementMaximum(Target target) const
+{
+    return target == Target::Frequency ? maximumFrequencyHz()
+        : target == Target::Amplitude
+            ? uint32_t(kAmplitudeMaximumTenthsDbm -
+                       kAmplitudeMinimumTenthsDbm)
+        : target == Target::Fm ? kFmMaximumHz
+        : target == Target::Pm ? kPmMaximumHundredthsRd
+        : kAmMaximumTenthsPercent;
+}
+
 uint8_t OperatingController::currentStepIndex() const
 {
     switch (settings_.wheelTarget) {
@@ -2011,7 +2071,10 @@ uint8_t OperatingController::currentStepIndex() const
 uint8_t OperatingController::currentStepMaximumIndex() const
 {
     switch (settings_.wheelTarget) {
-    case Target::Frequency: return uint8_t(itemCount(kFrequencySteps) - 1u);
+    case Target::Frequency:
+        return capabilities_.doublerInstalled()
+            ? uint8_t(itemCount(kFrequencySteps) - 1u)
+            : uint8_t(itemCount(kFrequencySteps) - 2u);
     case Target::Amplitude: return uint8_t(itemCount(kAmplitudeSteps) - 1u);
     case Target::Fm: return uint8_t(itemCount(kFmSteps) - 1u);
     case Target::Pm: return uint8_t(itemCount(kPmSteps) - 1u);

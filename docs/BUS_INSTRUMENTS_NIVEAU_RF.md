@@ -309,7 +309,7 @@ Le mode série `CAL` et l'assistant Python manuel permettent maintenant de :
 5. appliquer immédiatement le résultat et demander une mesure de contrôle ;
 6. conserver un journal JSON permettant la reprise et la génération C++.
 
-Deux banques EEPROM compactes de 840 corrections permettent une validation
+Deux banques EEPROM compactes de 1 148 corrections permettent une validation
 transactionnelle. `CAL ABORT`, `Adr RTL` ou un redémarrage rejettent la banque
 de travail et conservent la dernière calibration validée. La configuration RF
 présente au début est restaurée lors de `CAL ABORT` et de `CAL END`.
@@ -327,6 +327,22 @@ La procédure détaillée et les commandes sont dans
 ## Limites restantes
 
 - la table Flash livrée par défaut vaut entièrement zéro ;
-- la procédure complète de 840 points reste à exécuter et valider au banc ;
+- la procédure complète de 1 148 points reste à exécuter et valider au banc ;
 - les avertissements AM sous 1,5 MHz et à partir de +7 dBm restent à confirmer
   au banc.
+
+## Performances annoncées avec le doubleur
+
+La plage de commande de niveau reste −129,9 à +13,0 dBm avec ou sans
+doubleur. En revanche, les documents constructeur annoncent au-dessus de
+560 MHz une précision de niveau dégradée, typiquement de l'ordre de ±2 dB et
+jusqu'à ±2,5 dB selon la fiche et certaines plages de faibles niveaux. Ils
+signalent aussi des performances moins favorables pour les harmoniques,
+sous-harmoniques, parasites, bruit de phase et distorsion FM.
+
+Ces valeurs décrivent la chaîne RF et non un domaine de commande différent.
+Le firmware ne réduit donc ni la plage de niveau ni les combinaisons de
+modulation et ne crée pas de voyant d'erreur supplémentaire. Le profil X2 de
+calibration reste neutre tant qu'une table compatible n'a pas été importée ou
+mesurée. Les performances réelles devront être caractérisées sur un appareil
+équipé du doubleur.

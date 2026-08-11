@@ -72,6 +72,15 @@ constexpr uint8_t kPowerSenseInterruptFlag = _BV(INTF5);
 constexpr uint8_t kPowerSenseSenseBit0 = ISC50;
 constexpr uint8_t kPowerSenseSenseBit1 = ISC51;
 
+// Passive option declaration on Arduino Mega D4 / ATmega2560 PG5. The input
+// uses the AVR pull-up: an open jumper declares the doubler absent, while a
+// short to GND_CPU declares it installed. Never connect this pin to GND_INST,
+// which belongs to the isolated instrument-bus domain.
+#define ADRET_DOUBLER_JUMPER_DDR DDRG
+#define ADRET_DOUBLER_JUMPER_PORT PORTG
+#define ADRET_DOUBLER_JUMPER_PIN PING
+constexpr uint8_t kDoublerJumperBit = PG5;
+
 // Instrument bus through ISO1540 + MCP23017. The ATmega2560 hardware I2C pins
 // are Mega D20/SDA (PD1) and D21/SCL (PD0); neither is shared with Serial0.
 // MCP23017 A2..A0 are expected low. GPIOA carries D7..D0, GPIOB3..B0 the

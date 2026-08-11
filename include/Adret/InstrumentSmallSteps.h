@@ -14,10 +14,10 @@ struct SmallStepProgram {
     uint8_t dataByAddress[4];
 };
 
-// Builds the four bus words from a point-A frequency. The currently validated
-// domain is 90 MHz through 129.999975 MHz in 25 Hz steps, with an even
-// divisor20000. Odd divisors were not exercised by the available traces and
-// are deliberately rejected.
+// Builds the four bus words from a point-A frequency. The domain is 90 MHz
+// through 129.999975 MHz in 25 Hz steps. An odd divisor20000 uses the original
+// CPU's half-step marker on address 0; this is required for 10 Hz output steps
+// through the optional frequency doubler.
 bool makeSmallStepProgram(uint32_t pointAFrequencyHz, SmallStepProgram* program);
 
 }  // namespace instrument_bus

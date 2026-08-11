@@ -76,7 +76,8 @@ position du défilement dure 320 ms.
 
 | Paramètre | Limites | Pas disponibles |
 | --- | --- | --- |
-| fréquence | 100 kHz à 560 MHz | 10 Hz à 100 MHz par décades |
+| fréquence sans doubleur | 100 kHz à 560 MHz | 10 Hz à 100 MHz par décades |
+| fréquence avec doubleur | 100 kHz à 1 119 999 990 Hz | 10 Hz à 1 GHz par décades |
 | amplitude | -129,9 à +13,0 dBm | 0,1 / 1 / 10 dB |
 | AM | 0 à 99,9 % | 0,1 / 1 / 10 % |
 | PM | 0 à 19,99 rd | 0,01 / 0,1 / 1 / 10 rd |

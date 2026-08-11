@@ -52,7 +52,7 @@ anciennes traces libres.
   la forme du chiffre ASCII `0`.
 - Plusieurs commandes de réglage peuvent être regroupées dans un même
   message, dans l'ordre où elles doivent être préparées.
-- `STB?`, `IB?` et `BUILD?` doivent être transmis seuls. Une transaction ne
+- `STB?`, `IB?`, `BUILD?` et `OPT?` doivent être transmis seuls. Une transaction ne
   peut contenir qu'une seule commande `M nn`, obligatoirement en dernière
   position ; les réglages
   placés avant `M` sont appliqués et mémorisés ensemble.
@@ -112,8 +112,9 @@ Toutes les réponses se terminent par `CR LF` :
 | `STB n\r\n` | résultat de `STB?`, avec `n` compris entre 0 et 255 |
 | `IB ...\r\n` | état détaillé du bus instruments demandé par `IB?` |
 | `BUILD NUMBER=n COMPILED=date heure\r\n` | identification du firmware demandée par `BUILD?` |
+| `OPT DOUBLER=n MAX_HZ=n STEP_HZ=10\r\n` | capacité figée au démarrage demandée par `OPT?` |
 
-Une commande de lecture telle que `STB?`, `IB?` ou `BUILD?` produit uniquement
+Une commande de lecture telle que `STB?`, `IB?`, `BUILD?` ou `OPT?` produit uniquement
 sa réponse de données ; elle n'est pas suivie d'un `OK`.
 
 Lorsqu'une erreur demande l'attention du contrôleur, le 740A émet d'abord le
@@ -141,6 +142,7 @@ sont acceptées dans tous les modes et sont insensibles à la casse.
 | `STB?` | lit l'octet d'état et acquitte la demande `SRQ` |
 | `IB?` | lit l'état, les défauts et les compteurs du bus instruments |
 | `BUILD?` | lit le numéro et l'horodatage de compilation du firmware |
+| `OPT?` | lit la présence déclarée du doubleur, la fréquence maximale et la résolution |
 
 Le numéro de build suit le format décimal `AAAAMMJJRR`, où `RR` est la
 révision du firmware pour la journée. Par exemple :
@@ -191,7 +193,7 @@ applicables.
 
 | Fonction | Syntaxe | Unité transmise | Domaine |
 | --- | --- | --- | --- |
-| Fréquence RF | `F valeur` | Hz | 100 kHz à 560 MHz |
+| Fréquence RF | `F valeur` | Hz | 100 kHz à `MAX_HZ` annoncé par `OPT?` |
 | Niveau RF | `A valeur` | dBm | -129,9 à +13,0 dBm |
 | Sortie RF | `RF 0` ou `RF 1` | aucune | 0 = inhibée, 1 = validée |
 | Mode AM | `AM mode` | aucune | mode 0 à 3 |
@@ -208,10 +210,11 @@ applicables.
 
 ### Fréquence RF
 
-`F` est suivi de la fréquence exprimée en hertz. La plage valide est de
-100 000 Hz à 560 000 000 Hz inclus. La résolution effective est de 10 Hz ;
-une valeur exigeant une résolution supérieure est arrondie vers le bas à la
-dizaine de hertz.
+`F` est suivi de la fréquence exprimée en hertz. La plage commence à
+100 000 Hz. Elle se termine à 560 000 000 Hz sans doubleur ou à
+1 119 999 990 Hz avec doubleur ; 1 120 000 000 Hz est toujours exclu. La
+résolution effective reste de 10 Hz dans les deux profils et une valeur plus
+fine est arrondie vers le bas à la dizaine de hertz.
 
 ```text
 F 118e6
@@ -303,6 +306,11 @@ numéros doivent toujours comporter deux chiffres ; `M 1` n'est pas valide.
 Le rappel d'une mémoire vide est rejeté. Il allume le voyant d'erreur et
 produit `ERR E-00`, le numéro concerné restant visible sur l'afficheur comme
 sur l'instrument d'origine.
+
+Une mémoire structurellement valide au-dessus de 560 MHz reste conservée si
+le firmware redémarre sans cavalier X2. Son rappel est alors rejeté par
+`ERR E-21` sans modifier la sortie. Une séquence s'arrête dès qu'elle atteint
+une telle mémoire.
 
 ### Séquences
 

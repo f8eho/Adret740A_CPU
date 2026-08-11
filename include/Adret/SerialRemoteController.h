@@ -4,6 +4,7 @@
 
 #include "Adret/CalibrationStore.h"
 #include "Adret/FrontPanel.h"
+#include "Adret/InstrumentCapabilities.h"
 #include "Adret/SerialCommandParser.h"
 
 namespace adret {
@@ -14,7 +15,7 @@ public:
     SerialRemoteController(const SerialRemoteController&) = delete;
     SerialRemoteController& operator=(const SerialRemoteController&) = delete;
 
-    void begin();
+    void begin(const InstrumentCapabilities& capabilities);
     void poll();
     bool handlePanelKey(front_panel::Key key);
     bool localControlsEnabled() const;
@@ -35,6 +36,7 @@ private:
     void sendStatus();
     void sendInstrumentBusStatus();
     void sendBuildInfo();
+    void sendOptions();
     uint8_t statusByte() const;
     void setRemoteIndicator();
 
@@ -51,6 +53,7 @@ private:
     serial_protocol::ErrorCode lastError_ = serial_protocol::ErrorCode::E00;
     control::OutputConfiguration calibrationInitialOutput_ = {};
     bool calibrationActive_ = false;
+    InstrumentCapabilities capabilities_ = {};
 };
 
 extern SerialRemoteController serialRemoteController;

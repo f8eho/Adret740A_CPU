@@ -64,9 +64,12 @@ bool loadMemory(void* context,
 ParseResult parse(const char* text,
                   const Transaction& base,
                   FakeMemories* memories,
-                  ExecutionMarker marker = ExecutionMarker::LineEnding)
+                  ExecutionMarker marker = ExecutionMarker::LineEnding,
+                  uint32_t maximumFrequencyHz =
+                      adret::kBaseMaximumFrequencyHz)
 {
-    const ParseContext context = {&loadMemory, memories};
+    const ParseContext context = {
+        &loadMemory, memories, maximumFrequencyHz};
     return adret::serial_protocol::parseCommand(
         text, uint8_t(strlen(text)), marker, base, context);
 }
@@ -179,6 +182,32 @@ void testErrorsAndAtomicBase(FakeMemories* memories)
 
     result = parse("F118e6", localBase(), memories);
     CHECK(result.error == ErrorCode::E00);
+}
+
+void testDoublerFrequencyRange(FakeMemories* memories)
+{
+    ParseResult result = parse(
+        "F1119999990", remoteBase(), memories,
+        ExecutionMarker::LineEnding, adret::kDoublerMaximumFrequencyHz);
+    CHECK(result.error == ErrorCode::None);
+    CHECK(result.transaction.output.frequencyHz == 1119999990u);
+
+    result = parse("F1120000000", remoteBase(), memories,
+                   ExecutionMarker::LineEnding,
+                   adret::kDoublerMaximumFrequencyHz);
+    CHECK(result.error == ErrorCode::E21);
+
+    memories->values[7] = defaultOutput();
+    memories->values[7].frequencyHz = 800000000u;
+    memories->valid[7] = true;
+    result = parse("RM07", remoteBase(), memories);
+    CHECK(result.error == ErrorCode::E21);
+    CHECK(result.memoryErrorIndex == 7);
+    result = parse("RM07", remoteBase(), memories,
+                   ExecutionMarker::LineEnding,
+                   adret::kDoublerMaximumFrequencyHz);
+    CHECK(result.error == ErrorCode::None);
+    CHECK(result.transaction.output.frequencyHz == 800000000u);
 }
 
 void testMemoriesAndSequences(FakeMemories* memories)
@@ -326,6 +355,11 @@ void testReadOnlyQueries()
     CHECK(adret::serial_protocol::readOnlyQuery(build) ==
           ReadOnlyQuery::Build);
 
+    const FrameResult options = {
+        FrameEvent::Execute, ExecutionMarker::QuestionMark, "opt", 3u};
+    CHECK(adret::serial_protocol::readOnlyQuery(options) ==
+          ReadOnlyQuery::Options);
+
     const FrameResult wrongMarker = {
         FrameEvent::Execute, ExecutionMarker::LineEnding, "BUILD", 5u};
     CHECK(adret::serial_protocol::readOnlyQuery(wrongMarker) ==
@@ -358,6 +392,7 @@ int main()
     testModeAndGroupedConfiguration(&memories);
     testScalingAndModes(&memories);
     testErrorsAndAtomicBase(&memories);
+    testDoublerFrequencyRange(&memories);
     testMemoriesAndSequences(&memories);
     testStatusAndDeferredMerge(&memories);
     testFraming();

@@ -16,6 +16,10 @@ const int8_t
 static_assert(sizeof(adretCalibrationCorrectionTable) == kCorrectionTableSize,
               "Calibration table must reserve exactly one 2716 image");
 
+constexpr CalibrationProfile kPermanentTableProfile =
+#include "CalibrationProfile.inc"
+;
+
 int8_t readCorrection(uint16_t index)
 {
     if (index >= kCorrectionTableSize) {
@@ -24,10 +28,15 @@ int8_t readCorrection(uint16_t index)
     return int8_t(pgm_read_byte(&adretCalibrationCorrectionTable[index]));
 }
 
+CalibrationProfile permanentTableProfile()
+{
+    return kPermanentTableProfile;
+}
+
 bool frequencyRow(uint32_t frequencyHz, uint8_t* row)
 {
     if (row == nullptr || frequencyHz < 100000u ||
-        frequencyHz > 560000000u) {
+        frequencyHz >= 1120000000u) {
         return false;
     }
 
@@ -40,7 +49,7 @@ bool frequencyRow(uint32_t frequencyHz, uint8_t* row)
         const uint32_t tensMHz = frequencyHz / 10000000u;
         selected = 18u + (tensMHz - 1u) / 5u;
     }
-    if (selected >= kStandardFrequencyRowCount) {
+    if (selected >= kCalibrationFrequencyRowCount) {
         return false;
     }
     *row = uint8_t(selected);

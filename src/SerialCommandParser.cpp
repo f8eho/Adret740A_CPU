@@ -273,7 +273,9 @@ control::ModulationSource sourceForMode(uint8_t mode)
                      : control::ModulationSource::Hz400;
 }
 
-ErrorCode parseFrequency(Cursor* cursor, Transaction* transaction)
+ErrorCode parseFrequency(Cursor* cursor,
+                         uint32_t maximumFrequencyHz,
+                         Transaction* transaction)
 {
     DecimalNumber number = {};
     uint32_t value = 0u;
@@ -284,7 +286,7 @@ ErrorCode parseFrequency(Cursor* cursor, Transaction* transaction)
     if (scaled == ScaleResult::Negative) {
         return ErrorCode::E22;
     }
-    if (scaled != ScaleResult::Ok || value > control::kFrequencyMaximumHz) {
+    if (scaled != ScaleResult::Ok || value > maximumFrequencyHz) {
         return ErrorCode::E21;
     }
     value -= value % 10u;
@@ -423,6 +425,9 @@ ReadOnlyQuery readOnlyQuery(const FrameResult& frame)
     }
     if (exactQueryMatches(frame, "BUILD", 5u)) {
         return ReadOnlyQuery::Build;
+    }
+    if (exactQueryMatches(frame, "OPT", 3u)) {
+        return ReadOnlyQuery::Options;
     }
     return ReadOnlyQuery::None;
 }
@@ -591,6 +596,12 @@ ParseResult parseCommand(const char* text,
                 result.memoryErrorIndex = int8_t(index);
                 return result;
             }
+            if (result.transaction.output.frequencyHz >
+                context.maximumFrequencyHz) {
+                result.error = ErrorCode::E21;
+                result.memoryErrorIndex = int8_t(index);
+                return result;
+            }
             result.transaction.outputChanged = true;
             result.transaction.hasSettingCommand = true;
             continue;
@@ -678,7 +689,9 @@ ParseResult parseCommand(const char* text,
             continue;
         }
         if (matchMnemonic(&cursor, "F")) {
-            result.error = parseFrequency(&cursor, &result.transaction);
+            result.error = parseFrequency(&cursor,
+                                          context.maximumFrequencyHz,
+                                          &result.transaction);
         } else if (matchMnemonic(&cursor, "A")) {
             result.error = parseAmplitude(&cursor, &result.transaction);
         } else if (matchMnemonic(&cursor, "D")) {

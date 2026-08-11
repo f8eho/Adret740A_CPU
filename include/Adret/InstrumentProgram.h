@@ -52,7 +52,7 @@ struct InstrumentConfiguration {
     ModulationKind modulationKind;
     ModulationSource modulationSource;
     bool rfOff;
-    bool doublerEnabled;
+    bool doublerInstalled;
     bool pulseEnabled;
     bool pulseOptionInstalled;
 };

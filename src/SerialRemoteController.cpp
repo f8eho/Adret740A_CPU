@@ -159,9 +159,11 @@ void printTenthsDb(int16_t value)
 
 SerialRemoteController serialRemoteController;
 
-void SerialRemoteController::begin()
+void SerialRemoteController::begin(
+    const InstrumentCapabilities& capabilities)
 {
 #if ADRET_REMOTE_SERIAL
+    capabilities_ = capabilities;
     Serial.begin(115200);
     framer_.reset();
     clearStaged();
@@ -171,6 +173,8 @@ void SerialRemoteController::begin()
     lastError_ = serial_protocol::ErrorCode::E00;
     calibrationActive_ = false;
     setRemoteIndicator();
+#else
+    (void)capabilities;
 #endif
 }
 
@@ -258,12 +262,16 @@ void SerialRemoteController::processRecord(
         case serial_protocol::ReadOnlyQuery::Build:
             sendBuildInfo();
             return;
+        case serial_protocol::ReadOnlyQuery::Options:
+            sendOptions();
+            return;
         case serial_protocol::ReadOnlyQuery::None:
             break;
     }
 
     const serial_protocol::ParseContext context = {
-        &SerialRemoteController::loadMemory, this};
+        &SerialRemoteController::loadMemory, this,
+        capabilities_.maximumFrequencyHz()};
     const serial_protocol::Transaction actual =
         serial_protocol::initialTransaction(
             control::operatingController.settings().output, remoteState_);
@@ -512,7 +520,7 @@ bool SerialRemoteController::processCalibrationRecord(
         if (!calibrationActive_) {
             Serial.print(F("CAL ERROR NOT_ACTIVE\r\n"));
         } else if (!parseUnsigned(frame.text, frame.length, &position,
-                                  calibration::kStandardFrequencyRowCount - 1u,
+                                  calibration::kCalibrationFrequencyRowCount - 1u,
                                   &row) ||
                    !parseUnsigned(frame.text, frame.length, &position,
                                   calibration::kAttenuatorStepCount - 1u,
@@ -538,7 +546,7 @@ bool SerialRemoteController::processCalibrationRecord(
         Serial.print(calibration::calibrationStore.generation());
         Serial.print(F("\r\n"));
         for (uint8_t row = 0u;
-             row < calibration::kStandardFrequencyRowCount; ++row) {
+             row < calibration::kCalibrationFrequencyRowCount; ++row) {
             for (uint8_t step = 0u;
                  step < calibration::kAttenuatorStepCount; ++step) {
                 const uint16_t index =
@@ -699,6 +707,19 @@ void SerialRemoteController::sendBuildInfo()
     Serial.print(F("BUILD NUMBER="));
     Serial.print(build_info::kBuildNumber);
     Serial.print(F(" COMPILED=" __DATE__ " " __TIME__ "\r\n"));
+#endif
+}
+
+void SerialRemoteController::sendOptions()
+{
+#if ADRET_REMOTE_SERIAL
+    Serial.print(F("OPT DOUBLER="));
+    Serial.print(capabilities_.doublerInstalled() ? 1 : 0);
+    Serial.print(F(" MAX_HZ="));
+    Serial.print(capabilities_.maximumFrequencyHz());
+    Serial.print(F(" STEP_HZ="));
+    Serial.print(kFrequencyResolutionHz);
+    Serial.print(F("\r\n"));
 #endif
 }
 

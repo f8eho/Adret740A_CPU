@@ -69,7 +69,7 @@ bool frequencyInputsDiffer(const InstrumentConfiguration& previous,
                            const InstrumentConfiguration& configuration)
 {
     return previous.frequencyHz != configuration.frequencyHz ||
-           previous.doublerEnabled != configuration.doublerEnabled ||
+           previous.doublerInstalled != configuration.doublerInstalled ||
            previous.pulseEnabled != configuration.pulseEnabled ||
            previous.pulseOptionInstalled != configuration.pulseOptionInstalled;
 }
@@ -187,7 +187,9 @@ InstrumentProgramResult makeInstrumentProgramForSections(
     }
 
     FrequencyPlan frequency = {};
-    const bool frequencyValid = configuration.doublerEnabled
+    const bool useDoubler = configuration.doublerInstalled &&
+                            configuration.frequencyHz >= 560000000u;
+    const bool frequencyValid = useDoubler
         ? makeDoublerFrequencyPlan(configuration.frequencyHz, &frequency)
         : makeBaseFrequencyPlan(configuration.frequencyHz, &frequency);
     if (!frequencyValid) {

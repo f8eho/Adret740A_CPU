@@ -3,12 +3,29 @@
 #include <stdio.h>
 
 #include "Adret/CalibrationEprom.h"
+#include "Adret/InstrumentCapabilities.h"
 #include "Adret/InstrumentAmplitude.h"
 #include "Adret/InstrumentProgram.h"
 
 namespace {
 
 using namespace adret::instrument_bus;
+
+void testDoublerCapabilitySnapshot()
+{
+    bool simulatedInputIsHigh = true;
+    const adret::InstrumentCapabilities startup =
+        adret::capabilitiesFromDoublerJumperLevel(simulatedInputIsHigh);
+    simulatedInputIsHigh = false;
+    assert(!startup.doublerInstalled());
+    assert(startup.maximumFrequencyHz() == adret::kBaseMaximumFrequencyHz);
+
+    const adret::InstrumentCapabilities afterRestart =
+        adret::capabilitiesFromDoublerJumperLevel(simulatedInputIsHigh);
+    assert(afterRestart.doublerInstalled());
+    assert(afterRestart.maximumFrequencyHz() ==
+           adret::kDoublerMaximumFrequencyHz);
+}
 
 InstrumentConfiguration baseConfiguration()
 {
@@ -42,8 +59,14 @@ InstrumentProgram makeProgram(const InstrumentConfiguration& configuration)
     uint8_t registers[kInstrumentRegisterCount] = {};
     makeInitialInstrumentRegisters(registers);
     InstrumentProgram program = {};
-    assert(makeInstrumentProgram(configuration, 0, registers, &program) ==
-           InstrumentProgramResult::Ok);
+    const InstrumentProgramResult result =
+        makeInstrumentProgram(configuration, 0, registers, &program);
+    if (result != InstrumentProgramResult::Ok) {
+        fprintf(stderr, "program failed frequency=%lu result=%u\n",
+                static_cast<unsigned long>(configuration.frequencyHz),
+                unsigned(result));
+    }
+    assert(result == InstrumentProgramResult::Ok);
     return program;
 }
 
@@ -276,6 +299,79 @@ void testStandardFrequencyEndpoints()
     expectWrite(program, 9u, 3u, 0x9Eu);
 }
 
+void testDoublerFrequencyEndpoints()
+{
+    InstrumentConfiguration configuration = baseConfiguration();
+    configuration.doublerInstalled = true;
+
+    configuration.frequencyHz = 559999990u;
+    InstrumentProgram program = makeProgram(configuration);
+    expectWrite(program, 2u, 5u, 0x09u);
+
+    configuration.frequencyHz = 560000000u;
+    program = makeProgram(configuration);
+    expectWrite(program, 2u, 5u, 0x10u);
+    assert((program.finalRegisters[12] & kAddress12RangeMask) == 0x02u);
+
+    configuration.frequencyHz = 735999990u;
+    program = makeProgram(configuration);
+    expectWrite(program, 2u, 5u, 0x10u);
+
+    configuration.frequencyHz = 736000000u;
+    program = makeProgram(configuration);
+    expectWrite(program, 2u, 5u, 0x11u);
+
+    configuration.frequencyHz = 1119999990u;
+    program = makeProgram(configuration);
+    expectWrite(program, 2u, 5u, 0x11u);
+
+    configuration.pulseOptionInstalled = true;
+    configuration.pulseEnabled = true;
+    program = makeProgram(configuration);
+    expectWrite(program, 2u, 5u, 0x31u);
+
+    configuration.frequencyHz = 1120000000u;
+    uint8_t registers[kInstrumentRegisterCount] = {};
+    makeInitialInstrumentRegisters(registers);
+    assert(makeInstrumentProgram(configuration, 0, registers, &program) ==
+           InstrumentProgramResult::InvalidFrequency);
+
+    configuration = baseConfiguration();
+    configuration.frequencyHz = 560000010u;
+    assert(makeInstrumentProgram(configuration, 0, registers, &program) ==
+           InstrumentProgramResult::InvalidFrequency);
+}
+
+void testDoublerModulationAndLevelDomains()
+{
+    InstrumentConfiguration configuration = baseConfiguration();
+    configuration.doublerInstalled = true;
+    configuration.frequencyHz = 800000010u;
+
+    configuration.modulationKind = ModulationKind::Am;
+    configuration.amplitudeTenthsDbm = -1299;
+    (void)makeProgram(configuration);
+    configuration.amplitudeTenthsDbm = 130;
+    (void)makeProgram(configuration);
+
+    configuration.modulationKind = ModulationKind::Fm;
+    (void)makeProgram(configuration);
+    configuration.modulationKind = ModulationKind::Pm;
+    (void)makeProgram(configuration);
+
+    configuration.modulationKind = ModulationKind::Am;
+    configuration.pulseOptionInstalled = true;
+    configuration.pulseEnabled = true;
+    (void)makeProgram(configuration);
+
+    configuration.modulationKind = ModulationKind::Fm;
+    uint8_t registers[kInstrumentRegisterCount] = {};
+    makeInitialInstrumentRegisters(registers);
+    InstrumentProgram program = {};
+    assert(makeInstrumentProgram(configuration, 0, registers, &program) ==
+           InstrumentProgramResult::InvalidPulseState);
+}
+
 void testOriginalPlus5DbControlPolarity()
 {
     constexpr uint8_t kNoRelays = 0x3Fu;
@@ -335,8 +431,13 @@ void testCalibrationGrid()
     assert(frequencyRow(60000000u, &row) && row == 19u);
     assert(frequencyRow(559999999u, &row) && row == 28u);
     assert(frequencyRow(560000000u, &row) && row == 29u);
+    assert(frequencyRow(609999999u, &row) && row == 29u);
+    assert(frequencyRow(610000000u, &row) && row == 30u);
+    assert(frequencyRow(1109999999u, &row) && row == 39u);
+    assert(frequencyRow(1110000000u, &row) && row == 40u);
+    assert(frequencyRow(1119999990u, &row) && row == 40u);
     assert(!frequencyRow(99999u, &row));
-    assert(!frequencyRow(560000001u, &row));
+    assert(!frequencyRow(1120000000u, &row));
 
     uint8_t step = 0u;
     assert(attenuatorStep(130, &step) && step == 0u);
@@ -361,7 +462,8 @@ void testCalibrationGrid()
     assert(overlayIndex == 29u * 28u);
     assert(baseTableCrc16() == 0xC584u);
 
-    for (uint8_t expectedRow = 0u; expectedRow < 30u; ++expectedRow) {
+    for (uint8_t expectedRow = 0u;
+         expectedRow < kCalibrationFrequencyRowCount; ++expectedRow) {
         const uint32_t frequency = expectedRow < 9u
             ? uint32_t(expectedRow + 1u) * 100000u + 50000u
             : expectedRow < 18u
@@ -369,7 +471,13 @@ void testCalibrationGrid()
                 : expectedRow < 29u
                     ? 10000000u + uint32_t(expectedRow - 18u) * 50000000u +
                           25000000u
-                    : 560000000u;
+                    : expectedRow == 29u
+                        ? 585000000u
+                        : expectedRow < 40u
+                            ? 610000000u +
+                                  uint32_t(expectedRow - 30u) * 50000000u +
+                                  25000000u
+                            : 1115000000u;
         for (uint8_t expectedStep = 0u; expectedStep < 28u; ++expectedStep) {
             const int16_t amplitude = expectedStep == 0u
                 ? 100
@@ -388,6 +496,7 @@ void testCalibrationGrid()
 
 int main()
 {
+    testDoublerCapabilitySnapshot();
     test240MHzAmProgram();
     testRfOffClearsOnlyRelayBits();
     testDifferentialSections();
@@ -396,6 +505,8 @@ int main()
     testFmAndPmFields();
     testFmDemonstratedEndpoint();
     testStandardFrequencyEndpoints();
+    testDoublerFrequencyEndpoints();
+    testDoublerModulationAndLevelDomains();
     testOriginalPlus5DbControlPolarity();
     testHighLevelFineControlRemainsContinuous();
     testCalibrationGrid();

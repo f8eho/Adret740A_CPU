@@ -7,6 +7,17 @@ Items explicitly listed under remaining validation are still provisional.
 
 - Arduino Serial0 pins D0/D1 are left free for external communication.
 
+## Frequency-Doubler Declaration
+
+- Arduino Mega D4, ATmega2560 PG5, is reserved for a passive configuration
+  jumper sampled once during startup.
+- The AVR input uses its internal pull-up: open means the doubler is absent;
+  shorting D4 to `GND_CPU` means it is installed.
+- Never connect this jumper to `GND_INST`: that ground belongs to the isolated,
+  write-only instrument-bus domain.
+- This is a hardware declaration, not electrical detection of the RF module.
+  Changing the jumper while powered has no effect until the next restart.
+
 ## Power-Fail Input
 
 - The original supply exposes `PRESENCE ALIM (1)` on output 35. The chassis
