@@ -19,11 +19,96 @@ signée en dixièmes de dB.
 - capture `Dec_Mollette -70db à -35db pas de 0,1db.csv` ;
 - schéma analogique page 46 pour le réseau de l'adresse 8 ;
 - schémas approche et atténuateur, pages 17 et 19 ;
+- schéma de commande de régulation page 52 pour les signaux `REF`, `DET`
+  et `Cde AM` ;
 - routine originale aux adresses physiques `ED74` à `EF6D` ;
 - table de relais de l'EPROM programme à l'adresse physique `C1F6` ;
-- fiche technique du 740A pour les limites et la résolution de 0,1 dB.
+- fiche technique et manuel utilisateur du 740A pour les limites, la
+  résolution de 0,1 dB et la course analogique annoncée de 119 pas.
+
+## Vue d'ensemble fonctionnelle
+
+Le réglage de niveau associe deux dispositifs différents :
+
+```text
+adresse 8 -> référence analogique REF ---------+
+                                                  |
+détecteur analogique DET -----------------------+--> commande de niveau VHF
+                                                           |
+                                                           v
+source VHF régulée -> atténuateur RF à relais -> disjoncteur -> sortie
+                         adresse 6
+```
+
+- la carte analogique produit la consigne `REF`. Son réseau pondéré donne les
+  pas fins de 1 et 0,1 dB ;
+- la carte détecteur prélève la HF à l'entrée du bloc atténuateur et produit
+  `DET` ;
+- la carte de commande de régulation compare `REF` et `DET`, puis agit par
+  `Cde AM` sur le niveau de la carte VHF ;
+- l'atténuateur à relais ajoute ensuite les grands pas RF de 5 dB.
+
+La CPU ne mesure pas `DET`. Le bus instruments est utilisé pour écrire la
+consigne et les relais ; il ne ferme pas une seconde boucle numérique autour
+du niveau de sortie. La boucle rapide est entièrement analogique.
+
+Le détecteur étant placé avant les cellules d'atténuation, la boucle ne voit
+pas directement une perte apparue dans une cellule, le disjoncteur, le
+connecteur ou le câblage de sortie. Une telle perte ne peut être compensée que
+par une calibration mémorisée ou par une réparation du chemin RF.
+
+## Plage programmable et précision garantie
+
+Le manuel utilisateur distingue deux caractéristiques :
+
+- réglage possible de `+13,0` à `-129,9 dBm` sur 50 ohms ;
+- précision d'atténuation garantie seulement de `+13,0` à `-119,9 dBm`.
+
+L'interprétation la plus cohérente est qu'il ne s'agit pas d'une faute de
+frappe : les dix derniers dB restent programmables, mais le constructeur ne
+donne plus la tolérance de ±1,5 dB. Aux niveaux les plus faibles, les fuites HF,
+la diaphonie et l'isolation finie des relais deviennent comparables au signal
+utile.
+
+La mention `10 dB, 1 dB et 0,1 dB` du manuel décrit les résolutions de réglage
+offertes à l'utilisateur, pas les seuls poids physiques des relais. En
+interne :
+
+- un incrément de 0,1 dB modifie normalement la commande analogique d'un pas ;
+- un incrément de 1 dB représente dix pas analogiques ;
+- un incrément de 10 dB provoque une recomposition complète, généralement
+  équivalente à deux pas mécaniques de 5 dB.
 
 ## Adresse 8 : atténuation fine
+
+### Course utile de 119 pas
+
+Le synoptique de la carte analogique annonce `119 pas de 0,1 dB`, soit une
+course utile voisine de 11,9 dB. Cette course ne signifie pas que les 119 pas
+sont parcourus entre deux positions de relais. Comme les relais changent tous
+les 5 dB, environ 50 codes fins suffisent pour interpoler entre deux positions.
+Le reste fournit le recouvrement nécessaire aux commutations, à la plage haute
+et à la calibration.
+
+Avec une correction nulle, le programme utilise :
+
+| Domaine | Pas mécanique | Atténuation fine nominale |
+|---|---:|---:|
+| niveaux ordinaires | variable par pas de 5 dB | 6,9 à 11,8 dB |
+| `+7,0` à `+13,0 dBm` | 0 dB | 6,8 à 0,8 dB |
+| ensemble de la plage | 0 à 135 dB | 0,8 à 11,8 dB |
+
+Les valeurs proches de zéro ne doivent donc pas être qualifiées d'inutiles :
+elles appartiennent à la marge haute et peuvent aussi être atteintes par une
+correction. De même, la capture originale atteint 11,9 dB lorsque la table de
+calibration ajoute `+0,1 dB`.
+
+La constante numérique `13,8 dB` utilisée plus bas reproduit exactement le
+programme et les commandes de l'ancienne CPU. Elle constitue une référence de
+calcul. Elle ne prouve pas, à elle seule, que le code brut zéro produit
+physiquement `+13,8 dBm` sur le connecteur de sortie : les pertes fixes et les
+réglages analogiques interviennent entre la consigne interne et la mesure
+externe.
 
 Le réseau analogique donne les poids suivants :
 
@@ -124,6 +209,63 @@ correction = niveau_mesuré - niveau_demandé
 
 Par exemple, une sortie mesurée 0,4 dB trop forte produit une correction de
 `+4` dixièmes de dB.
+
+## Coopération des deux atténuations
+
+Pour les niveaux ordinaires et avec une correction nulle, la loi peut se lire
+simplement en dB :
+
+```text
+niveau demandé = 13,8 - atténuation mécanique - atténuation fine
+```
+
+La commande fine diminue de 0,1 dB chaque fois que le niveau demandé augmente
+de 0,1 dB. Lorsqu'elle arrive au bord de sa fenêtre, la CPU retire 5 dB
+d'atténuation mécanique et ajoute simultanément 4,9 dB d'atténuation fine. La
+variation résultante reste donc de 0,1 dB.
+
+### Exemple détaillé autour de -70 dBm
+
+| Niveau demandé | `s` | Mécanique | Fine | Adresse 6 basse | Adresse 8 |
+|---:|---:|---:|---:|---:|---:|
+| -70,0 dBm | 15 | 75 dB | 8,8 dB | `24` | `A8` |
+| -69,9 dBm | 15 | 75 dB | 8,7 dB | `24` | `A7` |
+| -68,1 dBm | 15 | 75 dB | 6,9 dB | `24` | `89` |
+| -68,0 dBm | 14 | 70 dB | 11,8 dB | `2C` | `D8` |
+
+Les deux valeurs encadrant le changement de relais donnent :
+
+```text
+-68,1 dBm : 13,8 - 75 -  6,9 = -68,1
+-68,0 dBm : 13,8 - 70 - 11,8 = -68,0
+```
+
+Entre ces deux commandes :
+
+```text
+variation mécanique : -5,0 dB d'atténuation
+variation analogique : +4,9 dB d'atténuation
+variation totale      : -0,1 dB d'atténuation
+```
+
+La sortie augmente ainsi de 0,1 dB sans discontinuité, malgré la commutation
+d'un relais de 5 dB.
+
+## Correction accessible par le bus
+
+Il n'existe pas de commande séparée pour modifier le gain ou l'offset du
+détecteur, ni de conversion permettant à la CPU de lire `DET`. Les réglages
+`GAIN` et `CENTRAGE` de la carte de commande de régulation sont analogiques.
+
+La correction accessible par le bus agit indirectement : la valeur signée de
+la table de calibration est ajoutée à l'atténuation fine de l'adresse 8. La
+boucle analogique suit alors une consigne `REF` légèrement déplacée. Une
+correction positive augmente l'atténuation et une correction négative augmente
+le niveau RF.
+
+Cette correction peut compenser statiquement les variations connues de la
+chaîne de niveau selon la fréquence et l'état mécanique. Elle ne constitue pas
+une mesure en temps réel du signal disponible sur la prise de sortie.
 
 ## Validation par la capture
 

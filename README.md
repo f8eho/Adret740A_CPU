@@ -32,6 +32,10 @@ commandes historiques du bus GPIB transposées sur Serial0.
 
 - `docs/retroanalyse_panneau_avant.md` rassemble le fonctionnement électrique,
   les protocoles, les résultats du banc et les points restant à valider.
+- `docs/DETECTION_DOUBLEUR.md` explique comment la CPU d'origine déclare
+  l'option doubleur sans retour depuis le bus instruments.
+- `docs/CALIBRATION_GROSSIERE_NIVEAU_RF.md` décrit le réglage analogique de
+  `GAIN` et `CENTRAGE` et les contrôles métrologiques préalables.
 - `include/Adret/HardwareConfig.h` centralise le cablage AVR.
 - `include/Adret/FrontPanelMap.h` nomme les selections issues du tableur ODS.
 - `include/Adret/FrontPanel.h` expose l'API logique du panneau avant.
@@ -102,6 +106,9 @@ python .\scripts\adret_calibration.py
 
 La procédure détaillée est décrite dans
 [`docs/CALIBRATION_AMPLITUDE.md`](docs/CALIBRATION_AMPLITUDE.md).
+Le réalignement analogique préalable avec un oscilloscope ou un wattmètre RF
+est décrit dans
+[`docs/CALIBRATION_GROSSIERE_NIVEAU_RF.md`](docs/CALIBRATION_GROSSIERE_NIVEAU_RF.md).
 
 Les tests hôte du parseur et du cadrage série se lancent avec :
 
