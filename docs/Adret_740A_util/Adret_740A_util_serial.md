@@ -3,7 +3,7 @@
 ## Objet et statut du document
 
 Ce document spécifie l'interface de télécommande série implémentée par la
-nouvelle carte CPU de l'Adret 740A basée sur un Arduino Mega 2560.
+nouvelle carte CPU de l'Adret 740A basée sur un Arduino Mega 1280 ou 2560.
 
 Le langage de commande reprend celui de l'interface IEEE-488 d'origine décrit
 dans [Adret_740A_util_gpib.md](Adret_740A_util_gpib.md). Les mnémoniques de
@@ -15,7 +15,7 @@ point.
 
 | Propriété | Valeur |
 | --- | --- |
-| Interface du microcontrôleur | `Serial0` de l'Arduino Mega 2560 |
+| Interface du microcontrôleur | `Serial0` de l'Arduino Mega 1280/2560 |
 | Réception par le 740A | D0 / RX0 |
 | Émission par le 740A | D1 / TX0 |
 | Niveaux électriques | UART TTL 5 V |

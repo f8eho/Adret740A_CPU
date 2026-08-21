@@ -49,7 +49,7 @@ constexpr int kCalibrationEndAddress =
 static_assert(sizeof(BankHeader) == 16u,
               "Unexpected calibration-bank header layout");
 static_assert(kCalibrationEndAddress <= eeprom_layout::kEepromSize,
-              "Calibration banks exceed ATmega2560 EEPROM capacity");
+              "Calibration banks exceed Arduino Mega EEPROM capacity");
 
 uint16_t crc16(const uint8_t* data, size_t length)
 {

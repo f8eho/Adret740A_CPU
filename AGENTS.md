@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 This is a PlatformIO firmware project for replacing the Adret 740A CPU with an
-Arduino Mega / ATmega2560.
+Arduino Mega / ATmega1280 or ATmega2560.
 
 - `src/`: C++ implementation files and `main.cpp`.
 - `include/Adret/`: public module headers, hardware mapping, bus maps, and
@@ -28,6 +28,8 @@ Build with PlatformIO:
 If `pio` is in `PATH`, `pio run` is equivalent. This compiles for
 `megaatmega2560` and reports RAM/Flash usage. Use VS Code PlatformIO
 `Project Tasks > megaatmega2560 > Build` for the same operation.
+Build the alternate target with `pio run -e megaatmega1280` or VS Code
+PlatformIO `Project Tasks > megaatmega1280 > Build`.
 
 There are no automated unit tests yet. Treat a successful build plus documented
 bench checks as the current validation path.

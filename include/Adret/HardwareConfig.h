@@ -3,21 +3,21 @@
 #include <avr/io.h>
 #include <stdint.h>
 
-#if !defined(__AVR_ATmega2560__)
-#warning "This project is wired and timed for ATmega2560 / Arduino Mega."
+#if !defined(__AVR_ATmega2560__) && !defined(__AVR_ATmega1280__)
+#warning "This project is wired and timed for ATmega1280/2560 Arduino Mega boards."
 #endif
 
 namespace adret {
 namespace hw {
 
-// Front panel 8-bit data bus: Arduino Mega pins 22..29, ATmega2560 PORTA.
+// Front panel 8-bit data bus: Arduino Mega pins 22..29, AVR PORTA.
 #define ADRET_FP_DATA_DDR DDRA
 #define ADRET_FP_DATA_PORT PORTA
 #define ADRET_FP_DATA_PIN PINA
 
 // Front panel control nibble PB3..PB0 from the original CPU bus.
 // PB2..PB0 select the decoded address, PB3 is used as ICM7218A mode.
-// Default wiring uses ATmega2560 PORTB bits 0..3 (Mega pins 53, 52, 51, 50).
+// Default wiring uses AVR PORTB bits 0..3 (Mega pins 53, 52, 51, 50).
 // Change only this file if the replacement CPU connector is wired elsewhere.
 #define ADRET_FP_SELECT_DDR DDRB
 #define ADRET_FP_SELECT_PORT PORTB
@@ -72,7 +72,7 @@ constexpr uint8_t kPowerSenseInterruptFlag = _BV(INTF5);
 constexpr uint8_t kPowerSenseSenseBit0 = ISC50;
 constexpr uint8_t kPowerSenseSenseBit1 = ISC51;
 
-// Passive option declaration on Arduino Mega D4 / ATmega2560 PG5. The input
+// Passive option declaration on Arduino Mega D4 / AVR PG5. The input
 // uses the AVR pull-up: an open jumper declares the doubler absent, while a
 // short to GND_CPU declares it installed. Never connect this pin to GND_INST,
 // which belongs to the isolated instrument-bus domain.
@@ -81,7 +81,7 @@ constexpr uint8_t kPowerSenseSenseBit1 = ISC51;
 #define ADRET_DOUBLER_JUMPER_PIN PING
 constexpr uint8_t kDoublerJumperBit = PG5;
 
-// Instrument bus through ISO1540 + MCP23017. The ATmega2560 hardware I2C pins
+// Instrument bus through ISO1540 + MCP23017. The AVR hardware I2C pins
 // are Mega D20/SDA (PD1) and D21/SCL (PD0); neither is shared with Serial0.
 // MCP23017 A2..A0 are expected low. GPIOA carries D7..D0, GPIOB3..B0 the
 // address, and GPIOB4 the active-low Chargt strobe. GPIOB7..B5 stay inputs.

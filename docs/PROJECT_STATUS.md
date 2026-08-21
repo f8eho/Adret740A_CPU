@@ -3,11 +3,14 @@
 Project name: `ADRET740A_CPU`
 
 The current firmware is a compile-tested and bench-tested low-level
-front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
+front-panel base for an Arduino Mega / ATmega1280 or ATmega2560 replacement
+CPU.
 
 ## Done
 
-- PlatformIO project for `megaatmega2560`.
+- PlatformIO projects for `megaatmega2560` (default) and `megaatmega1280`.
+  Build the ATmega1280 firmware explicitly with
+  `pio run -e megaatmega1280`.
 - Front-panel data bus on full 8-bit PORTA.
 - Front-panel control nibble on consecutive PORTB bits by default.
 - CA2 active-low address-enable handling for the 74LS138.
@@ -102,9 +105,10 @@ front-panel base for the Arduino Mega / ATmega2560 replacement CPU.
 - Serial0 command execution has been bench-validated with PuTTY using both
   the historical `?` terminator and `CR/LF` line endings.
 - Host parser/framing, instrument-program, calibration-tool and atomic EEPROM
-  migration vectors pass. The single PlatformIO firmware succeeds with 1,250
-  bytes RAM / 8,192 bytes and 45,980 bytes Flash / 253,952 bytes, including
-  the deliberately retained 2,048-byte zero calibration table.
+  migration vectors pass. The normal firmware succeeds on both targets with
+  1,250 bytes RAM / 8,192 bytes. It uses 45,632 bytes Flash / 126,976 bytes on
+  the ATmega1280 and 45,980 bytes Flash / 253,952 bytes on the ATmega2560,
+  including the deliberately retained 2,048-byte zero calibration table.
 
 ## Remaining Hardware Validation
 

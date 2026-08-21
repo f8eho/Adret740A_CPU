@@ -1,9 +1,9 @@
 # Rétroanalyse du panneau avant ADRET 740A
 
 Ce document rassemble la compréhension actuelle du panneau avant de l'ADRET
-740A et de son remplacement de carte CPU par une Arduino Mega 2560. Il décrit
-le matériel d'origine, le protocole observé sur le connecteur CPU et la manière
-dont le firmware reproduit ce protocole.
+740A et de son remplacement de carte CPU par une Arduino Mega 1280 ou 2560. Il
+décrit le matériel d'origine, le protocole observé sur le connecteur CPU et la
+manière dont le firmware reproduit ce protocole.
 
 ## Niveaux de certitude
 

@@ -1,7 +1,7 @@
 # ADRET740A_CPU
 
 Projet PlatformIO pour remplacer la carte CPU d'un generateur RF Adret 740A
-avec un Arduino Mega / ATmega2560.
+avec un Arduino Mega / ATmega1280 ou ATmega2560.
 
 ## Etat actuel
 
@@ -88,12 +88,22 @@ ecrit via `FrontPanelBus`.
 
 ## Compilation
 
-Depuis VS Code, utiliser PlatformIO: `Project Tasks > megaatmega2560 > Build`.
+Depuis VS Code, utiliser PlatformIO :
+`Project Tasks > megaatmega2560 > Build` pour la cible par défaut, ou
+`Project Tasks > megaatmega1280 > Build` pour une Mega 1280.
 
 Depuis un terminal ou Codex, si `pio` n'est pas dans le PATH :
 
 ```powershell
 & "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run
+```
+
+La commande sans environnement compile la cible ATmega2560 par défaut. Pour
+compiler ou téléverser explicitement le firmware ATmega1280 :
+
+```powershell
+& "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run -e megaatmega1280
+& "$env:USERPROFILE\.platformio\penv\Scripts\pio.exe" run -e megaatmega1280 -t upload
 ```
 
 La calibration manuelle, l'import d'une 2816 d'origine et la fusion finale
@@ -125,7 +135,7 @@ Les tests hôte du parseur et du cadrage série se lancent avec :
 - La ligne CA2 active G2 du 74LS138; elle est cablee par defaut sur PORTB bit 4
   et active bas.
 - La ligne CA1 clavier/roue est cablee par defaut sur Mega D2, soit PE4 / INT4
-  sur ATmega2560.
+  sur ATmega1280 et ATmega2560.
 - La lecture SN5 maintient CA2/Y5 actif 10 µs. Quatre acquittements sont
   envoyés au démarrage avant l'armement d'INT4.
 - SN11 est sélectionné par Y6/`110`; SN10 par Y7/`111`.

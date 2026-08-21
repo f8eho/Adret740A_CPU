@@ -86,9 +86,9 @@ doivent servir qu'à l'étude du format.
 
 Deux banques EEPROM de 1 148 valeurs sont utilisées à partir de l'adresse
 1280. Avec leur en-tête de 16 octets, elles se terminent à l'adresse 3607 et
-tiennent dans les 4 Kio de l'ATmega2560. Chaque banque possède une signature,
-une version, une génération, un profil, le CRC de la table Flash, un CRC de
-données et un état.
+tiennent dans les 4 Kio d'EEPROM des ATmega1280 et ATmega2560. Chaque banque
+possède une signature, une version, une génération, un profil, le CRC de la
+table Flash, un CRC de données et un état.
 
 Le format courant est la version 2. Une version 1 est migrée automatiquement :
 les lignes 0 à 28 sont toujours conservées, la ligne 29 ne l'est qu'en profil

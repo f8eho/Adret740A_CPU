@@ -110,8 +110,9 @@ restent en revanche une cause plausible.
 ## CPU de remplacement : déclaration par cavalier
 
 Le firmware utilise une image unique pour les deux configurations. Arduino
-Mega D4, soit `PG5` sur l'ATmega2560, est configurée en entrée avec pull-up et
-échantillonnée une seule fois, avant le chargement des réglages :
+Mega D4, soit `PG5` sur l'ATmega1280 comme sur l'ATmega2560, est configurée en
+entrée avec pull-up et échantillonnée une seule fois, avant le chargement des
+réglages :
 
 | Cavalier D4 | Capacité figée jusqu'au prochain redémarrage |
 | --- | --- |

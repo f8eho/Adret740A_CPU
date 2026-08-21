@@ -4,6 +4,10 @@ Ce projet KiCad 10 documente le câblage du prototype Arduino Mega 2560,
 ISO1540 et MCP23017 monté sur plaque à pastilles. Il ne contient volontairement
 ni PCB ni empreintes.
 
+Le même câblage et les mêmes numéros de broches s'appliquent à une Arduino
+Mega 1280 ; les validations matérielles consignées ici ont toutefois été
+effectuées avec le prototype Mega 2560.
+
 Les faisceaux panneau–Mega, Mega–ISO1540–MCP23017 et MCP23017–B1 sont dessinés
 fil à fil. Les symboles ISO1540 et MCP23017 reprennent les headers des
 mini-plaquettes photographiées ; seules les alimentations multidrop utilisent

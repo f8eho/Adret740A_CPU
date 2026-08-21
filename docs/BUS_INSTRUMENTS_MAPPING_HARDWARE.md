@@ -8,6 +8,10 @@ Ce document décrit le câblage du premier prototype entre :
 Arduino Mega 2560 -> ISO1540 -> MCP23017 -> connecteur B1 -> bus instruments
 ```
 
+Le prototype validé utilise une Mega 2560. Une Mega 1280 présente les mêmes
+broches Arduino et ports AVR pour tous les signaux décrits ici ; ce câblage lui
+est donc également applicable.
+
 Il complète [`BUS_INSTRUMENTS_MCP23017.md`](BUS_INSTRUMENTS_MCP23017.md), qui
 décrit le protocole, l'initialisation et les temporisations. Le mapping logique
 est implémenté dans `include/Adret/HardwareConfig.h` et `src/InstrumentBus.cpp`.
@@ -73,9 +77,9 @@ Deux signaux de B1 ne passent pas par l'expandeur :
 | `INHIB` | 6 | J1-5 du panneau avant | liaison directe du commutateur marche/attente, sans broche Mega |
 | `PA` | 7 | Mega D3 / PE5 / INT5 | présence alimentation, entrée haute impédance sans pull-up interne |
 
-## Arduino Mega 2560 vers ISO1540
+## Arduino Mega 1280/2560 vers ISO1540
 
-| Fonction | Broche Arduino | Port ATmega2560 | Broche ISO1540 | Domaine |
+| Fonction | Broche Arduino | Port ATmega1280/2560 | Broche ISO1540 | Domaine |
 | --- | ---: | --- | ---: | --- |
 | SDA | D20 | PD1 / SDA | 2, `SDA1` | CPU |
 | SCL | D21 | PD0 / SCL | 3, `SCL1` | CPU |

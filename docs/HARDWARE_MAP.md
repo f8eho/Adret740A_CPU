@@ -9,8 +9,8 @@ Items explicitly listed under remaining validation are still provisional.
 
 ## Frequency-Doubler Declaration
 
-- Arduino Mega D4, ATmega2560 PG5, is reserved for a passive configuration
-  jumper sampled once during startup.
+- Arduino Mega D4, ATmega1280/2560 PG5, is reserved for a passive
+  configuration jumper sampled once during startup.
 - The AVR input uses its internal pull-up: open means the doubler is absent;
   shorting D4 to `GND_CPU` means it is installed.
 - Never connect this jumper to `GND_INST`: that ground belongs to the isolated,
@@ -22,7 +22,7 @@ Items explicitly listed under remaining validation are still provisional.
 
 - The original supply exposes `PRESENCE ALIM (1)` on output 35. The chassis
   routes it to `PA`, which drove the original 6802 `NMI` input directly.
-- `PA` is connected to Arduino Mega D3, ATmega2560 PE5 / INT5.
+- `PA` is connected to Arduino Mega D3, ATmega1280/2560 PE5 / INT5.
 - D3 is a high-impedance input without an internal pull-up. `PA` is normally
   high; its falling edge requests the EEPROM settings save.
 - The supply schematic takes `PA` from its presence detector/divider, not from
@@ -44,7 +44,7 @@ Items explicitly listed under remaining validation are still provisional.
 
 ## Front Panel Bus
 
-- Data bus: ATmega2560 PORTA, Arduino Mega pins 22..29.
+- Data bus: ATmega1280/2560 PORTA, Arduino Mega pins 22..29.
 - Validated harness pairs: panel D0/D1 to Mega 23/22, D2/D3 to 25/24,
   D4/D5 to 27/26, and D6/D7 to 29/28.
 - Direction: bidirectional.

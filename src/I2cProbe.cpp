@@ -20,7 +20,7 @@ constexpr uint16_t kReliabilityCyclesPerStep = 50u;
 constexpr uint16_t kReliabilityFinalCycles = 1000u;
 constexpr uint8_t kReliabilityClockCount = 13u;
 
-// Exact ATmega2560 TWI rates for F_CPU=16 MHz and prescaler=1, ordered from
+// Exact ATmega1280/2560 TWI rates for F_CPU=16 MHz and prescaler=1, ordered from
 // TWBR=12 (400 kHz) through TWBR=0 (1 MHz).
 constexpr uint32_t kReliabilityClocksHz[kReliabilityClockCount] = {
     400000UL, 421052UL, 444444UL, 470588UL, 500000UL,

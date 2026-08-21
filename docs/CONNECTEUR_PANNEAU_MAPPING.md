@@ -1,9 +1,10 @@
 # Mapping du connecteur du panneau avant
 
 Ce document décrit le câblage prévu entre les **signaux logiques du connecteur
-CPU du panneau avant ADRET 740A** et les broches de l'**Arduino Mega 2560**.
-Ce mapping reprend le faisceau validé au banc avec la matrice clavier, les
-voyants et les trois groupes d'affichage.
+CPU du panneau avant ADRET 740A** et les broches d'un **Arduino Mega 1280 ou
+2560**. Ce mapping reprend le faisceau validé au banc sur Mega 2560 avec la
+matrice clavier, les voyants et les trois groupes d'affichage ; le brochage est
+identique sur Mega 1280.
 
 > Attention : les noms `PAx` et `PBx` du bus ADRET désignent les sorties du PIA
 > d'origine. Les noms `PAx`, `PBx` et `PEx` dans la colonne ATmega désignent les
@@ -12,7 +13,7 @@ voyants et les trois groupes d'affichage.
 
 ## Tableau de câblage
 
-| Signal connecteur ADRET | Contact J1 | Rôle | Sens côté Arduino | Port ATmega2560 | Nom logique Arduino | **N° imprimé sur le PCB** | Registre firmware |
+| Signal connecteur ADRET | Contact J1 | Rôle | Sens côté Arduino | Port ATmega1280/2560 | Nom logique Arduino | **N° imprimé sur le PCB** | Registre firmware |
 | --- | ---: | --- | --- | --- | --- | --- | --- |
 | `PA0` / donnée `D0` | 19 | Bit 0 du bus de données | Entrée/sortie | `PA1` | `D23` | **23** | `PORTA`, bit 1 |
 | `PA1` / donnée `D1` | 20 | Bit 1 du bus de données | Entrée/sortie | `PA0` | `D22` | **22** | `PORTA`, bit 0 |
@@ -81,9 +82,9 @@ firmware considère cette ligne **active à l'état bas** : repos à `1`, sélec
 
 `CA1` est une entrée d'interruption commune au clavier et à la roue codeuse.
 Elle est raccordée à `D2`, qui correspond à `PE4` et à l'interruption externe
-`INT4` sur l'ATmega2560. Le firmware la configure sur front descendant et
-active la résistance de pull-up interne de `PE4`. Celle-ci complète la
-résistance de rappel de 4,7 kΩ présente sur le panneau.
+`INT4` sur l'ATmega1280 comme sur l'ATmega2560. Le firmware la configure sur
+front descendant et active la résistance de pull-up interne de `PE4`. Celle-ci
+complète la résistance de rappel de 4,7 kΩ présente sur le panneau.
 
 ## Commande générale d'alimentation `INHIB`
 
