@@ -145,3 +145,15 @@ Les tests hôte du parseur et du cadrage série se lancent avec :
 
 Ces points sont volontairement isoles dans `HardwareConfig.h` pour eviter de
 modifier la logique metier apres validation du connecteur CPU.
+
+## Licence et crédits
+
+Les créations originales de ce projet — firmware, scripts, tests,
+documentation et matériel KiCad produits pour le projet — sont distribuées
+sous [licence MIT](LICENSE), Copyright (c) 2026 Pascal AMESLAND (F8EHO).
+
+Les scans, extraits, dumps, désassemblages et autres éléments provenant de
+tiers ne sont pas couverts par cette licence. Voir
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) pour le détail.
+
+Assisted-by: OpenAI:ChatGPT-5.6-Sol codex
