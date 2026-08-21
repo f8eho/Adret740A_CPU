@@ -27,6 +27,13 @@ however, relies on a 6802 processor board, two EPROMs and battery-backed
 memory. That board communicates separately with the front panel and with an
 internal sixteen-register bus controlling the instrument boards.
 
+This instrument dates from the 1980s and has a modular architecture that lends
+itself well to replacing its CPU with a more modern microcontroller. The
+processor board centralizes commands through clearly separated buses, while
+frequency synthesis and RF functions remain on relatively autonomous,
+specialized boards. The control logic can therefore be replaced without
+redesigning the complete analog signal chain.
+
 ## Why replace the CPU board?
 
 In my instrument, electrolyte leaked from the backup battery and destroyed the
@@ -39,6 +46,11 @@ boards, power supply and front panel a second life using available components,
 readable firmware and documented wiring. Reverse engineering the EPROMs and
 captured bus traffic makes it possible to reproduce frequency, level and
 modulation commands without modifying the instrument boards.
+
+Installing the new CPU requires no modification to the Adret chassis, wiring,
+front panel or instrument boards. It uses the existing connections in place of
+the original CPU board. The operation is therefore reversible: the replacement
+can be removed and a working original CPU board can be reinstalled.
 
 ## Why an Arduino Mega?
 
@@ -123,6 +135,27 @@ The complete pinout and safe startup sequence are documented in
 and
 [`BUS_INSTRUMENTS_MCP23017.md`](docs/BUS_INSTRUMENTS_MCP23017.md).
 
+## Functional compatibility and remote control
+
+The new firmware provides near feature parity with the original CPU: it
+retains front-panel operation, RF and modulation settings, memories, sequences,
+and local/remote behavior. Validation items that remain open are identified
+below and in `PROJECT_STATUS.md`.
+
+Two original functions are not currently provided:
+
+- the foot pedal or external timer connected to the rear `AUX` input does not
+  step through sequences; this feature could be added easily if required;
+- the `Pulse` modulation option is not implemented in the usable firmware,
+  although part of its low-level bus encoding has been investigated.
+
+The main intentional difference is the remote interface. The original
+IEEE-488/GPIB circuitry is not reproduced; it is replaced by Serial0 at
+115200 baud, available through the Arduino Mega's USB connector. The historical
+GPIB command syntax is retained wherever possible: only the electrical
+transport changes. A computer can therefore control the 740A through a serial
+terminal or a program opening the USB serial port, without a GPIB controller.
+
 ## Performance compared with the original board
 
 The I2C interface is slower than the original 6802 CPU's parallel writes. This
@@ -142,6 +175,16 @@ It was verified with a logic analyzer and then accepted by the original boards
 in the assembled generator. The firmware also reduces latency by transmitting
 only changed functional blocks: an identical request produces no writes, and
 `RF OFF` by itself produces a single word.
+
+The I2C clock was deliberately limited to 400 kHz to retain a comfortable
+reliability margin with the present modules, pull-up resistors and wiring. At
+this rate the generator already responds very well, with no perceptible
+difference from the original board during normal operation. The bench setup
+completed 1,000 full cycles reliably at 888,888 Hz, whereas 1 MHz was not
+reliable with the current assembly. A carefully built board with short traces,
+low bus capacitance, suitable pull-ups and good decoupling could therefore use
+a higher rate, but the complete isolated path would need to be revalidated
+before replacing the conservative 400 kHz setting.
 
 These figures describe the time required to program the internal bus latches.
 They are not measurements of the original analog circuitry's accuracy, phase
@@ -199,6 +242,9 @@ The KiCad 10 project and its printable PDF are in
 It documents the prototype wire by wire, and its latest ERC report contains no
 errors or warnings. It currently contains **no production-ready PCB layout**
 or footprints: the documented build is the perfboard prototype.
+
+The board plugs into the 740A's existing connectors. No trace or wire in the
+instrument needs to be cut or modified for installation.
 
 A cautious bring-up sequence is:
 
@@ -345,8 +391,17 @@ The complete procedure and measured results are in
 
 ## Calibration and host tests
 
-The menu-driven application combines manual calibration, import of an
-original 2816 and final merging of the table into Flash.
+The menu-driven application combines a guided attenuator-calibration
+procedure, import of an original 2816 and final merging of the table into
+Flash. It guides measurement and correction of the different attenuator states
+as a function of frequency.
+
+If the 2816 EEPROM from the original CPU board is still readable and its
+contents are coherent, its calibration data can be reused as the base table
+instead of starting from zero. Otherwise, the manual procedure can rebuild a
+table for the restored instrument. Import preserves the logical format of the
+original frequency/attenuator grid and checks compatibility with the base or
+frequency-doubler profile.
 
 On Windows, double-click `scripts\lancer_calibration.cmd` or run:
 

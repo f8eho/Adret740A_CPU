@@ -28,6 +28,13 @@ mémoire sauvegardée par batterie. Cette carte dialogue séparément avec le
 panneau avant et avec un bus interne de seize registres commandant les cartes
 instruments.
 
+Cet appareil des années 1980 possède une architecture modulaire qui se prête
+bien au remplacement de sa CPU par un microcontrôleur plus moderne. La carte
+processeur centralise les commandes au moyen de bus clairement séparés, tandis
+que la synthèse et les fonctions RF restent réalisées par des cartes
+spécialisées relativement autonomes. Il est ainsi possible de remplacer la
+logique de contrôle sans redessiner toute la chaîne analogique.
+
 ## Pourquoi remplacer la carte CPU ?
 
 Dans mon appareil, l'électrolyte de la batterie de sauvegarde a coulé et a
@@ -40,6 +47,12 @@ une seconde vie à ses cartes RF, à son alimentation et à son panneau avant av
 des composants disponibles, un firmware lisible et un câblage documenté. La
 rétroanalyse des EPROM et des captures du bus permet de reproduire les commandes
 de fréquence, de niveau et de modulation sans modifier les cartes instruments.
+
+L'installation de la nouvelle CPU ne demande aucune modification du châssis,
+du câblage, du panneau avant ou des cartes instruments de l'Adret. Elle utilise
+les connexions existantes à la place de la carte CPU d'origine. L'opération est
+donc réversible : la nouvelle carte peut être retirée et une CPU d'origine
+fonctionnelle peut être remontée.
 
 ## Pourquoi une Arduino Mega ?
 
@@ -126,6 +139,29 @@ Le brochage complet et la séquence de démarrage sûre sont documentés dans
 et
 [`BUS_INSTRUMENTS_MCP23017.md`](docs/BUS_INSTRUMENTS_MCP23017.md).
 
+## Compatibilité fonctionnelle et télécommande
+
+Le nouveau firmware est quasiment iso-fonctionnel avec la CPU d'origine : il
+conserve l'utilisation du panneau avant, les réglages RF et de modulation, les
+mémoires, les séquences et la logique locale/distance. Les validations encore
+ouvertes sont indiquées plus bas et dans `PROJECT_STATUS.md`.
+
+Deux fonctions d'origine ne sont pas reprises actuellement :
+
+- la pédale ou le cadenceur raccordé à l'entrée arrière `AUX` ne commande pas
+  l'avancement des séquences ; cette fonction pourrait être ajoutée facilement
+  si elle est nécessaire ;
+- l'option de modulation `Impulsion` n'est pas implémentée dans le firmware
+  utilisable, même si une partie de son codage bas niveau a été étudiée.
+
+La principale différence volontaire concerne l'interface distante. Le circuit
+IEEE-488/GPIB d'origine n'est pas reproduit ; il est remplacé par le port série
+Serial0 à 115200 bauds, accessible par le connecteur USB de l'Arduino Mega. La
+syntaxe historique des commandes GPIB est conservée autant que possible : seul
+le transport électrique change. Un ordinateur peut ainsi commander le 740A
+avec un terminal série ou un programme ouvrant le port USB-série, sans
+contrôleur GPIB.
+
 ## Performances par rapport à la carte d'origine
 
 L'interface I2C est plus lente que les écritures parallèles de la CPU 6802
@@ -145,6 +181,17 @@ moyenne. Elle a été vérifiée à l'analyseur logique, puis acceptée par les 
 d'origine sur le générateur assemblé. Le firmware réduit aussi la latence en
 n'envoyant que les blocs modifiés : une demande identique ne produit aucune
 écriture, et `RF OFF` seul ne produit qu'un mot.
+
+La fréquence I2C a été volontairement limitée à 400 kHz afin de conserver une
+bonne marge de fiabilité avec les modules, les résistances de tirage et le
+câblage actuels. À cette vitesse, le générateur répond déjà très bien et aucune
+différence n'est perceptible en utilisation normale par rapport à la carte
+d'origine. Le banc a fonctionné à 888 888 Hz pendant 1 000 cycles complets,
+alors que 1 MHz n'était pas fiable dans le montage actuel. Une carte réalisée
+avec un routage court, une capacité de bus réduite, des tirages et un découplage
+soignés pourrait donc employer une fréquence supérieure, mais celle-ci devrait
+être revalidée sur toute la chaîne isolée avant de remplacer le réglage
+conservateur de 400 kHz.
 
 Ces chiffres concernent le temps nécessaire pour programmer les latches du bus
 interne. Ils ne constituent pas une mesure de la précision, du bruit de phase,
@@ -206,6 +253,9 @@ Il décrit le prototype fil à fil et son dernier contrôle ERC ne contient ni
 erreur ni avertissement. Il ne contient actuellement **pas de circuit imprimé
 prêt à fabriquer** ni d'empreintes : la réalisation documentée est celle sur
 plaque à pastilles.
+
+La carte se raccorde aux connecteurs existants du 740A. Aucune piste ni aucun
+fil de l'appareil ne doit être coupé ou modifié pour l'installer.
 
 Un parcours prudent consiste à :
 
@@ -356,8 +406,17 @@ La procédure complète et les résultats mesurés se trouvent dans
 
 ## Calibration et tests hôte
 
-L'application à menus regroupe la calibration manuelle, l'import d'une 2816
-d'origine et la fusion finale de la table dans la Flash.
+L'application à menus regroupe une procédure guidée de calibration de
+l'atténuateur, l'import d'une 2816 d'origine et la fusion finale de la table
+dans la Flash. Elle guide la mesure et la correction des différents états de
+l'atténuateur en fonction de la fréquence.
+
+Si l'EEPROM 2816 de la carte CPU d'origine est encore lisible et que son contenu
+est cohérent, ses données de calibration peuvent être reprises comme table de
+base au lieu de repartir de zéro. Dans le cas contraire, la procédure manuelle
+permet de reconstruire une table adaptée à l'appareil restauré. L'import
+conserve le format logique de la grille fréquence/atténuateur d'origine et
+vérifie sa compatibilité avec le profil de base ou l'option doubleur.
 
 Sous Windows, double-cliquer sur `scripts\lancer_calibration.cmd` ou lancer :
 
