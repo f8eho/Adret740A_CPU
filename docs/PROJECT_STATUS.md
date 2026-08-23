@@ -11,10 +11,15 @@ CPU.
 - PlatformIO projects for `megaatmega2560` (default) and `megaatmega1280`.
   Build the ATmega1280 firmware explicitly with
   `pio run -e megaatmega1280`.
-- Front-panel data bus on full 8-bit PORTA.
-- Front-panel control nibble on consecutive PORTB bits by default.
+- Front-panel data bus on full 8-bit PORTA, with a hardware-boundary bit
+  reversal for the connector-friendly harness.
+- Front-panel control nibble on consecutive PORTB bits, reversed so A/B/C/MODE
+  use Mega D50/D51/D52/D53.
 - CA2 active-low address-enable handling for the 74LS138.
 - CA1 interrupt source shared by keyboard and optical wheel events.
+- Reviewed consolidation of CA1, power-fail PA and CA2 into D22..D53. The
+  interrupt inputs remain on D2/INT4 and D3/INT5; CA2 remains on D10/PB4,
+  avoiding polling or a disruptive select-bus/PCINT redesign.
 - Zero-filled 2 KiB signed-correction table in `PROGMEM`, reserving the full
   2716 calibration footprint without requiring an external memory component.
 - Original 2816 frequency/attenuator lookup grid, transactional two-bank
@@ -52,7 +57,10 @@ CPU.
   API behavior.
 - Keyboard matrix mapping from the provisional front-panel table/image, while
   preserving raw SN5 samples.
-- Bench-validated paired PORTA harness across Mega pins 22..29.
+- Connector-friendly PORTA harness mapping implemented for panel D0..D7 on
+  Mega 28, 29, 26, 27, 24, 25, 22, 23. The revised physical mapping, display
+  output and panel input were bench-validated on the jumper-wire harness on
+  2026-08-23 after correcting a bad contact.
 - ICM7218A Code B full-frame output for SN10/Y7 and SN11/Y6.
 - Bench-validated ten-digit frequency split and three-digit modulation and
   amplitude groups, with active-low decimal-point handling.
@@ -106,8 +114,8 @@ CPU.
   the historical `?` terminator and `CR/LF` line endings.
 - Host parser/framing, instrument-program, calibration-tool and atomic EEPROM
   migration vectors pass. The normal firmware succeeds on both targets with
-  1,250 bytes RAM / 8,192 bytes. It uses 45,632 bytes Flash / 126,976 bytes on
-  the ATmega1280 and 45,980 bytes Flash / 253,952 bytes on the ATmega2560,
+  1,250 bytes RAM / 8,192 bytes. It uses 45,604 bytes Flash / 126,976 bytes on
+  the ATmega1280 and 45,952 bytes Flash / 253,952 bytes on the ATmega2560,
   including the deliberately retained 2,048-byte zero calibration table.
 
 ## Remaining Hardware Validation

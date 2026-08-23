@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>D:\Documents\Projets\prog\Adret740A\hardware\Adret740A_replacement_cpu\Adret740A_replacement_cpu.kicad_sch</source>
-    <date>2026-08-03T20:33:16</date>
+    <date>2026-08-23T10:07:53</date>
     <tool>Eeschema 10.0.4</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -41,20 +41,20 @@
       <units>
         <unit name="A">
           <pins>
-            <pin num="28"/>
-            <pin num="29"/>
-            <pin num="26"/>
-            <pin num="27"/>
-            <pin num="24"/>
-            <pin num="25"/>
-            <pin num="22"/>
             <pin num="23"/>
+            <pin num="22"/>
+            <pin num="25"/>
+            <pin num="24"/>
+            <pin num="27"/>
+            <pin num="26"/>
+            <pin num="29"/>
+            <pin num="28"/>
             <pin num="2"/>
             <pin num="10"/>
-            <pin num="53"/>
-            <pin num="52"/>
-            <pin num="51"/>
             <pin num="50"/>
+            <pin num="51"/>
+            <pin num="52"/>
+            <pin num="53"/>
             <pin num="5V"/>
             <pin num="GND"/>
             <pin num="21"/>
@@ -502,15 +502,15 @@
       <node ref="R1" pin="2" pinfunction="2_2" pintype="passive"/>
     </net>
     <net code="4" name="/FP_A" class="Default">
-      <node ref="A1" pin="53" pinfunction="D53_/_PB0_53" pintype="passive"/>
+      <node ref="A1" pin="50" pinfunction="D50_/_PB3_50" pintype="passive"/>
       <node ref="J1" pin="4" pinfunction="A_/_PB0_4" pintype="passive"/>
     </net>
     <net code="5" name="/FP_B" class="Default">
-      <node ref="A1" pin="52" pinfunction="D52_/_PB1_52" pintype="passive"/>
+      <node ref="A1" pin="51" pinfunction="D51_/_PB2_51" pintype="passive"/>
       <node ref="J1" pin="3" pinfunction="B_/_PB1_3" pintype="passive"/>
     </net>
     <net code="6" name="/FP_C" class="Default">
-      <node ref="A1" pin="51" pinfunction="D51_/_PB2_51" pintype="passive"/>
+      <node ref="A1" pin="52" pinfunction="D52_/_PB1_52" pintype="passive"/>
       <node ref="J1" pin="2" pinfunction="C_/_PB2_2" pintype="passive"/>
     </net>
     <net code="7" name="/FP_CA1" class="Default">
@@ -522,39 +522,39 @@
       <node ref="J1" pin="10" pinfunction="WP_/_CA2_10" pintype="passive"/>
     </net>
     <net code="9" name="/FP_D0" class="Default">
-      <node ref="A1" pin="23" pinfunction="D23_/_PA1_23" pintype="passive"/>
+      <node ref="A1" pin="28" pinfunction="D28_/_PA6_28" pintype="passive"/>
       <node ref="J1" pin="19" pinfunction="PA0_/_D0_19" pintype="passive"/>
     </net>
     <net code="10" name="/FP_D1" class="Default">
-      <node ref="A1" pin="22" pinfunction="D22_/_PA0_22" pintype="passive"/>
+      <node ref="A1" pin="29" pinfunction="D29_/_PA7_29" pintype="passive"/>
       <node ref="J1" pin="20" pinfunction="PA1_/_D1_20" pintype="passive"/>
     </net>
     <net code="11" name="/FP_D2" class="Default">
-      <node ref="A1" pin="25" pinfunction="D25_/_PA3_25" pintype="passive"/>
+      <node ref="A1" pin="26" pinfunction="D26_/_PA4_26" pintype="passive"/>
       <node ref="J1" pin="21" pinfunction="PA2_/_D2_21" pintype="passive"/>
     </net>
     <net code="12" name="/FP_D3" class="Default">
-      <node ref="A1" pin="24" pinfunction="D24_/_PA2_24" pintype="passive"/>
+      <node ref="A1" pin="27" pinfunction="D27_/_PA5_27" pintype="passive"/>
       <node ref="J1" pin="22" pinfunction="PA3_/_D3_22" pintype="passive"/>
     </net>
     <net code="13" name="/FP_D4" class="Default">
-      <node ref="A1" pin="27" pinfunction="D27_/_PA5_27" pintype="passive"/>
+      <node ref="A1" pin="24" pinfunction="D24_/_PA2_24" pintype="passive"/>
       <node ref="J1" pin="23" pinfunction="PA4_/_D4_23" pintype="passive"/>
     </net>
     <net code="14" name="/FP_D5" class="Default">
-      <node ref="A1" pin="26" pinfunction="D26_/_PA4_26" pintype="passive"/>
+      <node ref="A1" pin="25" pinfunction="D25_/_PA3_25" pintype="passive"/>
       <node ref="J1" pin="24" pinfunction="PA5_/_D5_24" pintype="passive"/>
     </net>
     <net code="15" name="/FP_D6" class="Default">
-      <node ref="A1" pin="29" pinfunction="D29_/_PA7_29" pintype="passive"/>
+      <node ref="A1" pin="22" pinfunction="D22_/_PA0_22" pintype="passive"/>
       <node ref="J1" pin="25" pinfunction="PA6_/_D6_25" pintype="passive"/>
     </net>
     <net code="16" name="/FP_D7" class="Default">
-      <node ref="A1" pin="28" pinfunction="D28_/_PA6_28" pintype="passive"/>
+      <node ref="A1" pin="23" pinfunction="D23_/_PA1_23" pintype="passive"/>
       <node ref="J1" pin="26" pinfunction="PA7_/_D7_26" pintype="passive"/>
     </net>
     <net code="17" name="/FP_MODE" class="Default">
-      <node ref="A1" pin="50" pinfunction="D50_/_PB3_50" pintype="passive"/>
+      <node ref="A1" pin="53" pinfunction="D53_/_PB0_53" pintype="passive"/>
       <node ref="J1" pin="1" pinfunction="MODE_/_PB3_1" pintype="passive"/>
     </net>
     <net code="18" name="/GND_CPU" class="Default">

@@ -51,5 +51,5 @@ python hardware\Adret740A_replacement_cpu\validate_netlist.py
 ```
 
 Le contrôle vérifie notamment la séparation de `GND_CPU` et `GND_INST`, la
-liaison directe J1-5 vers B1-6, B1-7 vers Mega D3, les permutations du bus du
-panneau et les treize sorties MCP23017 vers B1.
+liaison directe J1-5 vers B1-6, B1-7 vers Mega D3, le nouveau mapping inversé
+du bus du panneau et les treize sorties MCP23017 vers B1.

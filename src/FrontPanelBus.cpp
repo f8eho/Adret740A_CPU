@@ -29,7 +29,7 @@ void FrontPanelBus::begin()
 void FrontPanelBus::writeRaw(front_panel::Select select, uint8_t value)
 {
     setDataOutput();
-    ADRET_FP_DATA_PORT = value;
+    ADRET_FP_DATA_PORT = hw::frontPanelDataToPort(value);
     setSelectNibble(uint8_t(select));
     hw::waitTtlSettle();
     pulseAddressEnable();
@@ -40,7 +40,7 @@ void FrontPanelBus::writeDisplay(front_panel::DisplayDevice device,
                                  uint8_t value)
 {
     setDataOutput();
-    ADRET_FP_DATA_PORT = value;
+    ADRET_FP_DATA_PORT = hw::frontPanelDataToPort(value);
     setSelectNibble(makeIcmSelect(device, mode));
     hw::waitTtlSettle();
     pulseAddressEnable();
@@ -96,18 +96,19 @@ front_panel::KeyboardSample FrontPanelBus::readKeyboard()
     assertAddressEnable();
     delayMicroseconds(hw::kFrontPanelKeyboardEnableUs);
 
-    const uint8_t raw = ADRET_FP_DATA_PIN;
+    const uint8_t portImage = ADRET_FP_DATA_PIN;
 
     releaseAddressEnable();
     setSelectNibble(uint8_t(front_panel::Select::IdleY0));
     setDataOutput();
     ADRET_FP_DATA_PORT = 0x00;
 
+    const uint8_t raw = hw::frontPanelDataFromPort(portImage);
     front_panel::KeyboardSample sample = {};
     sample.raw = raw;
     sample.xCode = front_panel::keyboardX(raw);
     sample.yCode = front_panel::keyboardY(raw);
-    // The validated harness crosses the panel D6/D7 signals onto AVR PA7/PA6.
+    // The normalized image preserves the established D6/D7 wheel semantics.
     sample.encoderCountLine = (raw & (1u << 7)) != 0u;
     sample.encoderDirectionLine = (raw & (1u << 6)) != 0u;
     return sample;
@@ -126,7 +127,8 @@ void FrontPanelBus::setDataInput()
 
 void FrontPanelBus::setSelectNibble(uint8_t nibble)
 {
-    const uint8_t shifted = uint8_t((nibble << hw::kFrontPanelSelectShift) &
+    const uint8_t portNibble = hw::frontPanelSelectToPort(nibble);
+    const uint8_t shifted = uint8_t((portNibble << hw::kFrontPanelSelectShift) &
                                     hw::kFrontPanelSelectMask);
     ADRET_FP_SELECT_PORT = uint8_t((ADRET_FP_SELECT_PORT &
                                     uint8_t(~hw::kFrontPanelSelectMask)) |

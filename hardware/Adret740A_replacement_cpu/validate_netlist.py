@@ -31,10 +31,10 @@ EXPECTED: dict[str, set[tuple[str, str]]] = {
     "POWER_SENSE": nodes(("J2", "7"), ("A1", "3")),
     "FP_CA1": nodes(("J1", "12"), ("A1", "2")),
     "FP_CA2": nodes(("J1", "10"), ("A1", "10")),
-    "FP_MODE": nodes(("J1", "1"), ("A1", "50")),
-    "FP_C": nodes(("J1", "2"), ("A1", "51")),
-    "FP_B": nodes(("J1", "3"), ("A1", "52")),
-    "FP_A": nodes(("J1", "4"), ("A1", "53")),
+    "FP_MODE": nodes(("J1", "1"), ("A1", "53")),
+    "FP_C": nodes(("J1", "2"), ("A1", "52")),
+    "FP_B": nodes(("J1", "3"), ("A1", "51")),
+    "FP_A": nodes(("J1", "4"), ("A1", "50")),
     "I2C_SDA_CPU": nodes(("A1", "20"), ("A2", "CPU_SDA")),
     "I2C_SCL_CPU": nodes(("A1", "21"), ("A2", "CPU_SCL")),
     "I2C_SDA_INST": nodes(("A2", "INST_SDA"), ("A3", "I2C_SDA")),
@@ -43,7 +43,7 @@ EXPECTED: dict[str, set[tuple[str, str]]] = {
     "MCP_RESET": nodes(("A3", "RST"), ("R2", "2")),
 }
 
-PANEL_DATA_TO_MEGA = ("23", "22", "25", "24", "27", "26", "29", "28")
+PANEL_DATA_TO_MEGA = ("28", "29", "26", "27", "24", "25", "22", "23")
 for bit, mega_pin in enumerate(PANEL_DATA_TO_MEGA):
     EXPECTED[f"FP_D{bit}"] = nodes(("J1", str(19 + bit)), ("A1", mega_pin))
 for bit in range(8):

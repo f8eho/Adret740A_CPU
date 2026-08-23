@@ -111,7 +111,8 @@ constexpr uint8_t segmentGlyph(char character, bool decimalPoint = false)
 }
 
 enum FirstCharFlags : uint8_t {
-    // These are AVR bus bits after the validated adjacent-pair crossover.
+    // These are normalized firmware bus bits. FrontPanelBus converts them to
+    // the connector-friendly physical PORTA order.
     kModulationOne = 1u << 0,
     kModulationP = 1u << 1,
     kPowerOneBlank = 1u << 2,
@@ -197,6 +198,8 @@ enum class MemoryLedMode : uint8_t {
 };
 
 struct KeyboardSample {
+    // Normalized firmware image, after conversion from the physical PORTA
+    // order used by the connector-friendly harness.
     uint8_t raw;
     uint8_t xCode;
     uint8_t yCode;

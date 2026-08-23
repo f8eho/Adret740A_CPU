@@ -2,8 +2,9 @@
 
 Ce document décrit le câblage prévu entre les **signaux logiques du connecteur
 CPU du panneau avant ADRET 740A** et les broches d'un **Arduino Mega 1280 ou
-2560**. Ce mapping reprend le faisceau validé au banc sur Mega 2560 avec la
-matrice clavier, les voyants et les trois groupes d'affichage ; le brochage est
+2560**. Le mapping ci-dessous est la nouvelle disposition destinée à éviter
+les croisements lors du soudage du connecteur mâle. Il a été validé au banc le
+23 août 2026 sur le faisceau provisoire à fils enfichables ; le brochage est
 identique sur Mega 1280.
 
 > Attention : les noms `PAx` et `PBx` du bus ADRET désignent les sorties du PIA
@@ -13,20 +14,20 @@ identique sur Mega 1280.
 
 ## Tableau de câblage
 
-| Signal connecteur ADRET | Contact J1 | Rôle | Sens côté Arduino | Port ATmega1280/2560 | Nom logique Arduino | **N° imprimé sur le PCB** | Registre firmware |
+| Signal connecteur ADRET | Contact J1 | Rôle | Sens côté Arduino | Port ATmega1280/2560 | Nom logique Arduino | **N° imprimé sur le PCB** | Registre AVR physique |
 | --- | ---: | --- | --- | --- | --- | --- | --- |
-| `PA0` / donnée `D0` | 19 | Bit 0 du bus de données | Entrée/sortie | `PA1` | `D23` | **23** | `PORTA`, bit 1 |
-| `PA1` / donnée `D1` | 20 | Bit 1 du bus de données | Entrée/sortie | `PA0` | `D22` | **22** | `PORTA`, bit 0 |
-| `PA2` / donnée `D2` | 21 | Bit 2 du bus de données | Entrée/sortie | `PA3` | `D25` | **25** | `PORTA`, bit 3 |
-| `PA3` / donnée `D3` | 22 | Bit 3 du bus de données | Entrée/sortie | `PA2` | `D24` | **24** | `PORTA`, bit 2 |
-| `PA4` / donnée `D4` | 23 | Bit 4 du bus de données | Entrée/sortie | `PA5` | `D27` | **27** | `PORTA`, bit 5 |
-| `PA5` / donnée `D5` | 24 | Bit 5 du bus de données | Entrée/sortie | `PA4` | `D26` | **26** | `PORTA`, bit 4 |
-| `PA6` / donnée `D6` | 25 | Bit 6 du bus de données | Entrée/sortie | `PA7` | `D29` | **29** | `PORTA`, bit 7 |
-| `PA7` / donnée `D7` | 26 | Bit 7 du bus de données | Entrée/sortie | `PA6` | `D28` | **28** | `PORTA`, bit 6 |
-| `PB0` / `A` | 4 | Adresse de sélection, bit 0 | Sortie | `PB0` | `D53` | **53** | `PORTB`, bit 0 |
-| `PB1` / `B` | 3 | Adresse de sélection, bit 1 | Sortie | `PB1` | `D52` | **52** | `PORTB`, bit 1 |
-| `PB2` / `C` | 2 | Adresse de sélection, bit 2 | Sortie | `PB2` | `D51` | **51** | `PORTB`, bit 2 |
-| `PB3` / `MODE` | 1 | Mode des afficheurs ICM7218A | Sortie | `PB3` | `D50` | **50** | `PORTB`, bit 3 |
+| `PA0` / donnée `D0` | 19 | Bit 0 du bus de données | Entrée/sortie | `PA6` | `D28` | **28** | `PORTA`, bit 6 |
+| `PA1` / donnée `D1` | 20 | Bit 1 du bus de données | Entrée/sortie | `PA7` | `D29` | **29** | `PORTA`, bit 7 |
+| `PA2` / donnée `D2` | 21 | Bit 2 du bus de données | Entrée/sortie | `PA4` | `D26` | **26** | `PORTA`, bit 4 |
+| `PA3` / donnée `D3` | 22 | Bit 3 du bus de données | Entrée/sortie | `PA5` | `D27` | **27** | `PORTA`, bit 5 |
+| `PA4` / donnée `D4` | 23 | Bit 4 du bus de données | Entrée/sortie | `PA2` | `D24` | **24** | `PORTA`, bit 2 |
+| `PA5` / donnée `D5` | 24 | Bit 5 du bus de données | Entrée/sortie | `PA3` | `D25` | **25** | `PORTA`, bit 3 |
+| `PA6` / donnée `D6` | 25 | Bit 6 du bus de données | Entrée/sortie | `PA0` | `D22` | **22** | `PORTA`, bit 0 |
+| `PA7` / donnée `D7` | 26 | Bit 7 du bus de données | Entrée/sortie | `PA1` | `D23` | **23** | `PORTA`, bit 1 |
+| `PB0` / `A` | 4 | Adresse de sélection, bit 0 | Sortie | `PB3` | `D50` | **50** | `PORTB`, bit 3 |
+| `PB1` / `B` | 3 | Adresse de sélection, bit 1 | Sortie | `PB2` | `D51` | **51** | `PORTB`, bit 2 |
+| `PB2` / `C` | 2 | Adresse de sélection, bit 2 | Sortie | `PB1` | `D52` | **52** | `PORTB`, bit 1 |
+| `PB3` / `MODE` | 1 | Mode des afficheurs ICM7218A | Sortie | `PB0` | `D53` | **53** | `PORTB`, bit 0 |
 | `CA2` / `WP` | 10 | Validation du décodeur d'adresse 74LS138 | Sortie | `PB4` | `D10` | **10** | `PORTB`, bit 4 |
 | `CA1` / `INT CLAV` | 12 | Interruption clavier et roue codeuse | Entrée | `PE4` / `INT4` | `D2` | **2** | `PINE`, bit 4 |
 | `INHIB` | 5 | Marche/arrêt général de l'alimentation ADRET | Sans connexion Arduino | — | — | — | Liaison directe vers B1-6 |
@@ -40,14 +41,19 @@ J1-7, J1-9, J1-11, J1-13 à J1-15, J1-17 et J1-18 ne sont pas raccordés dans
 le prototype.
 
 La colonne **N° imprimé sur le PCB** est celle à utiliser directement côté
-Mega. Le relevé validé avec toutes les touches de la matrice impose les
-permutations `22/23`, `24/25`, `26/27` et `28/29`. `CA1` va au contact marqué
-**2** et `CA2` au contact marqué **10**.
+Mega. La nouvelle disposition applique au faisceau historique les échanges
+`22/29`, `23/28`, `24/27`, `25/26`, ainsi que `50/53` et `51/52`. L'ancien
+prototype validé utilisait D0..D7 sur `23, 22, 25, 24, 27, 26, 29, 28` et
+MODE/C/B/A sur `50, 51, 52, 53`. Il n'est plus pris en charge par cette version
+du firmware. `CA1` va au contact marqué **2** et `CA2` au contact marqué
+**10**.
 
-Le bus de données reste groupé sur la totalité de `PORTA`, car le firmware le
-lit et l'écrit en une seule opération par `PINA`, `PORTA` et `DDRA`. Les
-permutations du tableau font partie du câblage validé et ne doivent pas être
-compensées dans le logiciel.
+Le bus de données reste groupé sur la totalité de `PORTA`. Le firmware lit et
+écrit toujours le port en une seule opération par `PINA`, `PORTA` et `DDRA`,
+puis inverse l'ordre des huit bits à la frontière matérielle. Il inverse de la
+même façon le quartet adresse/mode dans `PB3..PB0`. Les valeurs normalisées
+utilisées par les afficheurs, voyants, clavier et molette restent donc
+inchangées.
 
 ## Détail des signaux de contrôle
 
@@ -85,6 +91,20 @@ Elle est raccordée à `D2`, qui correspond à `PE4` et à l'interruption extern
 `INT4` sur l'ATmega1280 comme sur l'ATmega2560. Le firmware la configure sur
 front descendant et active la résistance de pull-up interne de `PE4`. Celle-ci
 complète la résistance de rappel de 4,7 kΩ présente sur le panneau.
+
+### Conservation de D2, D3 et D10
+
+Le regroupement de `CA1`, de la présence alimentation `PA` et de `CA2` dans la
+zone D22 à D53 a été étudié puis écarté. D30 à D49 ne disposent ni des
+interruptions externes utilisées ici, ni d'interruptions sur changement de
+broche. D50 à D53 offrent des PCINT, mais sont déjà entièrement occupées par
+`A`, `B`, `C` et `MODE`. Déplacer ces quatre sélections pour libérer des PCINT
+rendrait le câblage et les routines d'interruption sensiblement plus complexes.
+
+Le mapping conserve donc `CA1` sur D2/PE4/INT4 et `PA` sur D3/PE5/INT5. `CA2`
+reste sur D10/PB4 : bien que D10 soit séparée physiquement des D50 à D53 sur la
+Mega, PB4 est contigu à PB3..PB0 dans le registre AVR et permet de préserver
+les accès directs et les temporisations actuelles.
 
 ## Commande générale d'alimentation `INHIB`
 
@@ -131,8 +151,10 @@ incorrecte. `PA6/D6` reste simplement le bit 6 du bus de données bidirectionnel
 
 Pour une écriture vers le panneau :
 
-1. configurer `PORTA` en sortie et placer l'octet de données ;
-2. placer l'adresse sur `PB2..PB0` et, si nécessaire, le mode sur `PB3` ;
+1. configurer `PORTA` en sortie et placer l'octet de données physiquement
+   inversé par rapport à l'image normalisée du firmware ;
+2. inverser le quartet logique adresse/mode et placer l'image physique sur les
+   bits 3..0 de `PORTB` ;
 3. attendre la stabilisation des niveaux TTL ;
 4. faire passer `CA2` de `1` à `0`, puis de `0` à `1`.
 
@@ -143,7 +165,7 @@ Pour lire le clavier ou la roue codeuse après une interruption `CA1` :
 3. activer `CA2` à l'état bas ;
 4. maintenir `CA2` actif pendant 10 µs pour laisser SN5 et le chemin
    d'acquittement C10/SN16 se stabiliser ;
-5. lire les huit bits dans `PINA` ;
+5. lire les huit bits dans `PINA`, puis inverser l'octet avant son décodage ;
 6. relâcher `CA2`, puis remettre le bus dans son état de repos.
 
 Au démarrage, CA1 peut déjà être bloqué à l'état bas avant que l'interruption

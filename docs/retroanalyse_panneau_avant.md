@@ -54,42 +54,47 @@ flowchart LR
 SN1 est un 74LS138. Ses sorties `Y0..Y7` sont actives à l'état bas. Une
 adresse n'est donc effective que pendant l'activation de `CA2`.
 
-## 2. Câblage validé vers l'Arduino Mega
+## 2. Câblage vers l'Arduino Mega
 
 ### 2.1 Bus de données
 
-**Confirmé au banc.** Le faisceau réel croise chaque paire de broches Arduino.
-Ces croisements ont été établis en comparant tous les codes de la matrice
-clavier, puis confirmés par les voyants et les afficheurs.
+**Confirmé au banc le 23 août 2026.** Le nouveau faisceau inverse les broches
+du prototype historique afin de permettre un soudage direct vers le connecteur
+mâle. Le firmware compense cette disposition à la frontière de `PORTA`. La
+validation a été réalisée sur le faisceau provisoire à fils enfichables après
+correction d'un mauvais contact.
 
 | Signal panneau | Port AVR reçu/piloté | Nom Arduino | N° imprimé PCB |
 | --- | --- | --- | ---: |
-| `D0 / PA0` | `PA1` | `D23` | **23** |
-| `D1 / PA1` | `PA0` | `D22` | **22** |
-| `D2 / PA2` | `PA3` | `D25` | **25** |
-| `D3 / PA3` | `PA2` | `D24` | **24** |
-| `D4 / PA4` | `PA5` | `D27` | **27** |
-| `D5 / PA5` | `PA4` | `D26` | **26** |
-| `D6 / PA6` | `PA7` | `D29` | **29** |
-| `D7 / PA7` | `PA6` | `D28` | **28** |
+| `D0 / PA0` | `PA6` | `D28` | **28** |
+| `D1 / PA1` | `PA7` | `D29` | **29** |
+| `D2 / PA2` | `PA4` | `D26` | **26** |
+| `D3 / PA3` | `PA5` | `D27` | **27** |
+| `D4 / PA4` | `PA2` | `D24` | **24** |
+| `D5 / PA5` | `PA3` | `D25` | **25** |
+| `D6 / PA6` | `PA0` | `D22` | **22** |
+| `D7 / PA7` | `PA1` | `D23` | **23** |
 
 Le firmware accède toujours à l'octet complet avec `PORTA`, `PINA` et `DDRA`.
-Les permutations sont réalisées par le faisceau et ne sont pas réappliquées
-aux octets de voyants ou d'affichage.
+Une inversion des huit bits convertit l'image normalisée avant une écriture et
+après une lecture. Les octets de voyants, d'affichage et de clavier gardent
+ainsi leur encodage validé. Le prototype historique validé au banc utilisait
+D0..D7 sur Mega `23, 22, 25, 24, 27, 26, 29, 28`.
 
 ### 2.2 Sélection et contrôle
 
 | Signal panneau | Port AVR | Arduino | Sens Mega | Fonction |
 | --- | --- | ---: | --- | --- |
-| `PB0` | `PB0` | **53** | sortie | adresse bit 0 |
-| `PB1` | `PB1` | **52** | sortie | adresse bit 1 |
-| `PB2` | `PB2` | **51** | sortie | adresse bit 2 |
-| `PB3` | `PB3` | **50** | sortie | MODE ICM7218A |
+| `PB0` | `PB3` | **50** | sortie | adresse bit 0 |
+| `PB1` | `PB2` | **51** | sortie | adresse bit 1 |
+| `PB2` | `PB1` | **52** | sortie | adresse bit 2 |
+| `PB3` | `PB0` | **53** | sortie | MODE ICM7218A |
 | `CA2` | `PB4` | **10** | sortie | validation active bas |
 | `CA1` | `PE4 / INT4` | **2** | entrée | IRQ active bas |
 
 Serial0, broches Arduino 0 et 1, est réservé au protocole de télécommande
-série.
+série. Le quartet logique est inversé avant son écriture dans `PB3..PB0` ;
+`PB4/CA2` est préservé par l'accès masqué au registre.
 
 ## 3. Décodage des périphériques
 
@@ -275,12 +280,12 @@ d'un code stable. C15 couple cette détection au compteur SN13.
 
 ### 6.3 Octet SN5 et traitement logiciel
 
-| Bits reçus par la Mega | Fonction |
+| Bits de l'octet normalisé par le firmware | Fonction |
 | --- | --- |
 | bit 0..2 | code X |
 | bit 3..5 | code Y |
-| bit 7 | comptage molette, après permutation du faisceau D6/D7 |
-| bit 6 | sens molette, après permutation du faisceau D6/D7 |
+| bit 7 | comptage molette ; le signal physique D6 arrive sur PA0/D22 |
+| bit 6 | sens molette ; le signal physique D7 arrive sur PA1/D23 |
 
 Lorsqu'il ne s'agit pas d'une impulsion de molette, `(X,Y)` est converti en
 une touche nommée. Les positions absentes de la matrice sont ignorées. Deux
@@ -404,11 +409,12 @@ essais sans coupure.
 | Observation | Cause trouvée | Correction |
 | --- | --- | --- |
 | Voyants figés, clavier incohérent | mauvais contact CA2 | reprise du câblage CA2 |
-| Codes clavier systématiquement faux | quatre paires du bus inversées | faisceau 23/22, 25/24, 27/26, 29/28 |
+| Codes clavier systématiquement faux sur le prototype historique | quatre paires du bus inversées | ancien faisceau 23/22, 25/24, 27/26, 29/28 |
 | CA1 basse au démarrage | événement présent avant armement du front | quatre acquittements SN5 au boot |
 | Clavier nettement plus stable avec impulsion longue | Y5/CA2 initialement trop bref | maintien SN5 pendant 10 µs |
 | Trame modulation répétée sur la fréquence | SN10 et SN11 intervertis | SN11=Y6, SN10=Y7 |
 | Tous les points ICM allumés | bit DP actif à zéro | données Code B avec `ID7=1` |
+| Après inversion du faisceau : `0` affiché `8`, modulation `PPP` et validation incohérente | mauvais contact dans le faisceau provisoire | reprise du contact ; bannière, affichages et commande `VALID` corrects |
 | Touches doublées ou positions inconnues | rebonds/transitions de scan | rejet des inconnues et filtre 30 ms |
 | Clavier perdu après permutation D6/D7 | ligne sens prise pour comptage | interprétation AVR bits 7/6 corrigée |
 | Clavier/molette parfois figés après une touche | CA1 peut rester basse après l'acquittement | diagnostic et quatre acquittements SN5 supplémentaires bornés |
@@ -419,7 +425,8 @@ essais sans coupure.
 ### Confirmé au banc
 
 - sélection des registres et polarité CA2 ;
-- câblage des huit bits de données ;
+- nouveau câblage sans croisements des huit bits de données, validé sur le
+  faisceau provisoire ;
 - balayage des groupes de voyants ;
 - matrice et libellés du clavier ;
 - trames Code B SN10/SN11 et ordre des groupes numériques ;

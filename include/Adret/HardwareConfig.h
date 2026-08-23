@@ -11,19 +11,79 @@ namespace adret {
 namespace hw {
 
 // Front panel 8-bit data bus: Arduino Mega pins 22..29, AVR PORTA.
+// The connector-friendly harness reverses the eight physical PORTA pins from
+// the normalized byte image used by the firmware. This keeps all bus accesses
+// atomic while routing panel D0..D7 to Mega D28, D29, D26, D27, D24, D25,
+// D22 and D23 respectively.
 #define ADRET_FP_DATA_DDR DDRA
 #define ADRET_FP_DATA_PORT PORTA
 #define ADRET_FP_DATA_PIN PINA
 
+constexpr uint8_t swapFrontPanelNibbles(uint8_t value)
+{
+    return uint8_t((value >> 4) | (value << 4));
+}
+
+constexpr uint8_t swapFrontPanelBitPairs(uint8_t value)
+{
+    return uint8_t(((value & 0xCCu) >> 2) | ((value & 0x33u) << 2));
+}
+
+constexpr uint8_t swapFrontPanelAdjacentBits(uint8_t value)
+{
+    return uint8_t(((value & 0xAAu) >> 1) | ((value & 0x55u) << 1));
+}
+
+constexpr uint8_t reverseFrontPanelDataBits(uint8_t value)
+{
+    return swapFrontPanelAdjacentBits(
+        swapFrontPanelBitPairs(swapFrontPanelNibbles(value)));
+}
+
+constexpr uint8_t frontPanelDataToPort(uint8_t normalizedValue)
+{
+    return reverseFrontPanelDataBits(normalizedValue);
+}
+
+constexpr uint8_t frontPanelDataFromPort(uint8_t portValue)
+{
+    return reverseFrontPanelDataBits(portValue);
+}
+
+static_assert(frontPanelDataToPort(0x01u) == 0x80u &&
+              frontPanelDataToPort(0x02u) == 0x40u &&
+              frontPanelDataToPort(0x04u) == 0x20u &&
+              frontPanelDataToPort(0x08u) == 0x10u &&
+              frontPanelDataToPort(0x10u) == 0x08u &&
+              frontPanelDataToPort(0x20u) == 0x04u &&
+              frontPanelDataToPort(0x40u) == 0x02u &&
+              frontPanelDataToPort(0x80u) == 0x01u,
+              "Unexpected front-panel PORTA reversal");
+static_assert(frontPanelDataFromPort(frontPanelDataToPort(0xA5u)) == 0xA5u,
+              "Front-panel data conversion must round-trip");
+
 // Front panel control nibble PB3..PB0 from the original CPU bus.
 // PB2..PB0 select the decoded address, PB3 is used as ICM7218A mode.
-// Default wiring uses AVR PORTB bits 0..3 (Mega pins 53, 52, 51, 50).
+// The connector-friendly wiring uses AVR PORTB bits 3..0 for logical
+// A, B, C and MODE (Mega pins 50, 51, 52 and 53 respectively).
 // Change only this file if the replacement CPU connector is wired elsewhere.
 #define ADRET_FP_SELECT_DDR DDRB
 #define ADRET_FP_SELECT_PORT PORTB
 constexpr uint8_t kFrontPanelSelectShift = 0;
 constexpr uint8_t kFrontPanelSelectMask =
     uint8_t(_BV(PB0) | _BV(PB1) | _BV(PB2) | _BV(PB3));
+
+constexpr uint8_t frontPanelSelectToPort(uint8_t normalizedNibble)
+{
+    return uint8_t(reverseFrontPanelDataBits(
+                       uint8_t(normalizedNibble & 0x0Fu)) >> 4);
+}
+
+static_assert(frontPanelSelectToPort(0x01u) == 0x08u &&
+              frontPanelSelectToPort(0x02u) == 0x04u &&
+              frontPanelSelectToPort(0x04u) == 0x02u &&
+              frontPanelSelectToPort(0x08u) == 0x01u,
+              "Unexpected front-panel PORTB select reversal");
 
 // CA2 enables the 74LS138 address decoder while PB2..PB0 hold a valid address.
 // Default: PORTB bit 4 (Mega pin 10), active low on G2.

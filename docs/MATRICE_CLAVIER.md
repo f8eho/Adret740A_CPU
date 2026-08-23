@@ -17,12 +17,14 @@ Elle décrit les codes lus dans le registre d'entrée `SN5`.
 - `D0..D2` contiennent le code de colonne `X0..X7`.
 - `D3..D5` contiennent le code de ligne `Y0..Y5`.
 - Le signal panneau `D6` signale une impulsion de la roue codeuse. Avec le
-  faisceau validé, il arrive sur `PA7`, bit 7 lu par la Mega.
-- Le signal panneau `D7` donne le sens de la roue codeuse. Avec le faisceau
-  validé, il arrive sur `PA6`, bit 6 lu par la Mega.
+  nouveau faisceau, il arrive sur `PA0` (`D22`), puis l'inversion logicielle le
+  replace dans le bit normalisé 7.
+- Le signal panneau `D7` donne le sens de la roue codeuse. Avec le nouveau
+  faisceau, il arrive sur `PA1` (`D23`), puis l'inversion logicielle le replace
+  dans le bit normalisé 6.
 - `CA1` signale au CPU qu'un événement doit être lu dans `SN5`.
 
-Le scan brut est donc décodé par :
+Après normalisation de `PINA`, le scan brut est donc décodé par :
 
 ```text
 X = raw & 0x07

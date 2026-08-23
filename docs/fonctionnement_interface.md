@@ -104,13 +104,14 @@ Les affichages utilisent les formats suivants :
 - FM : centièmes de kHz sous 20 kHz, puis dixièmes jusqu'à 199,9 kHz. La valeur
   documentaire de 200 kHz reste désactivée tant que son code bus est inconnu.
 
-Le premier caractère spécial de modulation est commandé par SN4. Après les
-permutations du faisceau validé, D0 logiciel affiche `1`, D1 affiche `P` et les
-deux ensemble prennent l'aspect d'un `A`. Le firmware n'active donc que D0
-lorsqu'un `1` de tête est nécessaire. Le `1` spécial d'amplitude possède une
-commande d'extinction active haut ; les signes observés sont `+` sur D3 et `-`
-sur D4. Les points de tête SN17 sont actifs bas et restent éteints pour ces
-formats, les points utiles étant produits directement par les ICM7218A.
+Le premier caractère spécial de modulation est commandé par SN4. Dans l'octet
+normalisé du firmware, D0 affiche `1`, D1 affiche `P` et les deux ensemble
+prennent l'aspect d'un `A`. L'inversion vers le nouveau câblage est confinée à
+`FrontPanelBus`. Le firmware n'active donc que D0 lorsqu'un `1` de tête est
+nécessaire. Le `1` spécial d'amplitude possède une commande d'extinction active
+haut ; les signes observés sont `+` sur D3 et `-` sur D4. Les points de tête
+SN17 sont actifs bas et restent éteints pour ces formats, les points utiles
+étant produits directement par les ICM7218A.
 
 ## Modulation et RF
 

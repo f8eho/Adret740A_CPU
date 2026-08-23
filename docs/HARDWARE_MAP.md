@@ -45,21 +45,35 @@ Items explicitly listed under remaining validation are still provisional.
 ## Front Panel Bus
 
 - Data bus: ATmega1280/2560 PORTA, Arduino Mega pins 22..29.
-- Validated harness pairs: panel D0/D1 to Mega 23/22, D2/D3 to 25/24,
-  D4/D5 to 27/26, and D6/D7 to 29/28.
+- Connector-friendly harness: panel D0..D7 to Mega
+  28, 29, 26, 27, 24, 25, 22, 23. The revised mapping was bench-validated on
+  the jumper-wire harness on 2026-08-23 after correcting a bad contact.
 - Direction: bidirectional.
-- Access: direct register writes and reads through `PORTA`, `PINA`, `DDRA`.
+- Access: atomic register writes and reads through `PORTA`, `PINA`, `DDRA`,
+  with an eight-bit reversal at the hardware boundary.
 
 ## Front Panel Control
 
-Default mapping in `include/Adret/HardwareConfig.h`:
+Mapping in `include/Adret/HardwareConfig.h`:
 
-- `PB0`: PORTB bit 0, Arduino Mega pin 53.
-- `PB1`: PORTB bit 1, Arduino Mega pin 52.
-- `PB2`: PORTB bit 2, Arduino Mega pin 51.
-- `PB3`: PORTB bit 3, Arduino Mega pin 50, ICM7218A mode line.
+- `A`: PORTB bit 3, Arduino Mega pin 50.
+- `B`: PORTB bit 2, Arduino Mega pin 51.
+- `C`: PORTB bit 1, Arduino Mega pin 52.
+- `MODE`: PORTB bit 0, Arduino Mega pin 53, ICM7218A mode line.
 - `CA2`: PORTB bit 4, Arduino Mega pin 10, active low.
 - `CA1`: PORTE bit 4, Arduino Mega pin 2 / INT4.
+
+The placement of CA1, power-fail `PA`, and CA2 was reviewed for possible
+relocation into the D22..D53 header area and intentionally retained:
+
+- D30..D49 provide neither external interrupts nor pin-change interrupts on
+  the ATmega1280/2560, so they cannot replace D2/INT4 or D3/INT5 without
+  polling and reduced event reliability.
+- D50..D53 provide pin-change interrupts but are fully occupied by
+  A/B/C/MODE.
+- D10 remains the preferred CA2 output because PB4 is register-contiguous
+  with the PB3..PB0 select nibble and preserves the current direct-register
+  timing.
 
 ## Front Panel Selects
 
