@@ -227,20 +227,7 @@ CPU.
   discontinuity at the `+6.9` to `+7.0 dBm` boundary. The high-level amplitude
   program now retains the continuous 13.8-dB fine-control reference, changing
   address 8 from `89` to `88` across that boundary instead of `89` to `D8`.
-  The corrected transition was confirmed on the assembled instrument. The
-  original polarity of the VHF `+5 dB` control was retained after a temporary
-  inversion showed no corresponding RF change.
-- Subsequent direct bench measurements cleared the apparent 4-to-6-dB absolute
-  output deficit. The VHF `+5 dB` command is correct, all four amplifier stages
-  are active with about 22 dB total gain, and the attenuator, output circuit
-  breaker and relative attenuation steps behave coherently. A direct
-  Rigol-to-Siglent comparison showed that the hacked SSA3021X/SSA3032X spectrum
-  analyzer was reading approximately 6 dB low. A multipoint external amplitude
-  correction from 1 to 60 MHz restored coherent readings, after which `GAIN`
-  and `CENTRAGE` were aligned and checked successfully on several attenuation
-  states. Full-band absolute calibration still requires suitable metrology
-  equipment; see
-  [`CALIBRATION_GROSSIERE_NIVEAU_RF.md`](CALIBRATION_GROSSIERE_NIVEAU_RF.md).
+  The corrected transition was confirmed on the assembled instrument.
 - The serial `BUILD?` query was exercised on the instrument and returned build
   `2026072604` with its compilation timestamp, allowing flashed bench versions
   to be identified independently of the host source tree.

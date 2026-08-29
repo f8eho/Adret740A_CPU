@@ -170,46 +170,6 @@ est fiable. Les potentiomètres sont un réglage global et ne doivent pas être
 repris pour chaque fréquence. Les écarts résiduels dépendant de la fréquence
 seront traités ultérieurement par la table de calibration.
 
-Pour le banc actuellement utilisé, la correction externe du Siglent n'est
-caractérisée que de 1 à 60 MHz. Hors de cette plage, ses indications absolues
-ne doivent pas servir à régler l'Adret tant que l'analyseur n'a pas été
-recalibré. Son mode `Auto Cal` doit rester désactivé, puisqu'il a produit une
-erreur importante lors des essais.
-
-## Résultat obtenu sur l'appareil étudié
-
-Le défaut initial paraissait être une perte de sortie presque constante de
-4 à 6 dB. Les contrôles successifs ont cependant établi que :
-
-- la commande VHF `+5 dB` fonctionne correctement ;
-- les quatre étages de l'amplificateur VHF sont actifs et donnent environ
-  22 dB de gain total, à comparer aux 24 dB nominaux déduits des quatre étages
-  annoncés à 6 dB ;
-- les deux chemins RF arrivant au premier étage de puissance donnent des
-  niveaux comparables ;
-- le bloc atténuateur, le disjoncteur de sortie et leurs connexions présentent
-  une perte d'insertion et des écarts relatifs cohérents ;
-- l'écart apparent provenait principalement du Siglent SSA3021X modifié en
-  SSA3032X, qui indiquait environ 6 dB de moins que le niveau appliqué.
-
-Le générateur Rigol a été relié directement au Siglent, puis contrôlé avec un
-oscilloscope correctement chargé par 50 ohms. Une table de correction externe
-du Siglent a ensuite été établie par points entre 1 et 60 MHz. Dans cette bande,
-les niveaux de l'Adret redeviennent cohérents avec les valeurs programmées.
-
-Les potentiomètres `GAIN` et `CENTRAGE` ont été repris alternativement selon la
-méthode à deux points décrite ci-dessus. Le résultat a ensuite été contrôlé sur
-plusieurs positions de l'atténuateur et jugé correct. Le relevé de gain de
-l'amplificateur est conservé dans
-[`tests/Mesures gain ampli adret 740a.ods`](../tests/Mesures%20gain%20ampli%20adret%20740a.ods).
-
-Cette validation lève le diagnostic de panne globale de niveau, mais ne
-remplace pas une calibration absolue de l'Adret. Il reste à caractériser le
-générateur et l'analyseur sur toute la bande avec une source ou un wattmètre RF
-étalonné jusqu'à au moins 3,2 GHz. Les relevés bruts devront être conservés
-séparément avant de modifier les tables de correction de l'un ou l'autre
-appareil.
-
 ## Critères d'arrêt et recherche de panne
 
 Arrêter le réglage si :
